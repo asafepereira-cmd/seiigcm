@@ -131,6 +131,16 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   pdf.text(doc.cargo, 105, y, { align: "center" });
 
   const nome = `${doc.tipo.toUpperCase().replace(/[^A-Z]/gi, "_")}_${String(doc.numero).padStart(3, "0")}_${doc.ano}.pdf`;
-  if (salvar) pdf.save(nome);
+  if (salvar) {
+    const blob = pdf.output("blob");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nome;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
   return pdf;
 }
