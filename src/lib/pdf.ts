@@ -26,9 +26,9 @@ export async function gerarPDF(doc: Documento, salvar = true) {
 
   const header = () => {
     pdf.addImage(brasao, "PNG", 12, 7, 20, 20);
-    pdf.addImage(midia, "PNG", 166, 11, 28, 10);
+    pdf.addImage(midia, "PNG", 170, 11, 28, 10);
     pdf.setFont("times", "bold");
-    pdf.setFontSize(9.5);
+    pdf.setFontSize(8.5);
     HEADER.forEach((l, i) => pdf.text(l, 105, 12 + i * 4, { align: "center" }));
     pdf.setLineWidth(0.2);
     pdf.line(46, 28, 158, 28);
@@ -55,7 +55,7 @@ export async function gerarPDF(doc: Documento, salvar = true) {
     pdf.setFont("times", "bold");
     const lw = pdf.getTextWidth(label + " ");
     pdf.setFont("times", "normal");
-    const pad = " ".repeat(Math.ceil(lw / pdf.getTextWidth(" ")) + 1);
+    const pad = " ".repeat(Math.ceil(lw / pdf.getTextWidth(" ")));
     const lines: string[] = pdf.splitTextToSize(pad + value, TW);
     lines.forEach((ln, i) => {
       ensure(LH);
