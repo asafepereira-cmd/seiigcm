@@ -14,7 +14,7 @@ import { gerarPDF } from "@/lib/pdf";
 import { dataExtenso, modeloGravacao, numeroFormatado, type Documento, type Participante } from "@/lib/documento";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (s: Record<string, unknown>): { id?: string } => (typeof s.id === "string" ? { id: s.id } : {}),
+  validateSearch: (s: Record<string, unknown>): { id?: string } => (typeof s['id'] === "string" ? { id: s['id'] as string } : {}),
   head: () => ({
     meta: [
       { title: "Novo documento — Gerador de Ofícios CCM" },
@@ -34,7 +34,7 @@ const textoParaLista = (t: string): Participante[] =>
     .filter(Boolean)
     .map((l) => {
       const m = l.split(/\s+[–-]\s+/);
-      return { nome: m[0], funcao: m.slice(1).join(" – ") };
+      return { nome: m[0] ?? "", funcao: m.slice(1).join(" – ") };
     });
 
 async function proximoNumero(ano: number) {
