@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Documents are generated client-side with jsPDF in `src/lib/pdf.ts`; the on-screen preview in `src/routes/index.tsx` must mirror it. Why: no server PDF runtime on Workers.
+- Shared single account: the first account is created via `createFirstAccount` only when no auth users exist; the UI never calls signUp. Why: access is restricted to one shared login.
