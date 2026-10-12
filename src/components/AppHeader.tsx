@@ -1,0 +1,39 @@
+import { Link, useNavigate } from "@tanstack/react-router";
+import { LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+
+export function AppHeader() {
+  const navigate = useNavigate();
+  return (
+    <header className="sticky top-0 z-20 border-b bg-primary text-primary-foreground">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
+        <img src="/brand/brasao.png" alt="" className="h-9 w-9" />
+        <div className="mr-auto leading-tight">
+          <p className="font-serif text-lg font-bold">Gerador de Ofícios</p>
+          <p className="hidden text-xs opacity-80 sm:block">CCM · CEM XXXIII</p>
+        </div>
+        <nav className="flex items-center gap-1 text-sm">
+          <Link to="/" className="rounded-md px-3 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }} activeOptions={{ exact: true, includeSearch: false }}>
+            Novo
+          </Link>
+          <Link to="/historico" className="rounded-md px-3 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }}>
+            Histórico
+          </Link>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Sair"
+            className="hover:bg-primary-foreground/10 hover:text-primary-foreground"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              navigate({ to: "/login" });
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </nav>
+      </div>
+    </header>
+  );
+}
