@@ -55,20 +55,21 @@ export async function gerarPDF(doc: Documento, salvar = true) {
     pdf.setFont("times", "bold");
     const lw = pdf.getTextWidth(label + " ");
     pdf.setFont("times", "normal");
-    const pad = " ".repeat(Math.ceil(lw / pdf.getTextWidth(" ")));
-    const lines: string[] = pdf.splitTextToSize(pad + value, TW);
-    lines.forEach((ln, i) => {
+    const words = value.trim().split(/\s+/);
+    let first = "";
+    while (words.length && pdf.getTextWidth(first ? first + " " + words[0] : words[0]!) <= TW - lw) first = first ? first + " " + words.shift() : words.shift()!;
+    const rest: string[] = words.length ? pdf.splitTextToSize(words.join(" "), TW) : [];
+    ensure(LH);
+    pdf.setFont("times", "bold");
+    pdf.text(label, ML, y);
+    pdf.setFont("times", "normal");
+    if (justify && rest.length) pdf.text(first, ML + lw, y, { align: "justify", maxWidth: TW - lw });
+    else pdf.text(first, ML + lw, y);
+    y += LH;
+    rest.forEach((ln, i) => {
       ensure(LH);
-      const last = i === lines.length - 1;
-      pdf.setFont("times", "normal");
-      if (justify && !last) pdf.text(ln, ML, y, { align: "justify", maxWidth: TW });
+      if (justify && i < rest.length - 1) pdf.text(ln, ML, y, { align: "justify", maxWidth: TW });
       else pdf.text(ln, ML, y);
-      if (i === 0) {
-        pdf.setFillColor(255, 255, 255);
-        pdf.rect(ML, y - 4.5, lw + 0.5, 5.5, "F");
-        pdf.setFont("times", "bold");
-        pdf.text(label, ML, y);
-      }
       y += LH;
     });
   };
