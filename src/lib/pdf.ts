@@ -22,14 +22,18 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ unit: "mm", format: "a4" });
   const [brasao, midia] = await Promise.all([loadImage("/brand/brasao.png"), loadImage("/brand/midia.png")]);
-  const W = 210, ML = 20, MR = 20, TW = W - ML - MR, BOTTOM = 280, LH = 6.2;
+  const W = 210, ML = 20, MR = 20, TW = W - ML - MR, BOTTOM = 280;
+  const PT_MM = 25.4 / 72;
+  const LH = 12 * PT_MM * 1.26;
+  const HEADER_LH = 8.5 * PT_MM * 1.13;
+  const SIGNATURE_LH = 12 * PT_MM * 0.89;
 
   const header = (despacho = false) => {
     pdf.addImage(brasao, "PNG", 12, 7, 20, 20);
     pdf.addImage(midia, "PNG", 170, 11, 28, 10);
     pdf.setFont("times", "bold");
     pdf.setFontSize(8.5);
-    HEADER.forEach((l, i) => pdf.text(despacho && i === 3 ? 'GRUPAMENTO DE COMUNICAÇÃO E MÍDIA - "CEMXXXIII NA MÍDIA"' : l, 105, 12 + i * 4, { align: "center" }));
+    HEADER.forEach((l, i) => pdf.text(despacho && i === 3 ? 'GRUPAMENTO DE COMUNICAÇÃO E MÍDIA - "CEMXXXIII NA MÍDIA"' : l, 105, 12 + i * HEADER_LH, { align: "center" }));
     pdf.setLineWidth(0.2);
     pdf.line(46, 28, 158, 28);
   };
@@ -37,8 +41,12 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   let y = 40;
   const ensure = (h: number) => {
     if (y + h > BOTTOM) {
+      const font = pdf.getFont();
+      const size = pdf.getFontSize();
       pdf.addPage();
       header();
+      pdf.setFont(font.fontName, font.fontStyle);
+      pdf.setFontSize(size);
       y = 40;
     }
   };
@@ -80,8 +88,8 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   };
 
   pdf.setFontSize(12);
-  labelLine("Para:", doc.para);
-  labelLine("De:", doc.de);
+  labelLine("Para:", doc.para, true);
+  labelLine("De:", doc.de, true);
   y += LH * 0.7;
   labelLine("Assunto:", doc.assunto, true);
   y += LH * 0.7;
@@ -114,9 +122,9 @@ export async function gerarPDF(doc: Documento, salvar = true) {
     pdf.setFont("times", "normal");
     itens.forEach((p) => {
       const lines: string[] = pdf.splitTextToSize(p.funcao.trim() ? `${p.nome.trim()} – ${p.funcao.trim()}` : p.nome.trim(), TW - 2);
-      lines.forEach((ln) => {
+      lines.forEach((ln, i) => {
         ensure(LH);
-        pdf.text(ln, ML + 1, y);
+        pdf.text(ln, ML + 1, y, i < lines.length - 1 ? { align: "justify", maxWidth: TW - 2 } : {});
         y += LH;
       });
     });
@@ -141,7 +149,7 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   y += 5;
   pdf.setFont("times", "bold");
   pdf.text(doc.assinante.toUpperCase(), 105, y, { align: "center" });
-  y += 5;
+  y += SIGNATURE_LH;
   pdf.text(doc.cargo, 105, y, { align: "center" });
 
   const gestoras = assinantesDespacho(doc.despacho);

@@ -52,28 +52,28 @@ function Login() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-paper">
+    <main className="flex min-h-svh items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md rounded-xl border bg-card px-6 py-8 shadow-paper sm:p-10">
         <div className="mb-6 flex flex-col items-center text-center">
           <img src="/brand/brasao.png" alt="Brasão CEM XXXIII" className="h-20 w-20" />
-          <h1 className="mt-4 text-2xl font-bold text-primary">Gerador de Ofícios</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Coordenação de Comunicação e Mídia</p>
+          <h1 className="mt-4 text-2xl font-bold text-card-foreground">Gerador de Ofícios</h1>
+          <p className="mt-2 text-base leading-relaxed text-muted-foreground">Coordenação de Comunicação e Mídia · Acesso restrito</p>
         </div>
         {setup && (
           <p className="mb-4 rounded-md bg-secondary p-3 text-sm text-secondary-foreground">
             Primeiro acesso: defina o e-mail e a senha que serão compartilhados pela equipe.
           </p>
         )}
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="email">E-mail</Label>
-            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input className="h-11 bg-paper text-paper-ink shadow-sm" id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="pw">Senha</Label>
-            <Input id="pw" type="password" required minLength={setup ? 8 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input className="h-11 bg-paper text-paper-ink shadow-sm" id="pw" type="password" required minLength={setup ? 8 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="h-11 w-full text-base shadow-sm" disabled={loading}>
             {loading ? "Aguarde..." : setup ? "Criar acesso e entrar" : "Entrar"}
           </Button>
         </form>

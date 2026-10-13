@@ -10,7 +10,7 @@ export function AppHeader() {
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
         <img src="/brand/brasao.png" alt="" className="h-9 w-9" />
         <div className="mr-auto leading-tight">
-          <p className="font-serif text-lg font-bold">Gerador de Ofícios</p>
+           <p className="font-sans text-base font-bold sm:text-lg">Gerador de Ofícios</p>
           <p className="hidden text-xs opacity-80 sm:block">CCM · CEM XXXIII</p>
         </div>
         <nav className="flex items-center gap-1 text-sm">

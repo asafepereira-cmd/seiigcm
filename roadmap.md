@@ -1,3 +1,3 @@
-- [x] Inserir assinatura PNG própria e preservar ao salvar e reabrir.
-- [x] Adicionar despacho opcional com seleção de gestoras na prévia e PDF.
-- [x] Verificar os três modelos, download e leitura dos documentos salvos.
+- [ ] Ajustar entrelinhas e justificação na prévia e no PDF.
+- [ ] Aplicar visual azul e branco e fontes sem serifa da referência à interface.
+- [ ] Conferir interface e PDF após as alterações.
