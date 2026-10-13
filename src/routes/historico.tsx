@@ -16,6 +16,8 @@ export const Route = createFileRoute("/historico")({
       { name: "description", content: "Documentos já emitidos pela Coordenação de Comunicação e Mídia." },
       { property: "og:title", content: "Histórico — Gerador de Ofícios CCM" },
       { property: "og:description", content: "Documentos já emitidos." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Historico,

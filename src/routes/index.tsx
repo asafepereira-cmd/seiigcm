@@ -1,16 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Download, Save, Sparkles, FilePlus2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Download, Save, Sparkles, FilePlus2, Upload, X, Check, Circle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
 import { AppHeader } from "@/components/AppHeader";
+import { DispatchPreview } from "@/components/DispatchPreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { reviewWithAI } from "@/lib/server.functions";
 import { gerarPDF } from "@/lib/pdf";
+import { lerAssinaturaPng } from "@/lib/assinatura";
 import { dataExtenso, modeloGravacao, numeroFormatado, type Documento, type Participante } from "@/lib/documento";
 
 export const Route = createFileRoute("/")({
@@ -21,6 +23,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Preencha os campos e gere o ofício em PDF no padrão do CEM XXXIII, com revisão por IA." },
       { property: "og:title", content: "Novo documento — Gerador de Ofícios CCM" },
       { property: "og:description", content: "Gere ofícios em PDF no padrão do CEM XXXIII." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Editor,
@@ -52,6 +56,9 @@ function Editor() {
   const [instrucoes, setInstrucoes] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const signatureInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -77,12 +84,13 @@ function Editor() {
   const full: Documento = { ...doc, lista: textoParaLista(listaTexto) };
 
   async function revisar() {
+    if (!doc) return;
     setAiLoading(true);
     try {
       const r = await reviewWithAI({
-        data: { tipo: doc!.tipo, para: doc!.para, assunto: doc!.assunto, vocativo: doc!.vocativo, corpo: doc!.corpo, fecho: doc!.fecho, instrucoes },
+        data: { tipo: doc.tipo, para: doc.para, assunto: doc.assunto, vocativo: doc.vocativo, corpo: doc.corpo, fecho: doc.fecho, instrucoes },
       });
-      setDoc({ ...doc!, ...r });
+      setDoc((current) => current ? { ...current, ...r } : current);
       toast.success("Texto revisado pela IA. Confira antes de gerar.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha na revisão");
@@ -167,6 +175,41 @@ function Editor() {
               <F label="Assinante"><Input value={doc.assinante} onChange={(e) => set("assinante", e.target.value)} /></F>
               <F label="Cargo"><Input value={doc.cargo} onChange={(e) => set("cargo", e.target.value)} /></F>
             </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Minha assinatura (PNG sem fundo)</Label>
+              <input ref={signatureInput} type="file" accept="image/png,.png" className="hidden" aria-label="Enviar assinatura PNG"
+                onChange={async (e) => {
+                  const file = e.currentTarget.files?.[0];
+                  e.currentTarget.value = "";
+                  if (!file) return;
+                  setUploading(true);
+                  try {
+                    const assinaturaPng = await lerAssinaturaPng(file);
+                    setDoc((current) => current ? { ...current, assinaturaPng } : current);
+                    toast.success("Assinatura inserida");
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : "Não foi possível inserir a assinatura.");
+                  } finally { setUploading(false); }
+                }} />
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={uploading} onClick={() => signatureInput.current?.click()}>
+                  <Upload className="h-4 w-4" />{uploading ? "Enviando…" : doc.assinaturaPng ? "Trocar assinatura" : "Enviar assinatura PNG"}
+                </Button>
+                {doc.assinaturaPng && <Button variant="ghost" size="icon" aria-label="Remover assinatura" title="Remover assinatura" onClick={() => set("assinaturaPng", undefined)}><X className="h-4 w-4" /></Button>}
+              </div>
+              {doc.assinaturaPng && <div className="flex h-20 items-center justify-center rounded-md border bg-paper p-2"><img src={doc.assinaturaPng} alt="Minha assinatura" className="max-h-full max-w-full object-contain" /></div>}
+            </div>
+          </Group>
+
+          <Group title="Página complementar">
+            <Button variant={doc.despacho ? "secondary" : "outline"} className="w-full justify-between" aria-pressed={Boolean(doc.despacho)} onClick={() => set("despacho", doc.despacho ? undefined : "pedagogica")}>
+              Inserir página de despacho: {doc.despacho ? <Check className="h-4 w-4" /> : <Circle className="h-3 w-3 fill-current" />}
+            </Button>
+            {doc.despacho && <div className="grid grid-cols-3 gap-2" role="group" aria-label="Assinatura da gestão">
+              {([ ["pedagogica", "Gestora Ped."], ["administrativa", "Gestora Adm."], ["ambas", "Os dois"] ] as const).map(([value, label]) => (
+                <Button key={value} size="sm" className="h-auto min-h-9 whitespace-normal px-2" variant={doc.despacho === value ? "default" : "outline"} aria-pressed={doc.despacho === value} onClick={() => set("despacho", value)}>{label}</Button>
+              ))}
+            </div>}
           </Group>
 
           <div className="sticky bottom-0 -mx-4 flex gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
@@ -175,12 +218,18 @@ function Editor() {
             </Button>
             <Button
               className="flex-1"
+              disabled={generating || saving || uploading}
               onClick={async () => {
-                await salvar();
-                await gerarPDF(full);
+                setGenerating(true);
+                try {
+                  await salvar();
+                  await gerarPDF(full);
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Não foi possível gerar o PDF.");
+                } finally { setGenerating(false); }
               }}
             >
-              <Download className="h-4 w-4" /> Gerar PDF
+              <Download className="h-4 w-4" /> {generating ? "Gerando…" : "Gerar PDF"}
             </Button>
           </div>
         </section>
@@ -188,6 +237,7 @@ function Editor() {
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Pré-visualização</p>
           <Preview doc={full} />
+          {doc.despacho && <div className="mt-5"><p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Página de despacho</p><DispatchPreview opcao={doc.despacho} /></div>}
         </aside>
       </main>
     </div>
@@ -237,7 +287,9 @@ function Preview({ doc }: { doc: Documento }) {
         </div>
       )}
       {doc.fecho && <p className="mt-2 text-justify">{doc.fecho}</p>}
-      <div className="mx-auto mt-8 w-1/2 border-t border-paper-ink pt-1 text-center font-bold">
+      <div className="mx-auto mt-8 text-center font-bold">
+        {doc.assinaturaPng && <img src={doc.assinaturaPng} alt="Assinatura do documento" className="mx-auto mb-1 h-14 max-w-[42%] object-contain" />}
+        <div className="mx-auto mb-1 w-1/2 border-t border-paper-ink" />
         {doc.assinante.toUpperCase()}<br />{doc.cargo}
       </div>
     </div>

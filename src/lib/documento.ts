@@ -1,5 +1,19 @@
 export type Participante = { nome: string; funcao: string };
 
+export type Despacho = "pedagogica" | "administrativa" | "ambas";
+
+export const GESTORAS = {
+  pedagogica: { nome: "NUBIA PAULO DA COSTA ANDRADE", cargo: "Gestora Pedagógica do CEM XXIII" },
+  administrativa: { nome: "ADRIANA ROSADO MAIA OLIVEIRA DOMINGUES", cargo: "Gestora Administrativa do CEM XXIII" },
+};
+
+export function assinantesDespacho(opcao?: Despacho) {
+  if (opcao === "ambas") return [GESTORAS.administrativa, GESTORAS.pedagogica];
+  if (opcao === "administrativa") return [GESTORAS.administrativa];
+  if (opcao === "pedagogica") return [GESTORAS.pedagogica];
+  return [];
+}
+
 export type Documento = {
   tipo: string;
   numero: number;
@@ -17,6 +31,8 @@ export type Documento = {
   fecho: string;
   assinante: string;
   cargo: string;
+  assinaturaPng?: string;
+  despacho?: Despacho;
 };
 
 export const MESES = [

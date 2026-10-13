@@ -154,3 +154,19 @@
   }
   h1, h2, h3 { font-family: var(--font-serif); }
 }
+
+.dispatch-sheet { position: relative; width: 100%; aspect-ratio: 210 / 297; container-type: inline-size; font-family: "Times New Roman", serif; }
+.dispatch-header { position: absolute; inset: 2.36% 0 auto; height: 6.74%; }
+.dispatch-crest { position: absolute; left: 5.71%; width: 9.52%; height: 100%; object-fit: contain; }
+.dispatch-logo { position: absolute; left: 82%; top: 20%; width: 14%; height: 50%; object-fit: contain; }
+.dispatch-heading { position: absolute; left: 20.7%; width: 58.6%; font-size: 1.47cqw; line-height: 1.05; text-align: center; font-weight: bold; }
+.dispatch-heading::after { content: ""; display: block; margin: 1.2cqw 3cqw 0; border-bottom: 0.5px solid var(--paper-ink); }
+.dispatch-box { position: absolute; left: 5.71%; top: 14.48%; width: 88.57%; height: 41.41%; border: 0.5px solid var(--paper-ink); padding: 2.8% 3.8%; font-size: 2.02cqw; line-height: 1.1; }
+.dispatch-options { margin-top: 1.8cqw; }
+.dispatch-observations { margin-top: 2cqw; }
+.dispatch-lines { margin-top: 1.6cqw; }
+.dispatch-lines > div { height: 2.02cqw; border-top: 0.5px solid var(--paper-ink); }
+.dispatch-signers { position: absolute; left: 7%; right: 7%; bottom: 9%; display: flex; justify-content: center; gap: 5%; }
+.dispatch-signer { width: 49%; text-align: center; font-size: 1.65cqw; line-height: 1; }
+.dispatch-signers-both .dispatch-signer { width: 48%; font-size: 1.47cqw; }
+.dispatch-signature-line { border-top: 0.5px solid var(--paper-ink); margin: 0 4% 0.8cqw; }

@@ -1,5 +1,5 @@
 import type { Documento } from "./documento";
-import { dataExtenso, numeroFormatado } from "./documento";
+import { assinantesDespacho, dataExtenso, numeroFormatado } from "./documento";
 
 async function loadImage(src: string): Promise<string> {
   const res = await fetch(src);
@@ -24,12 +24,12 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   const [brasao, midia] = await Promise.all([loadImage("/brand/brasao.png"), loadImage("/brand/midia.png")]);
   const W = 210, ML = 20, MR = 20, TW = W - ML - MR, BOTTOM = 280, LH = 6.2;
 
-  const header = () => {
+  const header = (despacho = false) => {
     pdf.addImage(brasao, "PNG", 12, 7, 20, 20);
     pdf.addImage(midia, "PNG", 170, 11, 28, 10);
     pdf.setFont("times", "bold");
     pdf.setFontSize(8.5);
-    HEADER.forEach((l, i) => pdf.text(l, 105, 12 + i * 4, { align: "center" }));
+    HEADER.forEach((l, i) => pdf.text(despacho && i === 3 ? 'GRUPAMENTO DE COMUNICAÇÃO E MÍDIA - "CEMXXXIII NA MÍDIA"' : l, 105, 12 + i * 4, { align: "center" }));
     pdf.setLineWidth(0.2);
     pdf.line(46, 28, 158, 28);
   };
@@ -57,7 +57,12 @@ export async function gerarPDF(doc: Documento, salvar = true) {
     pdf.setFont("times", "normal");
     const words = value.trim().split(/\s+/);
     let first = "";
-    while (words.length && pdf.getTextWidth(first ? first + " " + words[0] : words[0]!) <= TW - lw) first = first ? first + " " + words.shift() : words.shift()!;
+    while (words.length) {
+      const word = words[0];
+      if (word === undefined || pdf.getTextWidth(first ? first + " " + word : word) > TW - lw) break;
+      first = first ? first + " " + word : word;
+      words.shift();
+    }
     const rest: string[] = words.length ? pdf.splitTextToSize(words.join(" "), TW) : [];
     ensure(LH);
     pdf.setFont("times", "bold");
@@ -120,8 +125,17 @@ export async function gerarPDF(doc: Documento, salvar = true) {
 
   if (doc.fecho.trim()) paragraph(doc.fecho.trim());
 
-  ensure(30);
-  y += 14;
+  ensure(doc.assinaturaPng ? 45 : 30);
+  if (doc.assinaturaPng) {
+    const image = pdf.getImageProperties(doc.assinaturaPng);
+    const scale = Math.min(70 / image.width, 22 / image.height);
+    const width = image.width * scale, height = image.height * scale;
+    y += 6;
+    pdf.addImage(doc.assinaturaPng, "PNG", (W - width) / 2, y, width, height);
+    y += height + 1;
+  } else {
+    y += 14;
+  }
   pdf.setLineWidth(0.2);
   pdf.line(65, y, 145, y);
   y += 5;
@@ -129,6 +143,34 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   pdf.text(doc.assinante.toUpperCase(), 105, y, { align: "center" });
   y += 5;
   pdf.text(doc.cargo, 105, y, { align: "center" });
+
+  const gestoras = assinantesDespacho(doc.despacho);
+  if (gestoras.length) {
+    pdf.addPage();
+    header(true);
+    pdf.setLineWidth(0.2);
+    pdf.rect(12, 43, 186, 123);
+    pdf.setFont("times", "bold");
+    pdf.setFontSize(12);
+    pdf.text("Despacho / Gestão", 20, 52);
+    pdf.setFont("times", "normal");
+    pdf.text(["( ) Deferido", "( ) Indeferido"], 20, 60, { lineHeightFactor: 1 });
+    pdf.text("Observações:", 20, 73);
+    for (let i = 0; i < 6; i++) pdf.line(20, 78 + i * 4.3, 188, 78 + i * 4.3);
+    gestoras.forEach((gestora, i) => {
+      const center = gestoras.length === 2 ? (i === 0 ? 63 : 147) : 105;
+      const lineWidth = gestoras.length === 2 ? 73 : 82;
+      pdf.line(center - lineWidth / 2, 146, center + lineWidth / 2, 146);
+      pdf.setFont("times", "bold");
+      pdf.setFontSize(10);
+      const maxWidth = gestoras.length === 2 ? 82 : 130;
+      const nameSize = Math.min(10, 10 * maxWidth / pdf.getTextWidth(gestora.nome));
+      pdf.setFontSize(nameSize);
+      pdf.text(gestora.nome, center, 150.5, { align: "center" });
+      pdf.setFontSize(10);
+      pdf.text(gestora.cargo, center, 154, { align: "center" });
+    });
+  }
 
   const nome = `${doc.tipo.toUpperCase().replace(/[^A-Z]/gi, "_")}_${String(doc.numero).padStart(3, "0")}_${doc.ano}.pdf`;
   if (salvar) {
