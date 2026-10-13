@@ -125,8 +125,17 @@ export async function gerarPDF(doc: Documento, salvar = true) {
 
   if (doc.fecho.trim()) paragraph(doc.fecho.trim());
 
-   ensure(doc.assinaturaPng ? 45 : 30);
-  y += 14;
+  ensure(doc.assinaturaPng ? 45 : 30);
+  if (doc.assinaturaPng) {
+    const image = pdf.getImageProperties(doc.assinaturaPng);
+    const scale = Math.min(70 / image.width, 22 / image.height);
+    const width = image.width * scale, height = image.height * scale;
+    y += 6;
+    pdf.addImage(doc.assinaturaPng, "PNG", (W - width) / 2, y, width, height);
+    y += height + 1;
+  } else {
+    y += 14;
+  }
   pdf.setLineWidth(0.2);
   pdf.line(65, y, 145, y);
   y += 5;
@@ -134,6 +143,34 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   pdf.text(doc.assinante.toUpperCase(), 105, y, { align: "center" });
   y += 5;
   pdf.text(doc.cargo, 105, y, { align: "center" });
+
+  const gestoras = assinantesDespacho(doc.despacho);
+  if (gestoras.length) {
+    pdf.addPage();
+    header(true);
+    pdf.setLineWidth(0.2);
+    pdf.rect(12, 43, 186, 123);
+    pdf.setFont("times", "bold");
+    pdf.setFontSize(12);
+    pdf.text("Despacho / Gestão", 20, 52);
+    pdf.setFont("times", "normal");
+    pdf.text(["( ) Deferido", "( ) Indeferido"], 20, 60, { lineHeightFactor: 1 });
+    pdf.text("Observações:", 20, 73);
+    for (let i = 0; i < 6; i++) pdf.line(20, 78 + i * 4.3, 188, 78 + i * 4.3);
+    gestoras.forEach((gestora, i) => {
+      const center = gestoras.length === 2 ? (i === 0 ? 63 : 147) : 105;
+      const lineWidth = gestoras.length === 2 ? 73 : 82;
+      pdf.line(center - lineWidth / 2, 146, center + lineWidth / 2, 146);
+      pdf.setFont("times", "bold");
+      pdf.setFontSize(10);
+      const maxWidth = gestoras.length === 2 ? 82 : 130;
+      const nameSize = Math.min(10, 10 * maxWidth / pdf.getTextWidth(gestora.nome));
+      pdf.setFontSize(nameSize);
+      pdf.text(gestora.nome, center, 150.5, { align: "center" });
+      pdf.setFontSize(10);
+      pdf.text(gestora.cargo, center, 154, { align: "center" });
+    });
+  }
 
   const nome = `${doc.tipo.toUpperCase().replace(/[^A-Z]/gi, "_")}_${String(doc.numero).padStart(3, "0")}_${doc.ano}.pdf`;
   if (salvar) {
