@@ -1,3 +1,3 @@
-- [ ] Ajustar entrelinhas e justificação na prévia e no PDF.
-- [ ] Aplicar visual azul e branco e fontes sem serifa da referência à interface.
-- [ ] Conferir interface e PDF após as alterações.
+- [x] Ajustar entrelinhas e justificação na prévia e no PDF.
+- [x] Aplicar visual azul e branco e fontes sem serifa da referência à interface.
+- [x] Conferir interface e PDF após as alterações; corrigir contraste dos campos e botões e justificação no PDF.
