@@ -46,17 +46,17 @@ function Historico() {
     <div className="min-h-screen">
       <AppHeader />
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <h1 className="mb-6 text-2xl font-bold text-primary">Documentos emitidos</h1>
+        <h1 className="mb-6 text-2xl font-bold text-primary-foreground">Documentos emitidos</h1>
         {rows === null ? (
-          <p className="text-muted-foreground">Carregando...</p>
+          <p className="text-primary-foreground">Carregando...</p>
         ) : rows.length === 0 ? (
-          <p className="text-muted-foreground">Nenhum documento salvo ainda.</p>
+          <p className="text-primary-foreground">Nenhum documento salvo ainda.</p>
         ) : (
           <ul className="space-y-3">
             {rows.map((r) => (
-              <li key={r.id} className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center">
+              <li key={r.id} className="flex flex-col gap-3 rounded-lg border bg-card p-4 text-card-foreground sm:flex-row sm:items-center">
                 <div className="mr-auto min-w-0">
-                  <p className="font-serif font-bold">{numeroFormatado(r.dados)}</p>
+                  <p className="font-sans font-bold">{numeroFormatado(r.dados)}</p>
                   <p className="truncate text-sm text-muted-foreground">{r.assunto}</p>
                 </div>
                 <div className="flex gap-2">

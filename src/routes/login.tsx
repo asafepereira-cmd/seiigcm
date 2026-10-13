@@ -53,7 +53,7 @@ function Login() {
 
   return (
     <main className="flex min-h-svh items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md rounded-xl border bg-card px-6 py-8 shadow-paper sm:p-10">
+      <div className="w-full max-w-md rounded-xl border bg-card px-6 py-8 text-card-foreground shadow-paper sm:p-10">
         <div className="mb-6 flex flex-col items-center text-center">
           <img src="/brand/brasao.png" alt="Brasão CEM XXXIII" className="h-20 w-20" />
           <h1 className="mt-4 text-2xl font-bold text-card-foreground">Gerador de Ofícios</h1>

@@ -12,3 +12,4 @@
 - Documents are generated client-side with jsPDF in `src/lib/pdf.ts`; the on-screen preview in `src/routes/index.tsx` must mirror it. Why: no server PDF runtime on Workers.
 - Shared single account: the first account is created via `createFirstAccount` only when no auth users exist; the UI never calls signUp. Why: access is restricted to one shared login.
 - Signature image data and dispatch choice are optional document fields stored with existing document JSON; dispatch signers come from `documento.ts` for both PDF and preview. Why: old documents remain compatible and downloaded documents match saved choices without public signature files.
+- PDF paragraph justification places words using measured widths, leaving each final line natural. Why: single-line jsPDF justification does not reliably expand word spacing.

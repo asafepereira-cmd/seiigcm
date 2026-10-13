@@ -59,6 +59,18 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   pdf.text(`${doc.cidade} - ${dataExtenso(doc.data)}`, W - MR, y, { align: "right" });
   y += 13;
 
+  const justifiedLine = (line: string, x: number, width: number) => {
+    const words = line.trim().split(/\s+/);
+    if (words.length < 2) { pdf.text(line, x, y); return; }
+    const total = words.reduce((sum, word) => sum + pdf.getTextWidth(word), 0);
+    const gap = (width - total) / (words.length - 1);
+    let cursor = x;
+    words.forEach((word) => {
+      pdf.text(word, cursor, y);
+      cursor += pdf.getTextWidth(word) + gap;
+    });
+  };
+
   const labelLine = (label: string, value: string, justify = false) => {
     pdf.setFont("times", "bold");
     const lw = pdf.getTextWidth(label + " ");
@@ -76,12 +88,12 @@ export async function gerarPDF(doc: Documento, salvar = true) {
     pdf.setFont("times", "bold");
     pdf.text(label, ML, y);
     pdf.setFont("times", "normal");
-    if (justify && rest.length) pdf.text(first, ML + lw, y, { align: "justify", maxWidth: TW - lw });
+    if (justify && rest.length) justifiedLine(first, ML + lw, TW - lw);
     else pdf.text(first, ML + lw, y);
     y += LH;
     rest.forEach((ln, i) => {
       ensure(LH);
-      if (justify && i < rest.length - 1) pdf.text(ln, ML, y, { align: "justify", maxWidth: TW });
+      if (justify && i < rest.length - 1) justifiedLine(ln, ML, TW);
       else pdf.text(ln, ML, y);
       y += LH;
     });
@@ -99,7 +111,7 @@ export async function gerarPDF(doc: Documento, salvar = true) {
     const lines: string[] = pdf.splitTextToSize(text, TW);
     lines.forEach((ln, i) => {
       ensure(LH);
-      if (i < lines.length - 1) pdf.text(ln, ML, y, { align: "justify", maxWidth: TW });
+      if (i < lines.length - 1) justifiedLine(ln, ML, TW);
       else pdf.text(ln, ML, y);
       y += LH;
     });
@@ -124,7 +136,8 @@ export async function gerarPDF(doc: Documento, salvar = true) {
       const lines: string[] = pdf.splitTextToSize(p.funcao.trim() ? `${p.nome.trim()} – ${p.funcao.trim()}` : p.nome.trim(), TW - 2);
       lines.forEach((ln, i) => {
         ensure(LH);
-        pdf.text(ln, ML + 1, y, i < lines.length - 1 ? { align: "justify", maxWidth: TW - 2 } : {});
+        if (i < lines.length - 1) justifiedLine(ln, ML + 1, TW - 2);
+        else pdf.text(ln, ML + 1, y);
         y += LH;
       });
     });
