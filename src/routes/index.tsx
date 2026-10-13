@@ -118,7 +118,7 @@ function Editor() {
       <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <section className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="mr-auto text-2xl font-bold text-primary">{docId ? "Editar documento" : "Novo documento"}</h1>
+            <h1 className="mr-auto text-2xl font-bold text-primary-foreground">{docId ? "Editar documento" : "Novo documento"}</h1>
             {docId && (
               <Button variant="outline" size="sm" onClick={() => navigate({ to: "/", search: {} })}>
                 <FilePlus2 className="h-4 w-4" /> Novo
@@ -151,7 +151,7 @@ function Editor() {
             <F label="Assunto"><Textarea rows={2} value={doc.assunto} onChange={(e) => set("assunto", e.target.value)} /></F>
             <F label="Vocativo"><Input value={doc.vocativo} onChange={(e) => set("vocativo", e.target.value)} /></F>
             <F label="Texto (separe parágrafos com uma linha em branco)">
-              <Textarea rows={9} value={doc.corpo} onChange={(e) => set("corpo", e.target.value)} />
+               <Textarea className="document-body-text" rows={9} value={doc.corpo} onChange={(e) => set("corpo", e.target.value)} />
             </F>
             <div className="rounded-lg border border-accent bg-accent/15 p-3">
               <Label className="text-xs">Orientação para a IA (opcional)</Label>
@@ -235,9 +235,9 @@ function Editor() {
         </section>
 
         <aside className="lg:sticky lg:top-20 lg:self-start">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Pré-visualização</p>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-primary-foreground">Pré-visualização</p>
           <Preview doc={full} />
-          {doc.despacho && <div className="mt-5"><p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Página de despacho</p><DispatchPreview opcao={doc.despacho} /></div>}
+          {doc.despacho && <div className="mt-5"><p className="mb-2 text-xs font-medium uppercase tracking-wider text-primary-foreground">Página de despacho</p><DispatchPreview opcao={doc.despacho} /></div>}
         </aside>
       </main>
     </div>
@@ -247,7 +247,7 @@ function Editor() {
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <fieldset className="space-y-3 rounded-xl border bg-card p-4">
-      <legend className="px-1 font-serif text-sm font-bold text-primary">{title}</legend>
+      <legend className="rounded-sm bg-card px-2 font-sans text-sm font-semibold text-primary">{title}</legend>
       {children}
     </fieldset>
   );
@@ -265,29 +265,29 @@ function F({ label, children, className }: { label: string; children: React.Reac
 function Preview({ doc }: { doc: Documento }) {
   const paras = doc.corpo.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   return (
-    <div className="aspect-[210/297] w-full overflow-auto rounded-sm bg-paper p-[6%] font-[Times_New_Roman,serif] text-[clamp(7px,1.6vw,11px)] leading-snug text-paper-ink shadow-paper lg:text-[clamp(7px,0.85vw,11px)]">
+    <div aria-label="Prévia do documento" className="document-preview aspect-[210/297] w-full overflow-auto rounded-sm bg-paper p-[6%] font-[Times_New_Roman,serif] text-[10px] text-paper-ink shadow-paper lg:text-[11px]">
       <div className="flex items-center gap-2 border-b border-paper-ink/60 pb-1">
         <img src="/brand/brasao.png" alt="" className="w-[11%]" />
-        <div className="flex-1 text-center text-[0.8em] font-bold leading-tight">
+        <div className="document-header-text flex-1 text-center text-[0.8em] font-bold">
           GOVERNO DO ESTADO DE RORAIMA<br />SECRETARIA DE EDUCAÇÃO E DESPORTO<br />COLÉGIO ESTADUAL MILITARIZADO FERNANDO GRANGEIRO DE MENEZES<br />COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII
         </div>
         <img src="/brand/midia.png" alt="" className="w-[15%]" />
       </div>
       <p className="mt-4 text-[1.1em] font-bold">{numeroFormatado(doc)}</p>
       <p className="text-right font-bold">{doc.cidade} - {dataExtenso(doc.data)}</p>
-      <p className="mt-3"><b>Para:</b> {doc.para}</p>
-      <p><b>De:</b> {doc.de}</p>
+      <p className="mt-3 text-justify"><b>Para:</b> {doc.para}</p>
+      <p className="text-justify"><b>De:</b> {doc.de}</p>
       <p className="mt-2 text-justify"><b>Assunto:</b> {doc.assunto}</p>
-      {doc.vocativo && <p className="mt-2">{doc.vocativo}</p>}
+      {doc.vocativo && <p className="mt-2 text-justify">{doc.vocativo}</p>}
       {paras.map((p, i) => <p key={i} className="mt-2 text-justify">{p}</p>)}
       {doc.lista.length > 0 && (
-        <div className="mt-2">
+        <div className="mt-2 text-justify">
           <b>{doc.tituloLista || "Participantes"}:</b>
           {doc.lista.map((p, i) => <div key={i}>{p.funcao ? `${p.nome} – ${p.funcao}` : p.nome}</div>)}
         </div>
       )}
       {doc.fecho && <p className="mt-2 text-justify">{doc.fecho}</p>}
-      <div className="mx-auto mt-8 text-center font-bold">
+      <div className="document-signature-text mx-auto mt-8 text-center font-bold">
         {doc.assinaturaPng && <img src={doc.assinaturaPng} alt="Assinatura do documento" className="mx-auto mb-1 h-14 max-w-[42%] object-contain" />}
         <div className="mx-auto mb-1 w-1/2 border-t border-paper-ink" />
         {doc.assinante.toUpperCase()}<br />{doc.cargo}
