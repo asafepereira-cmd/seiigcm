@@ -1,0 +1,3 @@
+- [ ] Inserir assinatura PNG própria e preservar ao salvar e reabrir.
+- [ ] Adicionar despacho opcional com seleção de gestoras na prévia e PDF.
+- [ ] Verificar os três modelos, download e leitura dos documentos salvos.
