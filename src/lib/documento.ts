@@ -28,7 +28,7 @@ export type Documento = {
   assunto: string;
   vocativo: string;
   corpo: string;
-  corpoFormatado?: RichNode;
+  corpoFormatado?: RichNode | undefined;
   tituloLista: string;
   lista: Participante[];
   fecho: string;

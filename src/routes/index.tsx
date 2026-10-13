@@ -92,6 +92,7 @@ function Editor() {
       const r = await reviewWithAI({
         data: { tipo: doc.tipo, para: doc.para, assunto: doc.assunto, vocativo: doc.vocativo, corpo: doc.corpo, fecho: doc.fecho, instrucoes },
       });
+      if (!r) throw new Error("A revisão não retornou um texto. Tente novamente.");
       setDoc((current) => current ? { ...current, ...r, corpoFormatado: r.corpo === current.corpo ? current.corpoFormatado : undefined } : current);
       toast.success("Texto revisado pela IA. Confira antes de gerar.");
     } catch (e) {

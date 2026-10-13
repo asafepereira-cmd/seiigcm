@@ -11,6 +11,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { Button } from "@/components/ui/button";
+import { isModuleLoadError, recoverModuleLoad } from "@/lib/module-recovery";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -41,33 +43,29 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    recoverModuleLoad(error, window.sessionStorage, () => window.location.reload());
   }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          Não foi possível carregar a página
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          O carregamento foi interrompido. Tente novamente para abrir a página atualizada.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
+          <Button
             onClick={() => {
+              if (isModuleLoadError(error)) { window.location.reload(); return; }
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
+            Tentar novamente
+          </Button>
+          <Button asChild variant="outline"><a href="/">Voltar ao início</a></Button>
         </div>
       </div>
     </div>
@@ -118,6 +116,20 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    const retry = (error: unknown) => recoverModuleLoad(error, window.sessionStorage, () => window.location.reload());
+    const onRejection = (event: PromiseRejectionEvent) => { if (retry(event.reason)) event.preventDefault(); };
+    const onPreloadError = (event: Event) => {
+      const payload = (event as Event & { payload?: unknown }).payload;
+      if (retry(payload)) event.preventDefault();
+    };
+    window.addEventListener("unhandledrejection", onRejection);
+    window.addEventListener("vite:preloadError", onPreloadError);
+    return () => {
+      window.removeEventListener("unhandledrejection", onRejection);
+      window.removeEventListener("vite:preloadError", onPreloadError);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

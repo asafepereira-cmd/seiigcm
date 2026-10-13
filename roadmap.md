@@ -1,4 +1,5 @@
 - [x] Ajustar entrelinhas e justificação na prévia e no PDF.
 - [x] Aplicar visual azul e branco e fontes sem serifa da referência à interface.
 - [x] Conferir interface e PDF após as alterações; corrigir contraste dos campos e botões e justificação no PDF.
-- [ ] Adicionar negrito, itálico, sublinhado e caixa alta ao editor, prévia e PDF; conferir salvamento.
+- [x] Adicionar negrito, itálico, sublinhado e caixa alta ao editor, prévia e PDF; conferir salvamento.
+- [x] Conferir e recuperar falhas de importação de página sem ciclos de recarregamento.

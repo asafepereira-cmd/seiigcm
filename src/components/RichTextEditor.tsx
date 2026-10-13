@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { plainToRich, richToPlain, type RichNode } from "@/lib/rich-text";
 
 export function RichTextEditor({ text, content, onChange }: {
-  text: string; content?: RichNode; onChange: (text: string, content: RichNode) => void;
+  text: string; content?: RichNode | undefined; onChange: (text: string, content: RichNode) => void;
 }) {
   const editor = useEditor({
     immediatelyRender: false,
