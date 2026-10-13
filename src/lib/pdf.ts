@@ -1,5 +1,6 @@
 import type { Documento } from "./documento";
 import { assinantesDespacho, dataExtenso, numeroFormatado } from "./documento";
+import { fontStyle, richParagraphs, wrapRichParagraph, type TextRun } from "./rich-text";
 
 async function loadImage(src: string): Promise<string> {
   const res = await fetch(src);
@@ -119,7 +120,28 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   };
 
   if (doc.vocativo.trim()) paragraph(doc.vocativo.trim());
-  doc.corpo
+  if (doc.corpoFormatado) {
+    const measure = (run: TextRun) => { pdf.setFont("times", fontStyle(run)); return pdf.getTextWidth(run.text); };
+    richParagraphs(doc.corpoFormatado).forEach((runs) => {
+      wrapRichParagraph(runs, TW, measure).forEach((line) => {
+        ensure(LH);
+        const naturalWidth = line.runs.reduce((sum, run) => sum + measure(run), 0);
+        const spaces = line.runs.reduce((sum, run) => sum + (run.text === " " ? 1 : 0), 0);
+        const extra = line.justify && spaces ? Math.max(0, (TW - naturalWidth) / spaces) : 0;
+        let x = ML;
+        line.runs.forEach((run) => {
+          pdf.setFont("times", fontStyle(run));
+          const width = measure(run) + (run.text === " " ? extra : 0);
+          pdf.text(run.text, x, y);
+          if (run.underline) { pdf.setLineWidth(0.2); pdf.line(x, y + 0.7, x + width, y + 0.7); }
+          x += width;
+        });
+        y += LH;
+      });
+      y += LH * 0.7;
+    });
+    pdf.setFont("times", "normal");
+  } else doc.corpo
     .split(/\n\s*\n/)
     .map((p) => p.replace(/\s*\n\s*/g, " ").trim())
     .filter(Boolean)

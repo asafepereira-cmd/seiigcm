@@ -161,6 +161,8 @@
 
 .document-preview, .document-body-text { line-height: var(--document-body-leading); }
 .document-body-text { text-align: justify; }
+.document-body-text p + p { margin-top: 0.7em; }
+.document-body-text p { overflow-wrap: anywhere; }
 .document-header-text { line-height: var(--document-header-leading); }
 .document-signature-text { line-height: var(--document-signature-leading); }
 
