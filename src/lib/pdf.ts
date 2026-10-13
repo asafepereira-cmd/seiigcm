@@ -1,5 +1,5 @@
 import type { Documento } from "./documento";
-import { dataExtenso, numeroFormatado } from "./documento";
+import { assinantesDespacho, dataExtenso, numeroFormatado } from "./documento";
 
 async function loadImage(src: string): Promise<string> {
   const res = await fetch(src);
@@ -24,12 +24,12 @@ export async function gerarPDF(doc: Documento, salvar = true) {
   const [brasao, midia] = await Promise.all([loadImage("/brand/brasao.png"), loadImage("/brand/midia.png")]);
   const W = 210, ML = 20, MR = 20, TW = W - ML - MR, BOTTOM = 280, LH = 6.2;
 
-  const header = () => {
+  const header = (despacho = false) => {
     pdf.addImage(brasao, "PNG", 12, 7, 20, 20);
     pdf.addImage(midia, "PNG", 170, 11, 28, 10);
     pdf.setFont("times", "bold");
     pdf.setFontSize(8.5);
-    HEADER.forEach((l, i) => pdf.text(l, 105, 12 + i * 4, { align: "center" }));
+    HEADER.forEach((l, i) => pdf.text(despacho && i === 3 ? 'GRUPAMENTO DE COMUNICAÇÃO E MÍDIA - "CEMXXXIII NA MÍDIA"' : l, 105, 12 + i * 4, { align: "center" }));
     pdf.setLineWidth(0.2);
     pdf.line(46, 28, 158, 28);
   };
@@ -57,7 +57,12 @@ export async function gerarPDF(doc: Documento, salvar = true) {
     pdf.setFont("times", "normal");
     const words = value.trim().split(/\s+/);
     let first = "";
-    while (words.length && pdf.getTextWidth(first ? first + " " + words[0] : words[0]!) <= TW - lw) first = first ? first + " " + words.shift() : words.shift()!;
+    while (words.length) {
+      const word = words[0];
+      if (word === undefined || pdf.getTextWidth(first ? first + " " + word : word) > TW - lw) break;
+      first = first ? first + " " + word : word;
+      words.shift();
+    }
     const rest: string[] = words.length ? pdf.splitTextToSize(words.join(" "), TW) : [];
     ensure(LH);
     pdf.setFont("times", "bold");
@@ -120,7 +125,7 @@ export async function gerarPDF(doc: Documento, salvar = true) {
 
   if (doc.fecho.trim()) paragraph(doc.fecho.trim());
 
-  ensure(30);
+   ensure(doc.assinaturaPng ? 45 : 30);
   y += 14;
   pdf.setLineWidth(0.2);
   pdf.line(65, y, 145, y);
