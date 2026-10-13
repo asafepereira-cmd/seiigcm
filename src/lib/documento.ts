@@ -1,3 +1,5 @@
+import type { RichNode } from "./rich-text";
+
 export type Participante = { nome: string; funcao: string };
 
 export type Despacho = "pedagogica" | "administrativa" | "ambas";
@@ -26,6 +28,7 @@ export type Documento = {
   assunto: string;
   vocativo: string;
   corpo: string;
+  corpoFormatado?: RichNode;
   tituloLista: string;
   lista: Participante[];
   fecho: string;

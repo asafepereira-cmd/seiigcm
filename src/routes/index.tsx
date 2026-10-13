@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
 import { AppHeader } from "@/components/AppHeader";
 import { DispatchPreview } from "@/components/DispatchPreview";
+import { RichTextEditor } from "@/components/RichTextEditor";
+import { richParagraphs } from "@/lib/rich-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,7 +92,7 @@ function Editor() {
       const r = await reviewWithAI({
         data: { tipo: doc.tipo, para: doc.para, assunto: doc.assunto, vocativo: doc.vocativo, corpo: doc.corpo, fecho: doc.fecho, instrucoes },
       });
-      setDoc((current) => current ? { ...current, ...r } : current);
+      setDoc((current) => current ? { ...current, ...r, corpoFormatado: r.corpo === current.corpo ? current.corpoFormatado : undefined } : current);
       toast.success("Texto revisado pela IA. Confira antes de gerar.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha na revisão");
@@ -151,7 +153,7 @@ function Editor() {
             <F label="Assunto"><Textarea rows={2} value={doc.assunto} onChange={(e) => set("assunto", e.target.value)} /></F>
             <F label="Vocativo"><Input value={doc.vocativo} onChange={(e) => set("vocativo", e.target.value)} /></F>
             <F label="Texto (separe parágrafos com uma linha em branco)">
-               <Textarea className="document-body-text" rows={9} value={doc.corpo} onChange={(e) => set("corpo", e.target.value)} />
+                <RichTextEditor text={doc.corpo} content={doc.corpoFormatado} onChange={(corpo, corpoFormatado) => setDoc((current) => current ? { ...current, corpo, corpoFormatado } : current)} />
             </F>
             <div className="rounded-lg border border-accent bg-accent/15 p-3">
               <Label className="text-xs">Orientação para a IA (opcional)</Label>
@@ -279,7 +281,7 @@ function Preview({ doc }: { doc: Documento }) {
       <p className="text-justify"><b>De:</b> {doc.de}</p>
       <p className="mt-2 text-justify"><b>Assunto:</b> {doc.assunto}</p>
       {doc.vocativo && <p className="mt-2 text-justify">{doc.vocativo}</p>}
-      {paras.map((p, i) => <p key={i} className="mt-2 text-justify">{p}</p>)}
+       {doc.corpoFormatado ? richParagraphs(doc.corpoFormatado).map((runs, i) => <p key={i} className="mt-2 whitespace-pre-line text-justify">{runs.map((run, j) => <span key={j} className={`${run.bold ? "font-bold" : ""} ${run.italic ? "italic" : ""} ${run.underline ? "underline" : ""}`}>{run.text}</span>)}</p>) : paras.map((p, i) => <p key={i} className="mt-2 text-justify">{p}</p>)}
       {doc.lista.length > 0 && (
         <div className="mt-2 text-justify">
           <b>{doc.tituloLista || "Participantes"}:</b>
