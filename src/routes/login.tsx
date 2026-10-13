@@ -14,6 +14,8 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Acesso restrito ao gerador de ofícios da Coordenação de Comunicação e Mídia." },
       { property: "og:title", content: "Entrar — Gerador de Ofícios CCM" },
       { property: "og:description", content: "Acesso restrito ao gerador de ofícios." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Login,
