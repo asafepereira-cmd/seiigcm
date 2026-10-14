@@ -6,15 +6,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { isStatusDocumento, ordenarEmitidos, STATUS_DOCUMENTO, type StatusDocumento } from "@/lib/emitidos";
 import { gerarPDF } from "@/lib/pdf";
 import { numeroFormatado, type Documento } from "@/lib/documento";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
     meta: [
-      { title: "Histórico — Gerador de Ofícios CCM" },
+      { title: "Emitidos — Gerador de Ofícios CCM" },
       { name: "description", content: "Documentos já emitidos pela Coordenação de Comunicação e Mídia." },
-      { property: "og:title", content: "Histórico — Gerador de Ofícios CCM" },
+      { property: "og:title", content: "Emitidos — Gerador de Ofícios CCM" },
       { property: "og:description", content: "Documentos já emitidos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -23,19 +25,41 @@ export const Route = createFileRoute("/historico")({
   component: Historico,
 });
 
-type Row = { id: string; assunto: string; created_at: string; dados: Documento };
+type Row = { id: string; tipo: string; numero: number; ano: number; status: StatusDocumento; assunto: string; created_at: string; dados: Documento };
 
 function Historico() {
   const { ready } = useRequireSession();
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [updating, setUpdating] = useState<string[]>([]);
+  const [loadError, setLoadError] = useState(false);
 
   const load = () =>
     supabase
       .from("documentos")
-      .select("id, assunto, created_at, dados")
+      .select("id, tipo, numero, ano, status, assunto, created_at, dados")
       .order("ano", { ascending: false })
       .order("numero", { ascending: false })
-      .then(({ data }) => setRows((data as unknown as Row[]) ?? []));
+      .then(({ data, error }) => {
+        setLoadError(Boolean(error));
+        if (error) { toast.error("Não foi possível carregar os documentos."); return; }
+        setRows(ordenarEmitidos((data as unknown as Row[]) ?? []));
+      });
+
+  async function alterarStatus(id: string, status: string) {
+    if (!isStatusDocumento(status)) return;
+    setUpdating(current => [...current, id]);
+    try {
+      const { data, error } = await supabase.from("documentos")
+        .update({ status, updated_at: new Date().toISOString() }).eq("id", id).select("status").single();
+      if (error || !data || !isStatusDocumento(data.status)) throw new Error("Falha ao salvar status");
+      setRows(current => current?.map(row => row.id === id ? { ...row, status } : row) ?? null);
+      toast.success("Status atualizado");
+    } catch {
+      toast.error("Não foi possível salvar o status. Tente novamente.");
+    } finally {
+      setUpdating(current => current.filter(value => value !== id));
+    }
+  }
 
   useEffect(() => {
     if (ready) load();
@@ -47,19 +71,31 @@ function Historico() {
       <AppHeader />
       <main className="mx-auto max-w-4xl px-4 py-8">
         <h1 className="mb-6 text-2xl font-bold text-primary-foreground">Documentos emitidos</h1>
-        {rows === null ? (
+        {loadError ? (
+          <Button variant="outline" onClick={load}>Tentar novamente</Button>
+        ) : rows === null ? (
           <p className="text-primary-foreground">Carregando...</p>
         ) : rows.length === 0 ? (
           <p className="text-primary-foreground">Nenhum documento salvo ainda.</p>
         ) : (
           <ul className="space-y-3">
             {rows.map((r) => (
-              <li key={r.id} className="flex flex-col gap-3 rounded-lg border bg-card p-4 text-card-foreground sm:flex-row sm:items-center">
+              <li key={r.id} className={`flex flex-col gap-3 rounded-lg border border-status-ink/15 p-4 text-status-ink sm:flex-row sm:items-center ${STATUS_DOCUMENTO[r.status]?.className ?? STATUS_DOCUMENTO.desenvolvendo.className}`}>
                 <div className="mr-auto min-w-0">
                   <p className="font-sans font-bold">{numeroFormatado(r.dados)}</p>
-                  <p className="truncate text-sm text-muted-foreground">{r.assunto}</p>
+                  <p className="break-words text-sm opacity-80">{r.assunto}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <Select value={r.status} disabled={updating.includes(r.id)} onValueChange={value => alterarStatus(r.id, value)}>
+                    <SelectTrigger aria-label={`Status de ${numeroFormatado(r.dados)}`} className="w-40 border-status-ink/25 bg-paper/70 text-status-ink">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(STATUS_DOCUMENTO) as StatusDocumento[]).map(status => (
+                        <SelectItem key={status} value={status}>{STATUS_DOCUMENTO[status].label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button size="sm" variant="outline" asChild>
                     <Link to="/" search={{ id: r.id }}>
                       <Pencil className="h-4 w-4" /> Editar
@@ -70,11 +106,12 @@ function Historico() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                     aria-label="Excluir"
                     onClick={async () => {
                       if (!confirm("Excluir este documento?")) return;
-                      await supabase.from("documentos").delete().eq("id", r.id);
+                      const { error } = await supabase.from("documentos").delete().eq("id", r.id);
+                      if (error) { toast.error("Não foi possível excluir o documento."); return; }
                       toast.success("Excluído");
                       load();
                     }}

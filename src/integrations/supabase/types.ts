@@ -23,6 +23,7 @@ export type Database = {
           dados: Json
           id: string
           numero: number
+          status: string
           tipo: string
           updated_at: string
         }
@@ -34,6 +35,7 @@ export type Database = {
           dados?: Json
           id?: string
           numero: number
+          status?: string
           tipo?: string
           updated_at?: string
         }
@@ -45,6 +47,7 @@ export type Database = {
           dados?: Json
           id?: string
           numero?: number
+          status?: string
           tipo?: string
           updated_at?: string
         }
