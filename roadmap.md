@@ -3,6 +3,6 @@
 - [x] Conferir interface e PDF após as alterações; corrigir contraste dos campos e botões e justificação no PDF.
 - [x] Adicionar negrito, itálico, sublinhado e caixa alta ao editor, prévia e PDF; conferir salvamento.
 - [x] Conferir e recuperar falhas de importação de página sem ciclos de recarregamento.
-- [ ] Ajustar acabamento da logo e renomear navegação para Emitidos.
-- [ ] Ordenar documentos e adicionar status persistentes com cores.
-- [ ] Conferir alterações e status salvos na interface.
+- [x] Ajustar acabamento da logo e renomear navegação para Emitidos.
+- [x] Ordenar documentos e adicionar status persistentes com cores.
+- [x] Conferir alterações e status salvos na interface.
