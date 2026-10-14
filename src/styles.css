@@ -53,6 +53,10 @@
   --color-chart-5: var(--chart-5);
   --color-paper: var(--paper);
   --color-paper-ink: var(--paper-ink);
+  --color-status-developing: var(--status-developing);
+  --color-status-sent: var(--status-sent);
+  --color-status-signed: var(--status-signed);
+  --color-status-ink: var(--status-ink);
   --font-serif: var(--font-serif);
   --font-sans: var(--font-sans);
   --shadow-paper: var(--shadow-paper);
@@ -94,6 +98,10 @@
   --ring: oklch(0.32 0.11 262);
   --paper: oklch(1 0 0);
   --paper-ink: oklch(0.15 0 0);
+  --status-developing: oklch(0.87 0.105 58);
+  --status-sent: oklch(0.94 0.13 99);
+  --status-signed: oklch(0.88 0.11 150);
+  --status-ink: oklch(0.25 0.025 260);
   --shadow-paper: 0 1px 2px oklch(0.2 0.05 260 / 0.08), 0 12px 32px -12px oklch(0.2 0.05 260 / 0.25);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -165,6 +173,10 @@
 .document-body-text p { overflow-wrap: anywhere; }
 .document-header-text { line-height: var(--document-header-leading); }
 .document-signature-text { line-height: var(--document-signature-leading); }
+
+.document-status-developing { background-color: var(--status-developing); }
+.document-status-sent { background-color: var(--status-sent); }
+.document-status-signed { background-color: var(--status-signed); }
 
 .dispatch-sheet { position: relative; width: 100%; aspect-ratio: 210 / 297; container-type: inline-size; font-family: "Times New Roman", serif; }
 .dispatch-header { position: absolute; inset: 2.36% 0 auto; height: 6.74%; }

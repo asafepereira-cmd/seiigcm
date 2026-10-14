@@ -6,6 +6,7 @@ import { createFirstAccount, getSetupStatus } from "@/lib/server.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import brasao from "@/assets/brasao-interface.png";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -55,7 +56,7 @@ function Login() {
     <main className="flex min-h-svh items-center justify-center px-4 py-8">
       <div className="w-full max-w-md rounded-xl border bg-card px-6 py-8 text-card-foreground shadow-paper sm:p-10">
         <div className="mb-6 flex flex-col items-center text-center">
-          <img src="/brand/brasao.png" alt="Brasão CEM XXXIII" className="h-20 w-20" />
+          <img src={brasao} alt="Brasão CEM XXXIII" className="h-20 w-20 object-contain" />
           <h1 className="mt-4 text-2xl font-bold text-card-foreground">Gerador de Ofícios</h1>
           <p className="mt-2 text-base leading-relaxed text-muted-foreground">Coordenação de Comunicação e Mídia · Acesso restrito</p>
         </div>

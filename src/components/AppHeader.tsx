@@ -2,13 +2,14 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import brasao from "@/assets/brasao-interface.png";
 
 export function AppHeader() {
   const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-20 border-b bg-primary text-primary-foreground">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
-        <img src="/brand/brasao.png" alt="" className="h-9 w-9" />
+        <img src={brasao} alt="Brasão CEM XXXIII" className="h-9 w-9 object-contain" />
         <div className="mr-auto leading-tight">
            <p className="font-sans text-base font-bold sm:text-lg">Gerador de Ofícios</p>
           <p className="hidden text-xs opacity-80 sm:block">CCM · CEM XXXIII</p>
@@ -18,7 +19,7 @@ export function AppHeader() {
             Novo
           </Link>
           <Link to="/historico" className="rounded-md px-3 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }}>
-            Histórico
+            Emitidos
           </Link>
           <Button
             size="icon"
