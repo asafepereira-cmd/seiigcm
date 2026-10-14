@@ -13,7 +13,7 @@ describe("documentos emitidos", () => {
   it("mantém memorandos por último mesmo com ano ou número maior", () => {
     const rows = [row("Memorando", 999, 2027), row("Ofício", 1, 2025), row("MEMORANDO", 5), row("Memorando", 8)];
     expect(ordenarEmitidos(rows).map(r => [r.tipo, r.numero])).toEqual([["Ofício", 1], ["Memorando", 999], ["Memorando", 8], ["MEMORANDO", 5]]);
-    expect(rows[0].numero).toBe(999);
+    expect(rows[0]?.numero).toBe(999);
   });
   it("aceita somente os três status definidos", () => {
     expect(["desenvolvendo", "enviado", "assinado"].every(isStatusDocumento)).toBe(true);
