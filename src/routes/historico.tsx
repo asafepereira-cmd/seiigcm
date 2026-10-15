@@ -1,6 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Download, Pencil, Trash2 } from "lucide-react";
+import { Copy, Download, Link2, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { carregarExtras, carregarSolicitacoes, enviarParaAssinatura, gestorasDoDespacho, type GestoraKey } from "@/lib/assinaturas-eletronicas";
+import { GESTORAS, type Despacho } from "@/lib/documento";
+import { lerAssinaturaPng } from "@/lib/assinatura";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
@@ -45,8 +49,50 @@ function Historico() {
         setRows(ordenarEmitidos((data as unknown as Row[]) ?? []));
       });
 
+  const [envio, setEnvio] = useState<{ row: Row; opcao: Despacho } | null>(null);
+  const [links, setLinks] = useState<{ row: Row; itens: { gestora: string; token: string; assinado_em: string | null }[] } | null>(null);
+  const [banco, setBanco] = useState<Record<string, string>>({});
+
+  const carregarBanco = () => supabase.from("assinaturas_gestoras").select("gestora, imagem")
+    .then(({ data }) => setBanco(Object.fromEntries((data ?? []).map(d => [d.gestora, d.imagem]))));
+
+  async function salvarImagem(gestora: GestoraKey, file?: File) {
+    if (!file) return;
+    try {
+      const imagem = await lerAssinaturaPng(file);
+      const { error } = await supabase.from("assinaturas_gestoras").upsert({ gestora, imagem, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      toast.success("Assinatura salva"); carregarBanco();
+    } catch { toast.error("Envie uma imagem PNG válida."); }
+  }
+
+  async function abrirLinks(row: Row) {
+    setLinks({ row, itens: await carregarSolicitacoes(row.id) });
+  }
+
+  async function confirmarEnvio() {
+    if (!envio) return;
+    try {
+      await enviarParaAssinatura(envio.row.id, gestorasDoDespacho(envio.opcao), null);
+      setRows(current => current?.map(row => row.id === envio.row.id ? { ...row, status: "enviado" } : row) ?? null);
+      const row = envio.row;
+      setEnvio(null);
+      toast.success("Enviado para assinatura");
+      abrirLinks(row);
+    } catch { toast.error("Não foi possível enviar para assinatura."); }
+  }
+
+  async function baixar(row: Row) {
+    try { await gerarPDF(row.dados, true, await carregarExtras(row.id)); }
+    catch { toast.error("Não foi possível gerar o PDF."); }
+  }
+
   async function alterarStatus(id: string, status: string) {
     if (!isStatusDocumento(status)) return;
+    if (status === "enviado") {
+      const row = rows?.find(r => r.id === id);
+      if (row) { setEnvio({ row, opcao: row.dados.despacho ?? "ambas" }); return; }
+    }
     setUpdating(current => [...current, id]);
     try {
       const { data, error } = await supabase.from("documentos")
@@ -62,7 +108,7 @@ function Historico() {
   }
 
   useEffect(() => {
-    if (ready) load();
+    if (ready) { load(); carregarBanco(); }
   }, [ready]);
 
   if (!ready) return null;
@@ -101,9 +147,14 @@ function Historico() {
                       <Pencil className="h-4 w-4" /> Editar
                     </Link>
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => gerarPDF(r.dados)}>
+                  <Button size="sm" variant="outline" onClick={() => baixar(r)}>
                     <Download className="h-4 w-4" /> PDF
                   </Button>
+                  {r.status !== "desenvolvendo" && (
+                    <Button size="sm" variant="outline" onClick={() => abrirLinks(r)}>
+                      <Link2 className="h-4 w-4" /> Links
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
@@ -123,7 +174,53 @@ function Historico() {
             ))}
           </ul>
         )}
+        <section className="mt-10 rounded-lg bg-card p-4 text-card-foreground">
+          <h2 className="mb-3 font-bold">Banco de assinaturas das gestoras</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {(["pedagogica", "administrativa"] as GestoraKey[]).map(g => (
+              <div key={g} className="space-y-2 rounded-md border p-3">
+                <p className="text-sm font-semibold">{GESTORAS[g].nome}</p>
+                {banco[g] ? <img src={banco[g]} alt={`Assinatura de ${GESTORAS[g].nome}`} className="h-14 object-contain" /> : <p className="text-xs text-muted-foreground">Nenhuma imagem enviada.</p>}
+                <label className="inline-block cursor-pointer text-sm text-primary underline">
+                  {banco[g] ? "Trocar imagem" : "Enviar PNG"}
+                  <input type="file" accept="image/png" className="hidden" onChange={e => salvarImagem(g, e.target.files?.[0])} />
+                </label>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
+      <Dialog open={!!envio} onOpenChange={o => !o && setEnvio(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Enviar para assinatura</DialogTitle></DialogHeader>
+          <p className="text-sm">Quem deve assinar o despacho?</p>
+          <div className="flex flex-wrap gap-2">
+            {([["pedagogica", "Gestora Ped."], ["administrativa", "Gestora Adm."], ["ambas", "As duas"]] as [Despacho, string][]).map(([v, l]) => (
+              <Button key={v} variant={envio?.opcao === v ? "default" : "outline"} onClick={() => envio && setEnvio({ ...envio, opcao: v })}>{l}</Button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">Sua emissão eletrônica será registrada agora. Será gerado um link único para cada gestora.</p>
+          <Button onClick={confirmarEnvio}>Enviar e gerar links</Button>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!links} onOpenChange={o => !o && setLinks(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Links de assinatura</DialogTitle></DialogHeader>
+          {links?.itens.length === 0 && <p className="text-sm">Nenhum link gerado.</p>}
+          {links?.itens.map(i => {
+            const url = `${window.location.origin}/assinar/${i.token}`;
+            return (
+              <div key={i.token} className="space-y-1 rounded-md border p-3">
+                <p className="text-sm font-semibold">{GESTORAS[i.gestora as GestoraKey]?.nome} — {i.assinado_em ? "Assinado" : "Aguardando"}</p>
+                <div className="flex gap-2">
+                  <input readOnly value={url} className="min-w-0 flex-1 rounded border bg-paper px-2 text-xs text-paper-ink" />
+                  <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /></Button>
+                </div>
+              </div>
+            );
+          })}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
