@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HistoricoRouteImport } from './routes/historico'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AssinarTokenRouteImport } from './routes/assinar.$token'
+import { Route as VerificarIdRouteImport } from './routes/verificar.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +30,60 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AssinarTokenRoute = AssinarTokenRouteImport.update({
+  id: '/assinar/$token',
+  path: '/assinar/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerificarIdRoute = VerificarIdRouteImport.update({
+  id: '/verificar/$id',
+  path: '/verificar/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
+  '/assinar/$token': typeof AssinarTokenRoute
+  '/verificar/$id': typeof VerificarIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
+  '/assinar/$token': typeof AssinarTokenRoute
+  '/verificar/$id': typeof VerificarIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
+  '/assinar/$token': typeof AssinarTokenRoute
+  '/verificar/$id': typeof VerificarIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/historico' | '/login'
+  fullPaths:
+    '/' | '/historico' | '/login' | '/assinar/$token' | '/verificar/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/historico' | '/login'
-  id: '__root__' | '/' | '/historico' | '/login'
+  to: '/' | '/historico' | '/login' | '/assinar/$token' | '/verificar/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/historico'
+    | '/login'
+    | '/assinar/$token'
+    | '/verificar/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HistoricoRoute: typeof HistoricoRoute
   LoginRoute: typeof LoginRoute
+  AssinarTokenRoute: typeof AssinarTokenRoute
+  VerificarIdRoute: typeof VerificarIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +109,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/assinar/$token': {
+      id: '/assinar/$token'
+      path: '/assinar/$token'
+      fullPath: '/assinar/$token'
+      preLoaderRoute: typeof AssinarTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verificar/$id': {
+      id: '/verificar/$id'
+      path: '/verificar/$id'
+      fullPath: '/verificar/$id'
+      preLoaderRoute: typeof VerificarIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +130,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HistoricoRoute: HistoricoRoute,
   LoginRoute: LoginRoute,
+  AssinarTokenRoute: AssinarTokenRoute,
+  VerificarIdRoute: VerificarIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
