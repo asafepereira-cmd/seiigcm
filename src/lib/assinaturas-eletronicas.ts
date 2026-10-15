@@ -8,7 +8,7 @@ export type AssinaturaGestora = {
   decisao: string | null;
   observacoes: string;
   assinadoEm: string | null;
-  imagem?: string;
+  imagem?: string | undefined;
 };
 
 export type ExtrasPDF = {
