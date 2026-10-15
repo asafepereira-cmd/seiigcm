@@ -19,9 +19,9 @@ export const getSignRequest = createServerFn({ method: "POST" })
       gestora: req.gestora as "pedagogica" | "administrativa",
       decisao: req.decisao, observacoes: req.observacoes, assinadoEm: req.assinado_em,
       doc: {
-        tipo: String(d.tipo ?? ""), numero: Number(d.numero ?? 0), ano: Number(d.ano ?? 0), sigla: String(d.sigla ?? ""),
-        assunto: String(d.assunto ?? ""), para: String(d.para ?? ""), corpo: String(d.corpo ?? ""),
-        assinante: String(d.assinante ?? ""),
+        tipo: String(d["tipo"] ?? ""), numero: Number(d["numero"] ?? 0), ano: Number(d["ano"] ?? 0), sigla: String(d["sigla"] ?? ""),
+        assunto: String(d["assunto"] ?? ""), para: String(d["para"] ?? ""), corpo: String(d["corpo"] ?? ""),
+        assinante: String(d["assinante"] ?? ""),
       },
     };
   });
@@ -56,8 +56,8 @@ export const getVerificacao = createServerFn({ method: "POST" })
     const d = doc.dados as Record<string, unknown>;
     return {
       found: true as const,
-      tipo: String(d.tipo ?? ""), numero: Number(d.numero ?? 0), ano: Number(d.ano ?? 0), sigla: String(d.sigla ?? ""),
-      assunto: String(d.assunto ?? ""), assinante: String(d.assinante ?? ""), cargo: String(d.cargo ?? ""),
+      tipo: String(d["tipo"] ?? ""), numero: Number(d["numero"] ?? 0), ano: Number(d["ano"] ?? 0), sigla: String(d["sigla"] ?? ""),
+      assunto: String(d["assunto"] ?? ""), assinante: String(d["assinante"] ?? ""), cargo: String(d["cargo"] ?? ""),
       emitidoEm: doc.emitido_em, status: doc.status,
       assinaturas: (sols ?? []).map(s => ({ gestora: s.gestora as "pedagogica" | "administrativa", decisao: s.decisao, assinadoEm: s.assinado_em })),
     };
