@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      assinaturas_gestoras: {
+        Row: {
+          gestora: string
+          imagem: string
+          updated_at: string
+        }
+        Insert: {
+          gestora: string
+          imagem: string
+          updated_at?: string
+        }
+        Update: {
+          gestora?: string
+          imagem?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documentos: {
         Row: {
           ano: number
@@ -21,6 +39,7 @@ export type Database = {
           created_at: string
           criado_por: string | null
           dados: Json
+          emitido_em: string | null
           id: string
           numero: number
           status: string
@@ -33,6 +52,7 @@ export type Database = {
           created_at?: string
           criado_por?: string | null
           dados?: Json
+          emitido_em?: string | null
           id?: string
           numero: number
           status?: string
@@ -45,6 +65,7 @@ export type Database = {
           created_at?: string
           criado_por?: string | null
           dados?: Json
+          emitido_em?: string | null
           id?: string
           numero?: number
           status?: string
@@ -52,6 +73,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      solicitacoes_assinatura: {
+        Row: {
+          assinado_em: string | null
+          created_at: string
+          decisao: string | null
+          documento_id: string
+          gestora: string
+          id: string
+          observacoes: string
+          token: string
+        }
+        Insert: {
+          assinado_em?: string | null
+          created_at?: string
+          decisao?: string | null
+          documento_id: string
+          gestora: string
+          id?: string
+          observacoes?: string
+          token: string
+        }
+        Update: {
+          assinado_em?: string | null
+          created_at?: string
+          decisao?: string | null
+          documento_id?: string
+          gestora?: string
+          id?: string
+          observacoes?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_assinatura_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
