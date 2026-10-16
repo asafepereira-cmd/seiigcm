@@ -21,9 +21,9 @@ import { numeroFormatado, type Documento } from "@/lib/documento";
 export const Route = createFileRoute("/historico")({
   head: () => ({
     meta: [
-      { title: "Emitidos — Gerador de Ofícios CCM" },
+      { title: "Emitidos — SEII GCM" },
       { name: "description", content: "Documentos já emitidos pela Coordenação de Comunicação e Mídia." },
-      { property: "og:title", content: "Emitidos — Gerador de Ofícios CCM" },
+      { property: "og:title", content: "Emitidos — SEII GCM" },
       { property: "og:description", content: "Documentos já emitidos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

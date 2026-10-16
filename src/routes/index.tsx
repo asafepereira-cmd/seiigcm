@@ -22,9 +22,9 @@ export const Route = createFileRoute("/")({
   validateSearch: (s: Record<string, unknown>): { id?: string } => (typeof s['id'] === "string" ? { id: s['id'] as string } : {}),
   head: () => ({
     meta: [
-      { title: "Novo documento — Gerador de Ofícios CCM" },
+      { title: "Novo documento — SEII GCM" },
       { name: "description", content: "Preencha os campos e gere o ofício em PDF no padrão do CEM XXXIII, com revisão por IA." },
-      { property: "og:title", content: "Novo documento — Gerador de Ofícios CCM" },
+      { property: "og:title", content: "Novo documento — SEII GCM" },
       { property: "og:description", content: "Gere ofícios em PDF no padrão do CEM XXXIII." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
