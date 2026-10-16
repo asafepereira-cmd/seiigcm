@@ -16,7 +16,7 @@ export function useRequireSession(adminOnly = true) {
       setSession(data.session);
       if (data.session && adminOnly) {
         const { data: roles, error } = await supabase.from("user_roles").select("role");
-        if (error || !roles?.some(r => r.role === "admin")) { navigate({ to: "/painel" }); return; }
+        if (error || !roles?.some(r => r.role === "admin" || (r.role as string) === "emissor")) { navigate({ to: "/painel" }); return; }
       }
       setReady(true);
       if (!data.session) navigate({ to: "/login" });

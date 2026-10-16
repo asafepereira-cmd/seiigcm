@@ -170,13 +170,14 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
 
   if (doc.fecho.trim()) paragraph(doc.fecho.trim());
 
-  ensure(doc.assinaturaPng ? 45 : 30);
-  if (doc.assinaturaPng) {
-    const image = pdf.getImageProperties(doc.assinaturaPng);
+  const assinaturaEmissor = doc.assinaturaPng || (extras.emitidoEm ? extras.emissorImagem : undefined);
+  ensure(assinaturaEmissor ? 45 : 30);
+  if (assinaturaEmissor) {
+    const image = pdf.getImageProperties(assinaturaEmissor);
     const scale = Math.min(70 / image.width, 22 / image.height);
     const width = image.width * scale, height = image.height * scale;
     y += 6;
-    pdf.addImage(doc.assinaturaPng, "PNG", (W - width) / 2, y, width, height);
+    pdf.addImage(assinaturaEmissor, "PNG", (W - width) / 2, y, width, height);
     y += height + 1;
   } else {
     y += 14;

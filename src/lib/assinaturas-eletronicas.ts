@@ -16,6 +16,7 @@ export type AssinaturaGestora = {
 export type ExtrasPDF = {
   emitidoEm?: string | null;
   verificarUrl?: string;
+  emissorImagem?: string;
   assinaturas?: AssinaturaGestora[];
 };
 
@@ -34,7 +35,7 @@ export function dataHora(iso: string) {
 
 export const SISTEMA = "S.E.I.GCM-CEMXXXIII";
 
-export async function enviarParaAssinatura(documentoId: string, gestoras: GestoraKey[], _emitidoEm: string | null, extras: {nome:string;funcao:string}[] = [], prioridade = "normal", prazo: string | null = null, termo = "") {
+export async function enviarParaAssinatura(documentoId: string, gestoras: GestoraKey[], _emitidoEm: string | null, extras: {nome:string;funcao:string;user_id?:string}[] = [], prioridade = "normal", prazo: string | null = null, termo = "") {
   const {error} = await supabase.rpc("enviar_documento",{_id:documentoId,_gestoras:gestoras,_extras:extras,_prioridade:prioridade,_prazo:prazo as string,_termo:termo});
   if(error) throw error;
 }
@@ -55,6 +56,7 @@ export async function carregarExtras(documentoId: string): Promise<ExtrasPDF> {
   const imagem = new Map((imgs ?? []).map(i => [i.gestora, i.imagem]));
   return {
     emitidoEm: doc.emitido_em,
+    emissorImagem: imagem.get("admin"),
     verificarUrl: `${window.location.origin}/verificar/${documentoId}`,
     assinaturas: sols.map(s => ({
       nome:s.signatario_nome, cargo:s.signatario_funcao, gestora: s.gestora, decisao: s.decisao, observacoes: s.observacoes, assinadoEm: s.assinado_em,
