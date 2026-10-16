@@ -1,0 +1,1 @@
+CREATE POLICY "user read assigned documents" ON public.documentos FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.solicitacoes_assinatura s WHERE s.documento_id = documentos.id AND s.gestora = 'user:' || auth.uid()::text));

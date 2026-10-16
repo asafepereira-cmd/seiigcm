@@ -12,3 +12,4 @@
 - [ ] Personalizar modelos dos emissores e limitar alterações aos próprios documentos.
 - [ ] Adicionar comentários, análise prévia do administrador e acompanhamento da abertura pelas gestoras.
 - [ ] Conferir permissões e fluxo autenticado de análise.
+- [ ] Corrigir leitura de documentos atribuídos à Ana Beatriz e atualização automática do painel.
