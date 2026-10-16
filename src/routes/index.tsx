@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { reviewWithAI } from "@/lib/server.functions";
 import { gerarPDF } from "@/lib/pdf";
 import { carregarExtras } from "@/lib/assinaturas-eletronicas";
+import { podeEditarDocumento } from "@/lib/document-access";
 import { lerAssinaturaPng } from "@/lib/assinatura";
 import { dataExtenso, modeloGravacao, numeroFormatado, type Documento, type Participante } from "@/lib/documento";
 
@@ -50,7 +51,7 @@ async function proximoNumero(ano: number) {
 }
 
 function Editor() {
-  const { ready } = useRequireSession();
+  const { ready, session, isAdmin } = useRequireSession();
   const { id } = Route.useSearch();
   const navigate = useNavigate();
   const [doc, setDoc] = useState<Documento | null>(null);
@@ -67,7 +68,12 @@ function Editor() {
     if (!ready) return;
     setDocId(id);
     if (id) {
-      supabase.from("documentos").select("dados").eq("id", id).single().then(({ data }) => {
+      supabase.from("documentos").select("dados,criado_por,status,analise_admin").eq("id", id).single().then(({ data }) => {
+        if (!data || !podeEditarDocumento(isAdmin, session?.user.id ?? '', data)) {
+          toast.error("Este documento não está disponível para edição.");
+          navigate({to:'/historico'});
+          return;
+        }
         if (data) {
           const d = data.dados as unknown as Documento;
           setDoc(d);
@@ -75,12 +81,13 @@ function Editor() {
         }
       });
     } else {
-      proximoNumero(new Date().getFullYear()).then((n) => {
-        setDoc(modeloGravacao(n));
+      Promise.all([proximoNumero(new Date().getFullYear()), supabase.from('paineis').select('nome,funcao').eq('user_id',session?.user.id ?? '').maybeSingle()]).then(([n, {data: titular}]) => {
+        if (!isAdmin && !titular) { toast.error('Seu painel precisa de nome e função.'); navigate({to:'/painel'}); return; }
+        setDoc(modeloGravacao(n, !isAdmin && titular ? titular : undefined));
         setListaTexto("");
       });
     }
-  }, [ready, id]);
+  }, [ready, id, isAdmin, session?.user.id]);
 
   if (!ready || !doc) return null;
   const set = <K extends keyof Documento>(k: K, v: Documento[K]) => setDoc({ ...doc, [k]: v });
@@ -108,7 +115,7 @@ function Editor() {
     const row = { tipo: full.tipo, numero: full.numero, ano: full.ano, assunto: full.assunto, dados: full as never, updated_at: new Date().toISOString() };
     const res = docId
       ? await supabase.from("documentos").update(row).eq("id", docId).select("id").single()
-      : await supabase.from("documentos").insert(row).select("id").single();
+      : await supabase.from("documentos").insert({...row, criado_por: session?.user.id}).select("id").single();
     setSaving(false);
     if (res.error) return toast.error("Erro ao salvar"), undefined;
     setDocId(res.data.id);

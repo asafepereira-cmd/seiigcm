@@ -20,4 +20,5 @@
 
 - Manager panels live under the client-only authenticated layout; emission screens additionally validate the admin role, and database RLS enforces every read/write. Why: managers only access assigned approvals.
 - Document dispatch and final signature status are atomic PostgreSQL functions locking the document row. Why: concurrent signatures must not leave the lifecycle status stale.
-- Emission panels use the 'emissor' role plus a paineis row (name, function); pode_emitir() grants admin and emissor document access, and signature requests to panel users use gestora 'user:<uuid>'. Why: every future emission panel gets the same emitter, tracking and signing access without admin privileges.
+- Emission panels use the 'emissor' role plus a paineis identity for new document defaults; RLS restricts mutation to owned unlocked drafts, and only the administrator dispatches signatures after submission through submeter_analise(). Why: every custom panel preserves its identity without bypassing administrator review.
+- Document comments and signature opening/analysis timestamps are persisted with RLS and authenticated RPCs; public token reads only record first opening. Why: approval progress remains auditable across panels.

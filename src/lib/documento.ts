@@ -58,7 +58,7 @@ export function hojeISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function modeloGravacao(numero: number): Documento {
+export function modeloGravacao(numero: number, titular?: {nome: string; funcao: string}): Documento {
   return {
     tipo: "Ofício",
     numero,
@@ -67,7 +67,7 @@ export function modeloGravacao(numero: number): Documento {
     cidade: "Boa Vista",
     data: hojeISO(),
     para: "Gestão Administrativa",
-    de: "Coordenação de Comunicação e Mídia do CEMXXXIII",
+    de: titular ? `${titular.nome} — ${titular.funcao}` : "Coordenação de Comunicação e Mídia do CEMXXXIII",
     assunto: "Solicitação de autorização para gravação",
     vocativo: "Prezada Gestora Administrativa,",
     corpo:
@@ -75,7 +75,7 @@ export function modeloGravacao(numero: number): Documento {
     tituloLista: "Equipe envolvida",
     lista: [],
     fecho: "Sem mais para o momento, coloco-me à disposição para quaisquer esclarecimentos.",
-    assinante: "ASAFE PEREIRA DA SILVA FELIX",
-    cargo: "Coordenador de Comunicação e Mídia - CEM XXXIII",
+    assinante: titular?.nome ?? "ASAFE PEREIRA DA SILVA FELIX",
+    cargo: titular?.funcao ?? "Coordenador de Comunicação e Mídia - CEM XXXIII",
   };
 }
