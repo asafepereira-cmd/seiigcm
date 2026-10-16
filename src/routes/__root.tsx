@@ -77,10 +77,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Gerador de Ofícios — CCM CEMXXXIII" },
+      { title: "SEII GCM — CCM CEMXXXIII" },
       { name: "description", content: "Criação automática de ofícios e memorandos da Coordenação de Comunicação e Mídia." },
       { name: "robots", content: "noindex" },
-      { property: "og:title", content: "Gerador de Ofícios — CCM CEMXXXIII" },
+      { property: "og:title", content: "SEII GCM — CCM CEMXXXIII" },
       { property: "og:description", content: "Criação automática de ofícios e memorandos da Coordenação de Comunicação e Mídia." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

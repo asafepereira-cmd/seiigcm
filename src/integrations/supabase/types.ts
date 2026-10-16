@@ -98,6 +98,27 @@ export type Database = {
         }
         Relationships: []
       }
+      paineis: {
+        Row: {
+          created_at: string
+          funcao: string
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          funcao: string
+          nome: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          funcao?: string
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       solicitacoes_assinatura: {
         Row: {
           assinado_em: string | null
@@ -189,13 +210,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      pode_emitir: { Args: { _uid: string }; Returns: boolean }
       registrar_assinatura: {
         Args: { _decisao: string; _observacoes: string; _token: string }
         Returns: undefined
       }
     }
     Enums: {
-      app_role: "admin" | "pedagogica" | "administrativa"
+      app_role: "admin" | "pedagogica" | "administrativa" | "emissor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -323,7 +345,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "pedagogica", "administrativa"],
+      app_role: ["admin", "pedagogica", "administrativa", "emissor"],
     },
   },
 } as const

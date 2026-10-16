@@ -11,9 +11,9 @@ import brasao from "@/assets/brasao-interface.png";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Entrar — Gerador de Ofícios CCM" },
+      { title: "Entrar — SEII GCM" },
       { name: "description", content: "Acesso restrito ao gerador de ofícios da Coordenação de Comunicação e Mídia." },
-      { property: "og:title", content: "Entrar — Gerador de Ofícios CCM" },
+      { property: "og:title", content: "Entrar — SEII GCM" },
       { property: "og:description", content: "Acesso restrito ao gerador de ofícios." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -57,7 +57,7 @@ function Login() {
       <div className="w-full max-w-md rounded-xl border bg-card px-6 py-8 text-card-foreground shadow-paper sm:p-10">
         <div className="mb-6 flex flex-col items-center text-center">
           <img src={brasao} alt="Brasão CEM XXXIII" className="h-20 w-20 object-contain" />
-          <h1 className="mt-4 text-2xl font-bold text-card-foreground">Gerador de Ofícios</h1>
+          <h1 className="mt-4 text-2xl font-bold text-card-foreground">SEII GCM</h1>
           <p className="mt-2 text-base leading-relaxed text-muted-foreground">Coordenação de Comunicação e Mídia · Acesso restrito</p>
         </div>
         {setup && (

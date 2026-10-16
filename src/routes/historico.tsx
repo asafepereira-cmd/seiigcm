@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { carregarExtras, carregarSolicitacoes, enviarParaAssinatura, gestorasDoDespacho, type GestoraKey } from "@/lib/assinaturas-eletronicas";
 import { GESTORAS, type Despacho } from "@/lib/documento";
-import { lerAssinaturaPng } from "@/lib/assinatura";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
@@ -21,9 +20,9 @@ import { numeroFormatado, type Documento } from "@/lib/documento";
 export const Route = createFileRoute("/historico")({
   head: () => ({
     meta: [
-      { title: "Emitidos — Gerador de Ofícios CCM" },
+      { title: "Emitidos — SEII GCM" },
       { name: "description", content: "Documentos já emitidos pela Coordenação de Comunicação e Mídia." },
-      { property: "og:title", content: "Emitidos — Gerador de Ofícios CCM" },
+      { property: "og:title", content: "Emitidos — SEII GCM" },
       { property: "og:description", content: "Documentos já emitidos." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -57,24 +56,10 @@ function Historico() {
   const [prioridade,setPrioridade] = useState("normal");
   const [prazo,setPrazo] = useState("");
   const [termo,setTermo] = useState("");
-  const [extras,setExtras] = useState<{nome:string;funcao:string}[]>([]);
+  const [extras,setExtras] = useState<{nome:string;funcao:string;user_id?:string}[]>([]);
+  const [paineis,setPaineis] = useState<{user_id:string;nome:string;funcao:string}[]>([]);
   const [funcoes,setFuncoes] = useState<string[]>([]);
   const [sending,setSending] = useState(false);
-  const [banco, setBanco] = useState<Record<string, string>>({});
-
-  const carregarBanco = () => supabase.from("assinaturas_gestoras").select("gestora, imagem")
-    .then(({ data }) => setBanco(Object.fromEntries((data ?? []).map(d => [d.gestora, d.imagem]))));
-
-  async function salvarImagem(gestora: GestoraKey, file?: File) {
-    if (!file) return;
-    try {
-      const imagem = await lerAssinaturaPng(file);
-      const { error } = await supabase.from("assinaturas_gestoras").upsert({ gestora, imagem, updated_at: new Date().toISOString() });
-      if (error) throw error;
-      toast.success("Assinatura salva"); carregarBanco();
-    } catch { toast.error("Envie uma imagem PNG válida."); }
-  }
-
   async function abrirLinks(row: Row) {
     setLinks({ row, itens: await carregarSolicitacoes(row.id) });
   }
@@ -118,7 +103,7 @@ function Historico() {
   }
 
   useEffect(() => {
-    if (ready) { load(); carregarBanco(); supabase.from("funcoes_predefinidas").select("nome").order("nome").then(({data})=>setFuncoes((data??[]).map(f=>f.nome))); }
+    if (ready) { load(); supabase.from("paineis").select("user_id,nome,funcao").order("nome").then(({data})=>setPaineis(data??[])); supabase.from("funcoes_predefinidas").select("nome").order("nome").then(({data})=>setFuncoes((data??[]).map(f=>f.nome))); }
   }, [ready]);
 
   if (!ready) return null;
@@ -184,21 +169,6 @@ function Historico() {
             ))}
           </ul>
         )}
-        <section className="mt-10 rounded-lg bg-card p-4 text-card-foreground">
-          <h2 className="mb-3 font-bold">Banco de assinaturas das gestoras</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {(["pedagogica", "administrativa"] as GestoraKey[]).map(g => (
-              <div key={g} className="space-y-2 rounded-md border p-3">
-                <p className="text-sm font-semibold">{GESTORAS[g].nome}</p>
-                {banco[g] ? <img src={banco[g]} alt={`Assinatura de ${GESTORAS[g].nome}`} className="h-14 object-contain" /> : <p className="text-xs text-muted-foreground">Nenhuma imagem enviada.</p>}
-                <label className="inline-block cursor-pointer text-sm text-primary underline">
-                  {banco[g] ? "Trocar imagem" : "Enviar PNG"}
-                  <input type="file" accept="image/png" className="hidden" onChange={e => salvarImagem(g, e.target.files?.[0])} />
-                </label>
-              </div>
-            ))}
-          </div>
-        </section>
       </main>
       <Dialog open={!!envio} onOpenChange={o => !o && setEnvio(null)}>
         <DialogContent className="max-h-[85svh] overflow-y-auto">
@@ -213,9 +183,11 @@ function Historico() {
           <div className="grid grid-cols-2 gap-3"><div><Label>Prioridade</Label><Select value={prioridade} onValueChange={setPrioridade}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="alta">Alta</SelectItem></SelectContent></Select></div><div><Label htmlFor="prazo">Data limite</Label><Input id="prazo" type="date" value={prazo} onChange={e=>setPrazo(e.target.value)}/></div></div>
           <div><Label htmlFor="termo">Termo de ciência</Label><Textarea id="termo" maxLength={2000} value={termo} onChange={e=>setTermo(e.target.value)}/></div>
           <h3 className="font-semibold">Outros signatários</h3>
-          {extras.map((extra,i)=><div key={i} className="space-y-2 border-b pb-3"><Input aria-label={`Nome do signatário ${i+1}`} maxLength={200} value={extra.nome} onChange={e=>setExtras(extras.map((x,j)=>j===i?{...x,nome:e.target.value}:x))}/><Select value={extra.funcao} onValueChange={v=>setExtras(extras.map((x,j)=>j===i?{...x,funcao:v}:x))}><SelectTrigger aria-label={`Função do signatário ${i+1}`}><SelectValue placeholder="Função"/></SelectTrigger><SelectContent>{funcoes.map(f=><SelectItem value={f} key={f}>{f}</SelectItem>)}</SelectContent></Select><Button variant="outline" size="sm" onClick={()=>setExtras(extras.filter((_,j)=>j!==i))}>Remover</Button></div>)}
-          <Button variant="outline" disabled={!funcoes.length || extras.length>=10} onClick={()=>setExtras([...extras,{nome:"",funcao:funcoes[0]??""}])}>Adicionar signatário</Button>
-          <Button disabled={sending || extras.some(e=>!e.nome.trim() || !e.funcao)} onClick={confirmarEnvio}>{sending?"Enviando...":"Assinar emissão e enviar"}</Button>
+          {extras.map((extra,i)=><div key={i} className="space-y-2 border-b pb-3"><Input aria-label={`Nome completo do signatário ${i+1}`} placeholder="Nome completo" disabled={!!extra.user_id} maxLength={200} value={extra.nome} onChange={e=>setExtras(extras.map((x,j)=>j===i?{...x,nome:e.target.value}:x))}/><Input list="funcoes-lista" aria-label={`Função do signatário ${i+1}`} placeholder="Função" maxLength={200} disabled={!!extra.user_id} value={extra.funcao} onChange={e=>setExtras(extras.map((x,j)=>j===i?{...x,funcao:e.target.value}:x))}/><Button variant="outline" size="sm" onClick={()=>setExtras(extras.filter((_,j)=>j!==i))}>Remover</Button></div>)}
+          <datalist id="funcoes-lista">{funcoes.map(f=><option value={f} key={f}/>)}</datalist>
+          <Button variant="outline" disabled={extras.length>=10} onClick={()=>setExtras([...extras,{nome:"",funcao:""}])}>Adicionar signatário</Button>
+          {paineis.length>0 && <div className="flex flex-wrap gap-2">{paineis.filter(p=>!extras.some(e=>e.user_id===p.user_id)).map(p=><Button key={p.user_id} size="sm" variant="outline" disabled={extras.length>=10} onClick={()=>setExtras([...extras,{nome:p.nome,funcao:p.funcao,user_id:p.user_id}])}>+ Painel: {p.nome}</Button>)}</div>}
+          <Button disabled={sending || extras.some(e=>!e.nome.trim() || !e.funcao.trim())} onClick={confirmarEnvio}>{sending?"Enviando...":"Assinar emissão e enviar"}</Button>
         </DialogContent>
       </Dialog>
       <Dialog open={!!links} onOpenChange={o => !o && setLinks(null)}>

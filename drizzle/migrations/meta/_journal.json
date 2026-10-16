@@ -36,6 +36,20 @@
       "when": 1792183106700,
       "tag": "0004_assinatura_painel_atomica",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792185058396,
+      "tag": "0005_add_emissor_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792185080418,
+      "tag": "0006_paineis_emissao",
+      "breakpoints": true
     }
   ]
 }
