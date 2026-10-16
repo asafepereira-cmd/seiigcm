@@ -4,6 +4,7 @@ import { isModuleLoadError, recoverModuleLoad } from "@/lib/module-recovery";
 describe("Recuperação de carregamento", () => {
   it("reconhece a falha de importação do Safari", () => {
     expect(isModuleLoadError(new TypeError("Importing a module script failed."))).toBe(true);
+    expect(isModuleLoadError(new TypeError("undefined is not an object (evaluating 'e[t??`default`]')"))).toBe(true);
     expect(isModuleLoadError(new Error("Erro ao salvar"))).toBe(false);
   });
   it("recarrega uma vez sem entrar em ciclo", () => {
