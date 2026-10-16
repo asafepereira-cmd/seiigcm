@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { isStatusDocumento, ordenarEmitidos, STATUS_DOCUMENTO, type StatusDocumento } from "@/lib/emitidos";
 import { gerarPDF } from "@/lib/pdf";
 import { numeroFormatado, type Documento } from "@/lib/documento";
+import { podeEditarDocumento, podeComentarDocumento } from "@/lib/document-access";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
@@ -31,10 +32,20 @@ export const Route = createFileRoute("/historico")({
   component: Historico,
 });
 
-type Row = { id: string; tipo: string; numero: number; ano: number; status: StatusDocumento; assunto: string; created_at: string; dados: Documento };
+type Row = { id: string; tipo: string; numero: number; ano: number; status: StatusDocumento; assunto: string; created_at: string; dados: Documento; criado_por:string|null; analise_admin:boolean; enviado_analise_em:string|null; emitido_em:string|null };
 
 function Historico() {
-  const { ready } = useRequireSession();
+  const { ready, session, isAdmin } = useRequireSession();
+  const [detalhes,setDetalhes] = useState<Row|null>(null);
+  const [comentario,setComentario] = useState('');
+  const [comentarios,setComentarios] = useState<{id:string;texto:string;created_at:string}[]>([]);
+  const [registros,setRegistros] = useState<{gestora:string;signatario_nome:string|null;assinado_em:string|null;decisao:string|null}[]>([]);
+  async function verDetalhes(row:Row) {
+    setDetalhes(row); setComentario(''); setComentarios([]); setRegistros([]);
+    const [c,s] = await Promise.all([supabase.from('documento_comentarios').select('id,texto,created_at').eq('documento_id',row.id).order('created_at'),supabase.from('solicitacoes_assinatura').select('gestora,signatario_nome,assinado_em,decisao').eq('documento_id',row.id)]);
+    if(c.error || s.error) toast.error('Não foi possível carregar todos os registros.');
+    setComentarios(c.data??[]); setRegistros(s.data??[]);
+  }
   const [rows, setRows] = useState<Row[] | null>(null);
   const [updating, setUpdating] = useState<string[]>([]);
   const [loadError, setLoadError] = useState(false);
@@ -42,7 +53,7 @@ function Historico() {
   const load = () =>
     supabase
       .from("documentos")
-      .select("id, tipo, numero, ano, status, assunto, created_at, dados")
+       .select("id, tipo, numero, ano, status, assunto, created_at, dados, criado_por, analise_admin, enviado_analise_em, emitido_em")
       .order("ano", { ascending: false })
       .order("numero", { ascending: false })
       .then(({ data, error }) => {
@@ -84,6 +95,15 @@ function Historico() {
 
   async function alterarStatus(id: string, status: string) {
     if (!isStatusDocumento(status)) return;
+    const documento=rows?.find(r=>r.id===id);
+    if (!documento || !podeEditarDocumento(isAdmin,session?.user.id??'',documento)) return;
+    if (!isAdmin && status === 'enviado') {
+      const {error}=await supabase.rpc('submeter_analise',{_id:id});
+      if(error) toast.error('Não foi possível enviar para análise.');
+      else {toast.success('Enviado para análise do administrador');load();}
+      return;
+    }
+    if (!isAdmin) return;
     if (status === "enviado") {
       const row = rows?.find(r => r.id === id);
       if (row) { setExtras([]); setPrazo(""); setPrioridade("normal"); setTermo(""); setEnvio({ row, opcao: row.dados.despacho ?? "ambas" }); return; }
@@ -125,9 +145,10 @@ function Historico() {
                 <div className="mr-auto min-w-0">
                   <p className="font-sans font-bold">{numeroFormatado(r.dados)}</p>
                   <p className="break-words text-sm opacity-80">{r.assunto}</p>
+                  {r.analise_admin && <p className="text-sm font-semibold">Em análise pelo administrador</p>}
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <Select value={r.status} disabled={updating.includes(r.id)} onValueChange={value => alterarStatus(r.id, value)}>
+                  {isAdmin ? <Select value={r.status} disabled={updating.includes(r.id)} onValueChange={value => alterarStatus(r.id, value)}>
                     <SelectTrigger aria-label={`Status de ${numeroFormatado(r.dados)}`} className="w-40 border-status-ink/25 bg-paper/70 text-status-ink">
                       <SelectValue />
                     </SelectTrigger>
@@ -136,21 +157,23 @@ function Historico() {
                         <SelectItem key={status} value={status}>{STATUS_DOCUMENTO[status].label}</SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
-                  <Button size="sm" variant="outline" asChild>
+                  </Select> : <span className="text-sm font-semibold">{STATUS_DOCUMENTO[r.status].label}</span>}
+                  {!isAdmin && podeEditarDocumento(false,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,'enviado')}>Enviar para análise</Button>}
+                  <Button size="sm" variant="outline" onClick={()=>verDetalhes(r)}>Visualizar</Button>
+                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" variant="outline" asChild>
                     <Link to="/" search={{ id: r.id }}>
                       <Pencil className="h-4 w-4" /> Editar
                     </Link>
-                  </Button>
+                  </Button>}
                   <Button size="sm" variant="outline" onClick={() => baixar(r)}>
                     <Download className="h-4 w-4" /> PDF
                   </Button>
-                  {r.status !== "desenvolvendo" && (
+                  {isAdmin && r.status !== "desenvolvendo" && (
                     <Button size="sm" variant="outline" onClick={() => abrirLinks(r)}>
                       <Link2 className="h-4 w-4" /> Links
                     </Button>
                   )}
-                  <Button
+                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button
                     size="sm"
                     variant="outline"
                     aria-label="Excluir"
@@ -163,13 +186,19 @@ function Historico() {
                     }}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  </Button>}
                 </div>
               </li>
             ))}
           </ul>
         )}
       </main>
+      <Dialog open={!!detalhes} onOpenChange={o=>!o&&setDetalhes(null)}><DialogContent className="max-h-[85svh] overflow-y-auto"><DialogHeader><DialogTitle>{detalhes?numeroFormatado(detalhes.dados):'Documento'}</DialogTitle></DialogHeader>
+        {detalhes && <><p className="font-semibold">{detalhes.assunto}</p><p className="whitespace-pre-line">{detalhes.dados.corpo}</p><p className="text-sm">Emissor: {detalhes.dados.assinante} — {detalhes.dados.cargo}</p><p className="text-sm">Emissão: {detalhes.emitido_em?new Date(detalhes.emitido_em).toLocaleString('pt-BR',{timeZone:'America/Boa_Vista'}):'Ainda não encaminhado para assinaturas'}</p>
+        {registros.map((s,i)=><p key={i} className="text-sm">{s.signatario_nome??GESTORAS[s.gestora as GestoraKey]?.nome??s.gestora}: {s.assinado_em?`${s.decisao} · ${new Date(s.assinado_em).toLocaleString('pt-BR',{timeZone:'America/Boa_Vista'})}`:'Aguardando assinatura'}</p>)}
+        <h3 className="font-semibold">Comentários</h3>{comentarios.map(c=><p key={c.id} className="whitespace-pre-line border-b pb-2 text-sm">{c.texto}<span className="block text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString('pt-BR',{timeZone:'America/Boa_Vista'})}</span></p>)}
+        {podeComentarDocumento(detalhes.status)&&<form className="space-y-2" onSubmit={async e=>{e.preventDefault();const {error}=await supabase.from('documento_comentarios').insert({documento_id:detalhes.id,texto:comentario.trim()});if(error)toast.error('Não foi possível comentar.');else {toast.success('Comentário registrado');verDetalhes(detalhes);}}}><Textarea aria-label="Comentário" maxLength={2000} required value={comentario} onChange={e=>setComentario(e.target.value)}/><Button type="submit" disabled={!comentario.trim()}>Comentar</Button></form>}</>}
+      </DialogContent></Dialog>
       <Dialog open={!!envio} onOpenChange={o => !o && setEnvio(null)}>
         <DialogContent className="max-h-[85svh] overflow-y-auto">
           <DialogHeader><DialogTitle>Enviar para assinatura</DialogTitle></DialogHeader>

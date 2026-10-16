@@ -9,4 +9,6 @@
 - [x] Retomar versão enxuta: acesso individual e painel das gestoras.
 - [x] Adicionar prioridade, prazo, funções e signatários extras ao envio.
 - [x] Conferir envio autenticado, três assinaturas independentes, status automático, download do PDF e interface móvel.
-- [ ] Conferir entrada de cada gestora com sua conta definitiva — aguarda cadastro dos e-mails e senhas reais pelo administrador.
+- [ ] Personalizar modelos dos emissores e limitar alterações aos próprios documentos.
+- [ ] Adicionar comentários, análise prévia do administrador e acompanhamento da abertura pelas gestoras.
+- [ ] Conferir permissões e fluxo autenticado de análise.

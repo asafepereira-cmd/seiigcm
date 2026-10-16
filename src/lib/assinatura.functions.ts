@@ -11,6 +11,7 @@ export const getSignRequest = createServerFn({ method: "POST" })
     const { data: req } = await supabaseAdmin.from("solicitacoes_assinatura")
       .select("gestora, signatario_nome, signatario_funcao, termo, decisao, observacoes, assinado_em, documento_id").eq("token", data.token).maybeSingle();
     if (!req) return { found: false as const };
+    await supabaseAdmin.from('solicitacoes_assinatura').update({aberto_em:new Date().toISOString()}).eq('token',data.token).is('aberto_em',null);
     const { data: doc } = await supabaseAdmin.from("documentos").select("dados").eq("id", req.documento_id).maybeSingle();
     if (!doc) return { found: false as const };
     const d = doc.dados as Record<string, unknown>;

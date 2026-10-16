@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 export function useRequireSession(adminOnly = true) {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
@@ -16,6 +17,7 @@ export function useRequireSession(adminOnly = true) {
       setSession(data.session);
       if (data.session && adminOnly) {
         const { data: roles, error } = await supabase.from("user_roles").select("role");
+        setIsAdmin(roles?.some(r => r.role === "admin") ?? false);
         if (error || !roles?.some(r => r.role === "admin" || (r.role as string) === "emissor")) { navigate({ to: "/painel" }); return; }
       }
       setReady(true);
@@ -23,5 +25,5 @@ export function useRequireSession(adminOnly = true) {
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate, adminOnly]);
-  return { session, ready: ready && !!session };
+  return { session, isAdmin, ready: ready && !!session };
 }
