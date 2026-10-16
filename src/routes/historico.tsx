@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Copy, Download, Link2, Pencil, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { carregarExtras, carregarSolicitacoes, enviarParaAssinatura, gestorasDoDespacho, type GestoraKey } from "@/lib/assinaturas-eletronicas";
 import { GESTORAS, type Despacho } from "@/lib/documento";
@@ -50,7 +53,13 @@ function Historico() {
       });
 
   const [envio, setEnvio] = useState<{ row: Row; opcao: Despacho } | null>(null);
-  const [links, setLinks] = useState<{ row: Row; itens: { gestora: string; token: string; assinado_em: string | null }[] } | null>(null);
+  const [links, setLinks] = useState<{ row: Row; itens: { gestora: string; signatario_nome: string | null; token: string; assinado_em: string | null }[] } | null>(null);
+  const [prioridade,setPrioridade] = useState("normal");
+  const [prazo,setPrazo] = useState("");
+  const [termo,setTermo] = useState("");
+  const [extras,setExtras] = useState<{nome:string;funcao:string}[]>([]);
+  const [funcoes,setFuncoes] = useState<string[]>([]);
+  const [sending,setSending] = useState(false);
   const [banco, setBanco] = useState<Record<string, string>>({});
 
   const carregarBanco = () => supabase.from("assinaturas_gestoras").select("gestora, imagem")
@@ -72,14 +81,15 @@ function Historico() {
 
   async function confirmarEnvio() {
     if (!envio) return;
+    setSending(true);
     try {
-      await enviarParaAssinatura(envio.row.id, gestorasDoDespacho(envio.opcao), null);
+      await enviarParaAssinatura(envio.row.id, gestorasDoDespacho(envio.opcao), null,extras,prioridade,prazo || null,termo);
       setRows(current => current?.map(row => row.id === envio.row.id ? { ...row, status: "enviado" } : row) ?? null);
       const row = envio.row;
       setEnvio(null);
       toast.success("Enviado para assinatura");
       abrirLinks(row);
-    } catch { toast.error("Não foi possível enviar para assinatura."); }
+    } catch { toast.error("Não foi possível enviar. Confira os signatários; documentos já enviados não podem ser reenviados."); } finally { setSending(false); }
   }
 
   async function baixar(row: Row) {
@@ -91,7 +101,7 @@ function Historico() {
     if (!isStatusDocumento(status)) return;
     if (status === "enviado") {
       const row = rows?.find(r => r.id === id);
-      if (row) { setEnvio({ row, opcao: row.dados.despacho ?? "ambas" }); return; }
+      if (row) { setExtras([]); setPrazo(""); setPrioridade("normal"); setTermo(""); setEnvio({ row, opcao: row.dados.despacho ?? "ambas" }); return; }
     }
     setUpdating(current => [...current, id]);
     try {
@@ -108,7 +118,7 @@ function Historico() {
   }
 
   useEffect(() => {
-    if (ready) { load(); carregarBanco(); }
+    if (ready) { load(); carregarBanco(); supabase.from("funcoes_predefinidas").select("nome").order("nome").then(({data})=>setFuncoes((data??[]).map(f=>f.nome))); }
   }, [ready]);
 
   if (!ready) return null;
@@ -191,7 +201,7 @@ function Historico() {
         </section>
       </main>
       <Dialog open={!!envio} onOpenChange={o => !o && setEnvio(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[85svh] overflow-y-auto">
           <DialogHeader><DialogTitle>Enviar para assinatura</DialogTitle></DialogHeader>
           <p className="text-sm">Quem deve assinar o despacho?</p>
           <div className="flex flex-wrap gap-2">
@@ -200,7 +210,12 @@ function Historico() {
             ))}
           </div>
           <p className="text-xs text-muted-foreground">Sua emissão eletrônica será registrada agora. Será gerado um link único para cada gestora.</p>
-          <Button onClick={confirmarEnvio}>Enviar e gerar links</Button>
+          <div className="grid grid-cols-2 gap-3"><div><Label>Prioridade</Label><Select value={prioridade} onValueChange={setPrioridade}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="alta">Alta</SelectItem></SelectContent></Select></div><div><Label htmlFor="prazo">Data limite</Label><Input id="prazo" type="date" value={prazo} onChange={e=>setPrazo(e.target.value)}/></div></div>
+          <div><Label htmlFor="termo">Termo de ciência</Label><Textarea id="termo" maxLength={2000} value={termo} onChange={e=>setTermo(e.target.value)}/></div>
+          <h3 className="font-semibold">Outros signatários</h3>
+          {extras.map((extra,i)=><div key={i} className="space-y-2 border-b pb-3"><Input aria-label={`Nome do signatário ${i+1}`} maxLength={200} value={extra.nome} onChange={e=>setExtras(extras.map((x,j)=>j===i?{...x,nome:e.target.value}:x))}/><Select value={extra.funcao} onValueChange={v=>setExtras(extras.map((x,j)=>j===i?{...x,funcao:v}:x))}><SelectTrigger aria-label={`Função do signatário ${i+1}`}><SelectValue placeholder="Função"/></SelectTrigger><SelectContent>{funcoes.map(f=><SelectItem value={f} key={f}>{f}</SelectItem>)}</SelectContent></Select><Button variant="outline" size="sm" onClick={()=>setExtras(extras.filter((_,j)=>j!==i))}>Remover</Button></div>)}
+          <Button variant="outline" disabled={!funcoes.length || extras.length>=10} onClick={()=>setExtras([...extras,{nome:"",funcao:funcoes[0]??""}])}>Adicionar signatário</Button>
+          <Button disabled={sending || extras.some(e=>!e.nome.trim() || !e.funcao)} onClick={confirmarEnvio}>{sending?"Enviando...":"Assinar emissão e enviar"}</Button>
         </DialogContent>
       </Dialog>
       <Dialog open={!!links} onOpenChange={o => !o && setLinks(null)}>
@@ -211,7 +226,7 @@ function Historico() {
             const url = `${window.location.origin}/assinar/${i.token}`;
             return (
               <div key={i.token} className="space-y-1 rounded-md border p-3">
-                <p className="text-sm font-semibold">{GESTORAS[i.gestora as GestoraKey]?.nome} — {i.assinado_em ? "Assinado" : "Aguardando"}</p>
+                <p className="text-sm font-semibold">{(i.signatario_nome ?? GESTORAS[i.gestora as GestoraKey]?.nome)} — {i.assinado_em ? "Assinado" : "Aguardando"}</p>
                 <div className="flex gap-2">
                   <input readOnly value={url} className="min-w-0 flex-1 rounded border bg-paper px-2 text-xs text-paper-ink" />
                   <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /></Button>

@@ -4,7 +4,9 @@ import type { Despacho } from "./documento";
 export type GestoraKey = "pedagogica" | "administrativa";
 
 export type AssinaturaGestora = {
-  gestora: GestoraKey;
+  gestora: string;
+  nome?: string | null;
+  cargo?: string | null;
   decisao: string | null;
   observacoes: string;
   assinadoEm: string | null;
@@ -32,27 +34,14 @@ export function dataHora(iso: string) {
 
 export const SISTEMA = "S.E.I.GCM-CEMXXXIII";
 
-function novoToken() {
-  return (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, "");
-}
-
-export async function enviarParaAssinatura(documentoId: string, gestoras: GestoraKey[], emitidoEm: string | null) {
-  const { data: existentes } = await supabase.from("solicitacoes_assinatura").select("gestora").eq("documento_id", documentoId);
-  const ja = new Set((existentes ?? []).map(e => e.gestora));
-  const novas = gestoras.filter(g => !ja.has(g)).map(gestora => ({ documento_id: documentoId, gestora, token: novoToken() }));
-  if (novas.length) {
-    const { error } = await supabase.from("solicitacoes_assinatura").insert(novas);
-    if (error) throw error;
-  }
-  const { error } = await supabase.from("documentos").update({
-    status: "enviado", emitido_em: emitidoEm ?? new Date().toISOString(), updated_at: new Date().toISOString(),
-  }).eq("id", documentoId);
-  if (error) throw error;
+export async function enviarParaAssinatura(documentoId: string, gestoras: GestoraKey[], _emitidoEm: string | null, extras: {nome:string;funcao:string}[] = [], prioridade = "normal", prazo: string | null = null, termo = "") {
+  const {error} = await supabase.rpc("enviar_documento",{_id:documentoId,_gestoras:gestoras,_extras:extras,_prioridade:prioridade,_prazo:prazo as string,_termo:termo});
+  if(error) throw error;
 }
 
 export async function carregarSolicitacoes(documentoId: string) {
   const { data } = await supabase.from("solicitacoes_assinatura")
-    .select("gestora, token, decisao, observacoes, assinado_em").eq("documento_id", documentoId);
+    .select("gestora, signatario_nome, signatario_funcao, token, decisao, observacoes, assinado_em").eq("documento_id", documentoId);
   return data ?? [];
 }
 
@@ -68,7 +57,7 @@ export async function carregarExtras(documentoId: string): Promise<ExtrasPDF> {
     emitidoEm: doc.emitido_em,
     verificarUrl: `${window.location.origin}/verificar/${documentoId}`,
     assinaturas: sols.map(s => ({
-      gestora: s.gestora as GestoraKey, decisao: s.decisao, observacoes: s.observacoes, assinadoEm: s.assinado_em,
+      nome:s.signatario_nome, cargo:s.signatario_funcao, gestora: s.gestora, decisao: s.decisao, observacoes: s.observacoes, assinadoEm: s.assinado_em,
       imagem: s.assinado_em ? imagem.get(s.gestora) : undefined,
     })),
   };
