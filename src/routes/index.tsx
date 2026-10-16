@@ -111,11 +111,12 @@ function Editor() {
   }
 
   async function salvar() {
+    if (!session?.user.id) { toast.error('Entre novamente para salvar.'); return; }
     setSaving(true);
     const row = { tipo: full.tipo, numero: full.numero, ano: full.ano, assunto: full.assunto, dados: full as never, updated_at: new Date().toISOString() };
     const res = docId
       ? await supabase.from("documentos").update(row).eq("id", docId).select("id").single()
-      : await supabase.from("documentos").insert({...row, criado_por: session?.user.id}).select("id").single();
+      : await supabase.from("documentos").insert({...row, criado_por: session.user.id}).select("id").single();
     setSaving(false);
     if (res.error) return toast.error("Erro ao salvar"), undefined;
     setDocId(res.data.id);
