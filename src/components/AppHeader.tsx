@@ -19,7 +19,7 @@ export function AppHeader() {
       const { data: p } = await supabase.from("paineis").select("nome").eq("user_id", u.user?.id ?? "").maybeSingle();
       completo = p?.nome ?? "";
     }
-    const partes = completo.trim().split(/\s+/).filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+    const partes = completo.trim().split(/\s+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
     setNome(partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1]}` : partes[0] ?? "");
   }); }, []);
   return (
