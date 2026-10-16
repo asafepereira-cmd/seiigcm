@@ -16,7 +16,7 @@ export type AssinaturaGestora = {
 export type ExtrasPDF = {
   emitidoEm?: string | null;
   verificarUrl?: string;
-  emissorImagem?: string;
+  emissorImagem?: string | undefined;
   assinaturas?: AssinaturaGestora[];
 };
 
