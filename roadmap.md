@@ -6,3 +6,6 @@
 - [x] Ajustar acabamento da logo e renomear navegação para Emitidos.
 - [x] Ordenar documentos e adicionar status persistentes com cores.
 - [x] Conferir alterações e status salvos na interface.
+- [ ] Retomar versão enxuta: acesso individual e painel das gestoras.
+- [ ] Adicionar prioridade, prazo, funções e signatários extras ao envio.
+- [ ] Conferir permissões, assinatura e PDF no fluxo completo.
