@@ -13,22 +13,25 @@ export const getPainel = createServerFn({ method: 'GET' }).middleware([requireSu
     context.supabase.from('funcoes_predefinidas').select('id,nome').order('nome'),
   ]);
   if(error || requestError) throw new Error('Não foi possível carregar o painel.');
-  return {admin,roles: roles ?? [],docs: ordenarPainel(docs ?? []),requests: requests ?? [],funcoes: funcoes ?? []};
+  const meus = new Set([...(roles ?? []).map(r => r.role as string), 'user:' + context.userId]);
+  const proprias = (requests ?? []).filter(r => meus.has(r.gestora));
+  return {admin,roles: roles ?? [],docs: ordenarPainel(docs ?? []),requests: proprias,funcoes: funcoes ?? []};
 });
 
 export const criarGestora = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
-.inputValidator((d:unknown) => z.object({email:z.string().email(),password:z.string().min(8).max(128),role:z.enum(['pedagogica','administrativa'])}).parse(d))
+.inputValidator((d:unknown) => z.object({email:z.string().email(),password:z.string().min(8).max(128),role:z.enum(['pedagogica','administrativa','emissor']),nome:z.string().trim().max(200).optional(),funcao:z.string().trim().max(200).optional()}).refine(v=>v.role!=='emissor'||(v.nome&&v.funcao),'Informe nome e função.').parse(d))
 .handler(async ({data,context}) => {
   const {data: admin,error} = await context.supabase.rpc('has_role',{_user_id:context.userId,_role:'admin'});
   if(error || !admin) throw new Error('Acesso restrito.');
   const {supabaseAdmin} = await import('@/integrations/supabase/client.server');
   const {data: existing,error: lookupError} = await supabaseAdmin.from('user_roles').select('id').eq('role',data.role);
   if(lookupError) throw new Error('Não foi possível conferir os acessos.');
-  if(existing?.length) throw new Error('Esta gestora já possui um acesso.');
+  if(data.role!=='emissor' && existing?.length) throw new Error('Esta gestora já possui um acesso.');
   const {data: user,error: createError} = await supabaseAdmin.auth.admin.createUser({email:data.email,password:data.password,email_confirm:true});
   if(createError || !user.user) throw new Error('Não foi possível criar o acesso. Confira o e-mail.');
   const {error: roleError} = await supabaseAdmin.from('user_roles').insert({user_id:user.user.id,role:data.role});
-  if(roleError) { await supabaseAdmin.auth.admin.deleteUser(user.user.id); throw new Error('Não foi possível atribuir o acesso.'); }
+  const {error: painelError} = data.role==='emissor' ? await supabaseAdmin.from('paineis').insert({user_id:user.user.id,nome:data.nome!,funcao:data.funcao!}) : {error:null};
+  if(roleError || painelError) { await supabaseAdmin.auth.admin.deleteUser(user.user.id); throw new Error('Não foi possível atribuir o acesso.'); }
   return {ok:true};
 });
 
