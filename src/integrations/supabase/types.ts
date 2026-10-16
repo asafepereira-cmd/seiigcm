@@ -42,6 +42,8 @@ export type Database = {
           emitido_em: string | null
           id: string
           numero: number
+          prazo: string | null
+          prioridade: string
           status: string
           tipo: string
           updated_at: string
@@ -55,6 +57,8 @@ export type Database = {
           emitido_em?: string | null
           id?: string
           numero: number
+          prazo?: string | null
+          prioridade?: string
           status?: string
           tipo?: string
           updated_at?: string
@@ -68,9 +72,29 @@ export type Database = {
           emitido_em?: string | null
           id?: string
           numero?: number
+          prazo?: string | null
+          prioridade?: string
           status?: string
           tipo?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      funcoes_predefinidas: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
         }
         Relationships: []
       }
@@ -83,6 +107,9 @@ export type Database = {
           gestora: string
           id: string
           observacoes: string
+          signatario_funcao: string | null
+          signatario_nome: string | null
+          termo: string
           token: string
         }
         Insert: {
@@ -93,6 +120,9 @@ export type Database = {
           gestora: string
           id?: string
           observacoes?: string
+          signatario_funcao?: string | null
+          signatario_nome?: string | null
+          termo?: string
           token: string
         }
         Update: {
@@ -103,6 +133,9 @@ export type Database = {
           gestora?: string
           id?: string
           observacoes?: string
+          signatario_funcao?: string | null
+          signatario_nome?: string | null
+          termo?: string
           token?: string
         }
         Relationships: [
@@ -115,15 +148,39 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "pedagogica" | "administrativa"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -250,6 +307,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "pedagogica", "administrativa"],
+    },
   },
 } as const
