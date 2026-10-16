@@ -50,6 +50,13 @@
       "when": 1792185080418,
       "tag": "0006_paineis_emissao",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792186264116,
+      "tag": "0007_emitter_review_and_analysis",
+      "breakpoints": true
     }
   ]
 }

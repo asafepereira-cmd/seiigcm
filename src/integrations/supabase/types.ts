@@ -32,14 +32,48 @@ export type Database = {
         }
         Relationships: []
       }
+      documento_comentarios: {
+        Row: {
+          autor_id: string
+          created_at: string
+          documento_id: string
+          id: string
+          texto: string
+        }
+        Insert: {
+          autor_id?: string
+          created_at?: string
+          documento_id: string
+          id?: string
+          texto: string
+        }
+        Update: {
+          autor_id?: string
+          created_at?: string
+          documento_id?: string
+          id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documento_comentarios_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documentos: {
         Row: {
+          analise_admin: boolean
           ano: number
           assunto: string
           created_at: string
           criado_por: string | null
           dados: Json
           emitido_em: string | null
+          enviado_analise_em: string | null
           id: string
           numero: number
           prazo: string | null
@@ -49,12 +83,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          analise_admin?: boolean
           ano: number
           assunto?: string
           created_at?: string
           criado_por?: string | null
           dados?: Json
           emitido_em?: string | null
+          enviado_analise_em?: string | null
           id?: string
           numero: number
           prazo?: string | null
@@ -64,12 +100,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          analise_admin?: boolean
           ano?: number
           assunto?: string
           created_at?: string
           criado_por?: string | null
           dados?: Json
           emitido_em?: string | null
+          enviado_analise_em?: string | null
           id?: string
           numero?: number
           prazo?: string | null
@@ -121,10 +159,12 @@ export type Database = {
       }
       solicitacoes_assinatura: {
         Row: {
+          aberto_em: string | null
           assinado_em: string | null
           created_at: string
           decisao: string | null
           documento_id: string
+          em_analise_em: string | null
           gestora: string
           id: string
           observacoes: string
@@ -134,10 +174,12 @@ export type Database = {
           token: string
         }
         Insert: {
+          aberto_em?: string | null
           assinado_em?: string | null
           created_at?: string
           decisao?: string | null
           documento_id: string
+          em_analise_em?: string | null
           gestora: string
           id?: string
           observacoes?: string
@@ -147,10 +189,12 @@ export type Database = {
           token: string
         }
         Update: {
+          aberto_em?: string | null
           assinado_em?: string | null
           created_at?: string
           decisao?: string | null
           documento_id?: string
+          em_analise_em?: string | null
           gestora?: string
           id?: string
           observacoes?: string
@@ -192,6 +236,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      devolver_analise: { Args: { _id: string }; Returns: undefined }
       enviar_documento: {
         Args: {
           _extras: Json
@@ -210,11 +255,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      marcar_analise: { Args: { _id: string }; Returns: undefined }
       pode_emitir: { Args: { _uid: string }; Returns: boolean }
       registrar_assinatura: {
         Args: { _decisao: string; _observacoes: string; _token: string }
         Returns: undefined
       }
+      submeter_analise: { Args: { _id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "pedagogica" | "administrativa" | "emissor"
