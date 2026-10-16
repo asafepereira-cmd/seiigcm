@@ -171,12 +171,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      enviar_documento: {
+        Args: {
+          _extras: Json
+          _gestoras: string[]
+          _id: string
+          _prazo: string
+          _prioridade: string
+          _termo: string
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      registrar_assinatura: {
+        Args: { _decisao: string; _observacoes: string; _token: string }
+        Returns: undefined
       }
     }
     Enums: {

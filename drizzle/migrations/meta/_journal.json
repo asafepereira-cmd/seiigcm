@@ -29,6 +29,13 @@
       "when": 1792139138906,
       "tag": "0003_painel_gestoras",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792183106700,
+      "tag": "0004_assinatura_painel_atomica",
+      "breakpoints": true
     }
   ]
 }

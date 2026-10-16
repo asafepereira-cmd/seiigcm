@@ -245,7 +245,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     const marca = (d: string) => assinadas.filter(a => a?.decisao === d).length ? "X" : " ";
     pdf.text([`(${marca("deferido")}) Deferido`, `(${marca("indeferido")}) Indeferido`], 20, 60, { lineHeightFactor: 1 });
     pdf.text("Observações:", 20, 73);
-    const obs = assinadas.filter(a => a?.observacoes.trim()).map(a => (chaves.length > 1 ? `${GESTORAS[a!.gestora].nome.split(" ")[0]}: ` : "") + a!.observacoes.trim()).join(" ");
+    const obs = assinadas.flatMap(a => a?.observacoes.trim() ? [(chaves.length > 1 ? `${GESTORAS[a.gestora as keyof typeof GESTORAS]?.nome.split(" ")[0] ?? ""}: ` : "") + a.observacoes.trim()] : []).join(" ");
     if (obs) {
       pdf.setFontSize(10);
       pdf.text((pdf.splitTextToSize(obs, 166) as string[]).slice(0, 6), 21, 77.2, { lineHeightFactor: 1.2 });
@@ -274,11 +274,27 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     let yy = 172;
     assinadas.forEach((a, i) => {
       if (!a?.assinadoEm) return;
-      const g = gestoras[i]!;
+      const g = gestoras[i];
+      if (!g) return;
       const { data, hora } = dataHora(a.assinadoEm);
       yy += carimbo(`Documento assinado eletronicamente por ${g.nome}, ${g.cargo}, em ${data}, às ${hora}, via ${SISTEMA}. Decisão: ${a.decisao === "indeferido" ? "Indeferido" : "Deferido"}.`, yy) + 3;
     });
+    y = yy;
     blocoQR(yy + 2);
+  }
+
+  const outras = extras.assinaturas?.filter(a => a.nome && a.assinadoEm) ?? [];
+  if (outras.length) {
+    y += 28;
+    for (const a of outras) {
+      if (!a.assinadoEm) continue;
+      const {data,hora} = dataHora(a.assinadoEm);
+      const text = `Documento assinado eletronicamente por ${a.nome}, ${a.cargo ?? ""}, em ${data}, às ${hora}, via ${SISTEMA}. Decisão: ${a.decisao === "indeferido" ? "Indeferido" : "Deferido"}.${a.observacoes ? " Observações: " + a.observacoes : ""}`;
+      pdf.setFontSize(9);
+      ensure(Math.max(13,(pdf.splitTextToSize(text,TW-18) as string[]).length*4+5)+3);
+      y += carimbo(text,y)+3;
+    }
+    ensure(24); blocoQR(y+2);
   }
 
   const nome = `${doc.tipo.toUpperCase().replace(/[^A-Z]/gi, "_")}_${String(doc.numero).padStart(3, "0")}_${doc.ano}.pdf`;

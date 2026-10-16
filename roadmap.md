@@ -6,3 +6,7 @@
 - [x] Ajustar acabamento da logo e renomear navegação para Emitidos.
 - [x] Ordenar documentos e adicionar status persistentes com cores.
 - [x] Conferir alterações e status salvos na interface.
+- [x] Retomar versão enxuta: acesso individual e painel das gestoras.
+- [x] Adicionar prioridade, prazo, funções e signatários extras ao envio.
+- [x] Conferir envio autenticado, três assinaturas independentes, status automático, download do PDF e interface móvel.
+- [ ] Conferir entrada de cada gestora com sua conta definitiva — aguarda cadastro dos e-mails e senhas reais pelo administrador.

@@ -53,7 +53,7 @@ function Assinar() {
         {req === null ? <p>Carregando...</p> : !req.found ? (
           <p>Link de assinatura inválido.</p>
         ) : (() => {
-          const g = GESTORAS[req.gestora];
+          const g = req.nome ? {nome:req.nome,cargo:req.cargo ?? ""} : GESTORAS[req.gestora];
           return (
             <div className="space-y-4">
               <div>
@@ -70,6 +70,7 @@ function Assinar() {
                 </div>
               ) : (
                 <>
+                  {req.termo && <p className="whitespace-pre-line text-sm">{req.termo}</p>}
                   <p className="text-sm">Eu, <b>{g.nome}</b>, {g.cargo}, declaro que li e tomei ciência do conteúdo deste documento, emitido por {req.doc.assinante}, e registro abaixo meu despacho.</p>
                   <div className="flex gap-2">
                     <Button variant={decisao === "deferido" ? "default" : "outline"} onClick={() => setDecisao("deferido")}>Deferido</Button>

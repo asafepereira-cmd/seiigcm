@@ -36,8 +36,8 @@ function Verificar() {
             <p><b>Assunto:</b> {v.assunto}</p>
             <Linha texto={`Emitido eletronicamente por ${v.assinante}, ${v.cargo}, em ${dataHora(v.emitidoEm).data}, às ${dataHora(v.emitidoEm).hora}.`} />
             {v.assinaturas.map(a => a.assinadoEm ? (
-              <Linha key={a.gestora} texto={`Assinado eletronicamente por ${GESTORAS[a.gestora].nome}, ${GESTORAS[a.gestora].cargo}, em ${dataHora(a.assinadoEm).data}, às ${dataHora(a.assinadoEm).hora}. Decisão: ${a.decisao === "indeferido" ? "Indeferido" : "Deferido"}.`} />
-            ) : <p key={a.gestora} className="text-sm text-muted-foreground">Aguardando assinatura de {GESTORAS[a.gestora].nome}.</p>)}
+              <Linha key={a.gestora} texto={`Assinado eletronicamente por ${(a.nome ?? GESTORAS[a.gestora]?.nome ?? "Signatário")}, ${(a.cargo ?? GESTORAS[a.gestora]?.cargo ?? "")}, em ${dataHora(a.assinadoEm).data}, às ${dataHora(a.assinadoEm).hora}. Decisão: ${a.decisao === "indeferido" ? "Indeferido" : "Deferido"}.`} />
+            ) : <p key={a.gestora} className="text-sm text-muted-foreground">Aguardando assinatura de {(a.nome ?? GESTORAS[a.gestora]?.nome ?? "Signatário")}.</p>)}
           </>
         )}
       </div>

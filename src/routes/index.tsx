@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { reviewWithAI } from "@/lib/server.functions";
 import { gerarPDF } from "@/lib/pdf";
+import { carregarExtras } from "@/lib/assinaturas-eletronicas";
 import { lerAssinaturaPng } from "@/lib/assinatura";
 import { dataExtenso, modeloGravacao, numeroFormatado, type Documento, type Participante } from "@/lib/documento";
 
@@ -225,8 +226,9 @@ function Editor() {
               onClick={async () => {
                 setGenerating(true);
                 try {
-                  await salvar();
-                  await gerarPDF(full);
+                  const savedId = await salvar();
+                  if (!savedId) return;
+                  await gerarPDF(full, true, await carregarExtras(savedId));
                 } catch (error) {
                   toast.error(error instanceof Error ? error.message : "Não foi possível gerar o PDF.");
                 } finally { setGenerating(false); }
