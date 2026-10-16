@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { lerAssinaturaPng } from '@/lib/assinatura';
 import { toast } from 'sonner';
-const options = queryOptions({queryKey:['painel'],queryFn:()=>getPainel()});
+const options = queryOptions({queryKey:['painel'],queryFn:()=>getPainel(),refetchInterval:15_000,refetchOnWindowFocus:'always',refetchOnReconnect:'always'});
 export const Route = createFileRoute('/_authenticated/painel')({
   loader:({context})=>context.queryClient.ensureQueryData(options),
   head:()=>({meta:[{title:'Painel de aprovação — CCM'},{name:'description',content:'Aprovações, prazos e acessos individuais do CEM XXXIII.'},{property:'og:title',content:'Painel de aprovação — CCM'},{property:'og:description',content:'Aprovações e acessos individuais do CCM.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),
