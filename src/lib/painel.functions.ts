@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { ordenarPainel } from './painel';
+import { ordenarPainel, solicitacoesDoUsuario } from './painel';
 
 export const getPainel = createServerFn({ method: 'GET' }).middleware([requireSupabaseAuth]).handler(async ({context}) => {
   const {data: roles,error: roleError} = await context.supabase.from('user_roles').select('role');
@@ -13,8 +13,7 @@ export const getPainel = createServerFn({ method: 'GET' }).middleware([requireSu
     context.supabase.from('funcoes_predefinidas').select('id,nome').order('nome'),
   ]);
   if(error || requestError) throw new Error('Não foi possível carregar o painel.');
-  const meus = new Set([...(roles ?? []).map(r => r.role as string), 'user:' + context.userId]);
-  const proprias = (requests ?? []).filter(r => meus.has(r.gestora));
+  const proprias = solicitacoesDoUsuario(requests ?? [], (roles ?? []).map(r => r.role), context.userId);
   return {admin,roles: roles ?? [],docs: ordenarPainel(docs ?? []),requests: admin ? requests ?? [] : proprias,funcoes: funcoes ?? []};
 });
 

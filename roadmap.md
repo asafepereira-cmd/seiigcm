@@ -12,4 +12,5 @@
 - [ ] Personalizar modelos dos emissores e limitar alterações aos próprios documentos.
 - [ ] Adicionar comentários, análise prévia do administrador e acompanhamento da abertura pelas gestoras.
 - [ ] Conferir permissões e fluxo autenticado de análise.
-- [ ] Corrigir leitura de documentos atribuídos à Ana Beatriz e atualização automática do painel.
+- [x] Corrigir leitura de documentos atribuídos à Ana Beatriz e atualização automática do painel; testes passaram e atualização automática conferida no administrador.
+- [ ] Conferir o documento recebido dentro da conta de Ana Beatriz — acesso de teste não autorizado.
