@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
 import { AppHeader } from "@/components/AppHeader";
+import { DocumentPreview } from "@/components/DocumentPreview";
+import { Link } from "@tanstack/react-router";
 import { DispatchPreview } from "@/components/DispatchPreview";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { richParagraphs } from "@/lib/rich-text";
@@ -20,7 +22,7 @@ import { lerAssinaturaPng } from "@/lib/assinatura";
 import { dataExtenso, modeloGravacao, numeroFormatado, type Documento, type Participante } from "@/lib/documento";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (s: Record<string, unknown>): { id?: string } => (typeof s['id'] === "string" ? { id: s['id'] as string } : {}),
+  validateSearch: (s: Record<string, unknown>): { id?: string; processo?: string } => ({ ...(typeof s["id"] === "string" ? {id:s["id"]} : {}), ...(typeof s["processo"] === "string" ? {processo:s["processo"]} : {}) }),
   head: () => ({
     meta: [
       { title: "Novo documento — SEII GCM" },
@@ -52,7 +54,7 @@ async function proximoNumero(ano: number) {
 
 function Editor() {
   const { ready, session, isAdmin } = useRequireSession();
-  const { id } = Route.useSearch();
+  const { id, processo } = Route.useSearch();
   const navigate = useNavigate();
   const [doc, setDoc] = useState<Documento | null>(null);
   const [docId, setDocId] = useState<string | undefined>(id);
@@ -113,13 +115,12 @@ function Editor() {
   async function salvar() {
     if (!session?.user.id) { toast.error('Entre novamente para salvar.'); return; }
     setSaving(true);
-    const row = { tipo: full.tipo, numero: full.numero, ano: full.ano, assunto: full.assunto, dados: full as never, updated_at: new Date().toISOString() };
-    const res = docId
-      ? await supabase.from("documentos").update(row).eq("id", docId).select("id").single()
-      : await supabase.from("documentos").insert({...row, criado_por: session.user.id}).select("id").single();
+    const {data:saved,error} = await supabase.rpc('salvar_documento',{_id:docId as string,_dados:full as never,_processo:processo as string});
+    const res = error || !saved ? {error:error??new Error('Falha'),data:null} : await supabase.from('documentos').select('id,dados').eq('id',saved).single();
     setSaving(false);
-    if (res.error) return toast.error("Erro ao salvar"), undefined;
+    if (res.error || !res.data) return toast.error("Erro ao salvar"), undefined;
     setDocId(res.data.id);
+    setDoc(res.data.dados as unknown as Documento);
     toast.success("Documento salvo");
     return res.data.id;
   }
@@ -138,16 +139,17 @@ function Editor() {
             )}
           </div>
 
+          <div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/processos">Novo processo</Link></Button><Button variant="outline" onClick={()=>navigate({to:"/",search:{}})}>Novo documento</Button></div>
           <Group title="Identificação">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <F label="Tipo">
-                <select className="h-9 w-full rounded-md border border-input bg-card px-2 text-sm" value={doc.tipo} onChange={(e) => set("tipo", e.target.value)}>
+                <select disabled={!!docId} className="h-9 w-full rounded-md border border-input bg-card px-2 text-sm" value={doc.tipo} onChange={(e) => set("tipo", e.target.value)}>
                   <option>Ofício</option>
                   <option>Memorando</option>
                 </select>
               </F>
-              <F label="Número"><Input type="number" min={1} value={doc.numero} onChange={(e) => set("numero", Number(e.target.value))} /></F>
-              <F label="Ano"><Input type="number" value={doc.ano} onChange={(e) => set("ano", Number(e.target.value))} /></F>
+              <F label="Número"><Input type="number" disabled min={1} value={doc.numero} onChange={(e) => set("numero", Number(e.target.value))} /></F>
+              <F label="Ano"><Input type="number" disabled={!!docId} value={doc.ano} onChange={(e) => set("ano", Number(e.target.value))} /></F>
               <F label="Sigla"><Input value={doc.sigla} onChange={(e) => set("sigla", e.target.value)} /></F>
               <F label="Cidade"><Input value={doc.cidade} onChange={(e) => set("cidade", e.target.value)} /></F>
               <F label="Data" className="col-span-1 sm:col-span-3"><Input type="date" value={doc.data} onChange={(e) => set("data", e.target.value)} /></F>
@@ -236,7 +238,8 @@ function Editor() {
                 try {
                   const savedId = await salvar();
                   if (!savedId) return;
-                  await gerarPDF(full, true, await carregarExtras(savedId));
+                  const {data:saved} = await supabase.from("documentos").select("dados").eq("id",savedId).single();
+                  if(saved) await gerarPDF(saved.dados as unknown as Documento, true, await carregarExtras(savedId));
                 } catch (error) {
                   toast.error(error instanceof Error ? error.message : "Não foi possível gerar o PDF.");
                 } finally { setGenerating(false); }
@@ -249,7 +252,7 @@ function Editor() {
 
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <p className="mb-2 text-xs font-medium uppercase tracking-wider text-primary-foreground">Pré-visualização</p>
-          <Preview doc={full} />
+          <DocumentPreview doc={full} />
           {doc.despacho && <div className="mt-5"><p className="mb-2 text-xs font-medium uppercase tracking-wider text-primary-foreground">Página de despacho</p><DispatchPreview opcao={doc.despacho} /></div>}
         </aside>
       </main>
@@ -275,36 +278,3 @@ function F({ label, children, className }: { label: string; children: React.Reac
   );
 }
 
-function Preview({ doc }: { doc: Documento }) {
-  const paras = doc.corpo.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
-  return (
-    <div aria-label="Prévia do documento" className="document-preview aspect-[210/297] w-full overflow-auto rounded-sm bg-paper p-[6%] font-[Times_New_Roman,serif] text-[10px] text-paper-ink shadow-paper lg:text-[11px]">
-      <div className="flex items-center gap-2 border-b border-paper-ink/60 pb-1">
-        <img src="/brand/brasao.png" alt="" className="w-[11%]" />
-        <div className="document-header-text flex-1 text-center text-[0.8em] font-bold">
-          GOVERNO DO ESTADO DE RORAIMA<br />SECRETARIA DE EDUCAÇÃO E DESPORTO<br />COLÉGIO ESTADUAL MILITARIZADO FERNANDO GRANGEIRO DE MENEZES<br />COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII
-        </div>
-        <img src="/brand/midia.png" alt="" className="w-[15%]" />
-      </div>
-      <p className="mt-4 text-[1.1em] font-bold">{numeroFormatado(doc)}</p>
-      <p className="text-right font-bold">{doc.cidade} - {dataExtenso(doc.data)}</p>
-      <p className="mt-3 text-justify"><b>Para:</b> {doc.para}</p>
-      <p className="text-justify"><b>De:</b> {doc.de}</p>
-      <p className="mt-2 text-justify"><b>Assunto:</b> {doc.assunto}</p>
-      {doc.vocativo && <p className="mt-2 text-justify">{doc.vocativo}</p>}
-       {doc.corpoFormatado ? richParagraphs(doc.corpoFormatado).map((runs, i) => <p key={i} className="mt-2 whitespace-pre-line text-justify">{runs.map((run, j) => <span key={j} className={`${run.bold ? "font-bold" : ""} ${run.italic ? "italic" : ""} ${run.underline ? "underline" : ""}`}>{run.text}</span>)}</p>) : paras.map((p, i) => <p key={i} className="mt-2 text-justify">{p}</p>)}
-      {doc.lista.length > 0 && (
-        <div className="mt-2 text-justify">
-          <b>{doc.tituloLista || "Participantes"}:</b>
-          {doc.lista.map((p, i) => <div key={i}>{p.funcao ? `${p.nome} – ${p.funcao}` : p.nome}</div>)}
-        </div>
-      )}
-      {doc.fecho && <p className="mt-2 text-justify">{doc.fecho}</p>}
-      <div className="document-signature-text mx-auto mt-8 text-center font-bold">
-        {doc.assinaturaPng && <img src={doc.assinaturaPng} alt="Assinatura do documento" className="mx-auto mb-1 h-14 max-w-[42%] object-contain" />}
-        <div className="mx-auto mb-1 w-1/2 border-t border-paper-ink" />
-        {doc.assinante.toUpperCase()}<br />{doc.cargo}
-      </div>
-    </div>
-  );
-}

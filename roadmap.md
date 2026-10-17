@@ -14,3 +14,8 @@
 - [ ] Conferir permissões e fluxo autenticado de análise.
 - [x] Corrigir leitura de documentos atribuídos à Ana Beatriz e atualização automática do painel; testes passaram e atualização automática conferida no administrador.
 - [ ] Conferir o documento recebido dentro da conta de Ana Beatriz — acesso de teste não autorizado.
+- [ ] Preservar versões com mesmo número e adicionar assinantes após envio, com deferimento ou ciência.
+- [ ] Unificar visualização, comentários e exportação identificada em todos os painéis.
+- [ ] Administrar todas as contas e permissões, incluindo painéis sem emissão.
+- [ ] Criar processos com ofício validado, acessos restritos, documentos internos e anexos PDF.
+- [ ] Testar regras e conferir fluxo autenticado das novas opções.
