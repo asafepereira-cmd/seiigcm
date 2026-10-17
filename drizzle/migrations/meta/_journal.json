@@ -64,6 +64,13 @@
       "when": 1792188741016,
       "tag": "0008_individual_signer_document_read",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792262447246,
+      "tag": "0009_processos_versoes_permissoes",
+      "breakpoints": true
     }
   ]
 }
