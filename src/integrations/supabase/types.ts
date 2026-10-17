@@ -404,6 +404,16 @@ export type Database = {
       acesso_processo: { Args: { _id: string; _uid: string }; Returns: boolean }
       conta_ativa: { Args: { _uid: string }; Returns: boolean }
       devolver_analise: { Args: { _id: string }; Returns: undefined }
+      encaminhar_documento: {
+        Args: {
+          _id: string
+          _prazo?: string
+          _prioridade?: string
+          _signatarios: Json
+          _termo?: string
+        }
+        Returns: undefined
+      }
       enviar_documento: {
         Args: {
           _extras: Json
