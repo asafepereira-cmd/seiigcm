@@ -14,10 +14,11 @@ export function AppHeader() {
     const roles = (data ?? []).map(r => r.role as string);
     setAdmin(roles.includes("admin")); setEmissor(roles.includes("admin") || roles.includes("emissor"));
     let completo = roles.includes("admin") ? "Asafe Felix" : roles.includes("pedagogica") ? "Nubia Andrade" : roles.includes("administrativa") ? "Adriana Domingues" : "";
-    if (!roles.includes("admin") && roles.includes("emissor")) {
+    if (!roles.includes("admin")) {
       const { data: u } = await supabase.auth.getUser();
-      const { data: p } = await supabase.from("paineis").select("nome").eq("user_id", u.user?.id ?? "").maybeSingle();
-      completo = p?.nome ?? "";
+      const { data: p } = await supabase.from("paineis").select("nome,pode_emitir,ativo").eq("user_id", u.user?.id ?? "").maybeSingle();
+      completo = p?.nome ?? completo;
+      setEmissor(!!p?.pode_emitir && p.ativo);
     }
     const partes = completo.trim().split(/\s+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
     setNome(partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1]}` : partes[0] ?? "");
@@ -30,13 +31,14 @@ export function AppHeader() {
            <p className="font-sans text-base font-bold sm:text-lg">SEII GCM</p>
           <p className="text-xs opacity-80">{nome ? `Olá! ${nome}` : "CCM · CEM XXXIII"}</p>
         </div>
-        <nav className="flex items-center gap-1 text-sm">
-          {emissor && <><Link to="/" className="rounded-md px-3 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }} activeOptions={{ exact: true, includeSearch: false }}>
+        <nav className="flex items-center flex-wrap justify-end gap-1 text-xs sm:text-sm">
+          {emissor && <><Link to="/" className="rounded-md px-2 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }} activeOptions={{ exact: true, includeSearch: false }}>
             Novo
           </Link>
-          <Link to="/historico" className="rounded-md px-3 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }}>
+          </>}<Link to="/historico" className="rounded-md px-2 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }}>
             Emitidos
-          </Link></>}
+          </Link>
+          <Link to="/processos" className="rounded-md px-2 py-1.5 hover:bg-primary-foreground/10">Processos</Link>
           <Link to="/painel" className="rounded-md px-2 py-1.5 hover:bg-primary-foreground/10">{admin ? "Admin" : "Painel"}</Link>
           <Button
             size="icon"
