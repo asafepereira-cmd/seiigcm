@@ -1,17 +1,9 @@
 import type { Documento } from "./documento";
 import { assinantesDespacho, dataExtenso, identificacaoDocumento } from "./documento";
-import { dataHora, gestorasDoDespacho, SISTEMA, type ExtrasPDF } from "./assinaturas-eletronicas";
+import { dataHora, gestorasDoDespacho, type ExtrasPDF } from "./assinaturas-eletronicas";
 import { GESTORAS } from "./documento";
 import { fontStyle, richParagraphs, wrapRichParagraph, type TextRun } from "./rich-text";
-import { textoExportacao } from "./workflow";
-import { supabase } from "@/integrations/supabase/client";
-
-async function nomePainelAtual(): Promise<string> {
-  const { data: u } = await supabase.auth.getUser();
-  if (!u.user) return "Usuário não identificado";
-  const { data: p } = await supabase.from("paineis").select("nome").eq("user_id", u.user.id).maybeSingle();
-  return p?.nome ?? "Asafe Pereira da Silva Felix — Coordenação de Comunicação e Mídia";
-}
+import signatureSeal from '@/assets/seii-signature-seal.png.asset.json';
 
 async function loadImage(src: string): Promise<string> {
   const res = await fetch(src);
@@ -33,7 +25,7 @@ const HEADER = [
 export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF = {}) {
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ unit: "mm", format: "a4" });
-  const [brasao, midia] = await Promise.all([loadImage("/brand/brasao.png"), loadImage("/brand/midia.png")]);
+  const [brasao, midia, seal] = await Promise.all([loadImage("/brand/brasao.png"), loadImage("/brand/midia.png"), loadImage(signatureSeal.url)]);
   const W = 210, ML = 20, MR = 20, TW = W - ML - MR, BOTTOM = 280;
   const PT_MM = 25.4 / 72;
   const LH = 12 * PT_MM * 1.26;
@@ -206,48 +198,67 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   y += SIGNATURE_LH;
   pdf.text(doc.cargo, 105, y, { align: "center" });
 
-  // Carimbo eletrônico: quadro com ícone de selo e texto.
+  // Use the original supplied seal and a ruled, black Times signature block.
+  const stampLines = (text: string) => {
+    const prefix = 'Documento assinado eletronicamente por ';
+    const end = text.indexOf(', em ', prefix.length);
+    const runs: TextRun[] = end > 0 ? [
+      { text: prefix, bold: false, italic: false, underline: false },
+      { text: text.slice(prefix.length, end), bold: true, italic: false, underline: false },
+      { text: text.slice(end), bold: false, italic: false, underline: false },
+    ] : [{ text, bold: false, italic: false, underline: false }];
+    pdf.setFontSize(10);
+    return wrapRichParagraph(runs, TW - 30, run => {
+      pdf.setFont('times', fontStyle(run));
+      return pdf.getTextWidth(run.text);
+    });
+  };
+  const stampHeight = (text: string) => Math.max(26, stampLines(text).length * 4.5 + 8);
   const carimbo = (text: string, top: number) => {
-    pdf.setFont("times", "normal");
-    pdf.setFontSize(9);
-    const lines: string[] = pdf.splitTextToSize(text, TW - 18);
-    const h = Math.max(13, lines.length * 4 + 5);
-    pdf.setDrawColor(30, 58, 138);
-    pdf.setLineWidth(0.3);
-    pdf.roundedRect(ML, top, TW, h, 2, 2);
-    const cx = ML + 7, cy = top + h / 2;
-    pdf.setFillColor(30, 58, 138);
-    pdf.circle(cx, cy, 4, "F");
-    pdf.setDrawColor(255, 255, 255);
-    pdf.setLineWidth(0.7);
-    pdf.line(cx - 2, cy, cx - 0.5, cy + 1.6);
-    pdf.line(cx - 0.5, cy + 1.6, cx + 2.2, cy - 1.6);
-    pdf.setDrawColor(0, 0, 0);
-    pdf.setTextColor(20, 30, 60);
-    pdf.text(lines, ML + 14, top + (h - lines.length * 4) / 2 + 3, { lineHeightFactor: 1.15 });
+    const lines = stampLines(text);
+    const h = Math.max(26, lines.length * 4.5 + 8);
     pdf.setTextColor(0, 0, 0);
+    pdf.setDrawColor(160, 160, 160);
     pdf.setLineWidth(0.2);
+    pdf.line(ML, top, W - MR, top);
+    pdf.line(ML, top + h, W - MR, top + h);
+    pdf.addImage(seal, 'PNG', ML + 1, top + (h - 18) / 2, 26.5, 18);
+    lines.forEach((line, i) => {
+      let x = ML + 30;
+      line.runs.forEach(run => {
+        pdf.setFont('times', fontStyle(run));
+        pdf.text(run.text, x, top + (h - lines.length * 4.5) / 2 + 3.5 + i * 4.5);
+        x += pdf.getTextWidth(run.text);
+      });
+    });
+    pdf.setDrawColor(0, 0, 0);
     return h;
   };
   const qr = extras.verificarUrl ? await (await import("qrcode")).toDataURL(extras.verificarUrl, { margin: 0, width: 240 }) : null;
   const blocoQR = (top: number) => {
     if (!qr || !extras.verificarUrl) return;
-    pdf.addImage(qr, "PNG", ML, top, 20, 20);
+    pdf.addImage(qr, "PNG", ML + 1, top + 2, 22, 22);
     pdf.setFont("times", "normal");
-    pdf.setFontSize(8.5);
-    pdf.text(["A autenticidade do documento pode ser conferida no endereço:", extras.verificarUrl, `informando o código verificador do documento. Sistema ${SISTEMA}`], ML + 24, top + 7, { lineHeightFactor: 1.3 });
+    pdf.setFontSize(9);
+    const code = new URL(extras.verificarUrl).pathname.split('/').filter(Boolean).pop() ?? '';
+    const lines = pdf.splitTextToSize(`A autenticidade do documento pode ser conferida no endereço ${extras.verificarUrl}, informando o código verificador ${code}.`, TW - 28) as string[];
+    pdf.text(lines, ML + 28, top + 7, { lineHeightFactor: 1.2 });
+    pdf.setDrawColor(160, 160, 160);
+    pdf.line(ML, top + 27, W - MR, top + 27);
+    pdf.setDrawColor(0, 0, 0);
   };
 
   if (extras.emitidoEm) {
     const { data, hora } = dataHora(extras.emitidoEm);
     pdf.setFontSize(12);
     y += 8;
-    ensure(18);
-    y += carimbo(`Documento assinado eletronicamente por ${doc.assinante.toUpperCase()}, ${doc.cargo}, em ${data}, às ${hora}, conforme portaria interna de legalização do ${SISTEMA}.`, y);
+    const text = `Documento assinado eletronicamente por ${doc.assinante.toUpperCase()}, ${doc.cargo}, em ${data}, às ${hora}, conforme portaria interna de legalização do S.E.I.I GCM.`;
+    ensure(stampHeight(text));
+    y += carimbo(text, y);
   }
 
   const gestoras = assinantesDespacho(doc.despacho);
-  if (!gestoras.length && qr) { y += 4; ensure(22); blocoQR(y); }
+  if (!gestoras.length && qr) { y += 4; ensure(28); blocoQR(y); }
   if (gestoras.length) {
     pdf.addPage();
     header(true);
@@ -294,30 +305,28 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
       const g = gestoras[i];
       if (!g) return;
       const { data, hora } = dataHora(a.assinadoEm);
-      yy += carimbo(`Documento assinado eletronicamente por ${g.nome}, ${g.cargo}, em ${data}, às ${hora}, conforme portaria interna de legalização do ${SISTEMA}. Decisão: ${a.decisao === "indeferido" ? "Indeferido" : "Deferido"}.`, yy) + 3;
+      const text = `Documento assinado eletronicamente por ${g.nome}, ${g.cargo}, em ${data}, às ${hora}, conforme portaria interna de legalização do S.E.I.I GCM.`;
+      y = yy;
+      ensure(stampHeight(text) + 3);
+      yy = y + carimbo(text, y) + 3;
     });
     y = yy;
-    blocoQR(yy + 2);
+    ensure(30); blocoQR(y + 2);
   }
 
-  const outras = extras.assinaturas?.filter(a => a.nome && a.assinadoEm) ?? [];
+  const outras = extras.assinaturas?.filter(a => a.nome && a.assinadoEm && !(doc.despacho && gestorasDoDespacho(doc.despacho).includes(a.gestora as 'administrativa' | 'pedagogica'))) ?? [];
   if (outras.length) {
-    y += 28;
+    y += 32;
     for (const a of outras) {
       if (!a.assinadoEm) continue;
       const {data,hora} = dataHora(a.assinadoEm);
-      const text = `Documento assinado eletronicamente por ${a.nome}, ${a.cargo ?? ""}, em ${data}, às ${hora}, via ${SISTEMA}. Decisão: ${a.decisao === "indeferido" ? "Indeferido" : "Deferido"}.${a.observacoes ? " Observações: " + a.observacoes : ""}`;
+      const text = `Documento assinado eletronicamente por ${a.nome}, ${a.cargo ?? ""}, em ${data}, às ${hora}, conforme portaria interna de legalização do S.E.I.I GCM.`;
       pdf.setFontSize(9);
-      ensure(Math.max(13,(pdf.splitTextToSize(text,TW-18) as string[]).length*4+5)+3);
+      ensure(stampHeight(text)+3);
       y += carimbo(text,y)+3;
     }
-    ensure(24); blocoQR(y+2);
+    ensure(30); blocoQR(y+2);
   }
-
-  ensure(12);
-  pdf.setFont("times", "bold");
-  pdf.setFontSize(7);
-  pdf.text(textoExportacao(await nomePainelAtual(), new Date().toISOString()), ML, y + 6);
 
   const nome = `${doc.tipo.toUpperCase().replace(/[^A-Z]/gi, "_")}_${String(doc.numero).padStart(3, "0")}_${doc.ano}.pdf`;
   if (salvar) {
