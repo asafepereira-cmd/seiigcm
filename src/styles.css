@@ -80,24 +80,24 @@
   --background: oklch(0.29 0.125 265);
   --foreground: oklch(0.98 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.05 260);
+  --card-foreground: var(--background);
   --popover: oklch(0.995 0.003 85);
-  --popover-foreground: oklch(0.22 0.05 260);
+  --popover-foreground: var(--background);
   --primary: oklch(0.34 0.115 268);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.94 0.012 265);
-  --secondary-foreground: oklch(0.25 0.06 260);
+  --secondary-foreground: var(--background);
   --muted: oklch(0.95 0.005 265);
-  --muted-foreground: oklch(0.5 0.03 260);
+  --muted-foreground: var(--background);
   --accent: oklch(0.91 0.03 265);
-  --accent-foreground: oklch(0.25 0.06 260);
+  --accent-foreground: var(--background);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.88 0.003 265);
   --input: oklch(0.84 0.003 265);
   --ring: oklch(0.32 0.11 262);
   --paper: oklch(1 0 0);
-  --paper-ink: oklch(0.15 0 0);
+  --paper-ink: var(--background);
   --status-developing: oklch(0.87 0.105 58);
   --status-sent: oklch(0.94 0.13 99);
   --status-signed: oklch(0.88 0.11 150);
@@ -193,3 +193,7 @@
 .dispatch-signer { width: 49%; text-align: center; font-size: 1.65cqw; line-height: 1; }
 .dispatch-signers-both .dispatch-signer { width: 48%; font-size: 1.47cqw; }
 .dispatch-signature-line { border-top: 0.5px solid var(--paper-ink); margin: 0 4% 0.8cqw; }
+
+@layer base {
+  .bg-card, .bg-paper { color: var(--card-foreground); }
+}

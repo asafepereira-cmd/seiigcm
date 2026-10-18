@@ -36,6 +36,7 @@ export type Documento = {
   cargo: string;
   assinaturaPng?: string;
   despacho?: Despacho;
+  processo?: { numero: number; ano: number; tema: string };
 };
 
 export const MESES = [
@@ -53,6 +54,18 @@ export function numeroFormatado(doc: Pick<Documento, "tipo" | "numero" | "ano" |
   return `${doc.tipo.toUpperCase()} Nº ${String(doc.numero).padStart(3, "0")}/${doc.ano} – ${doc.sigla}`;
 }
 
+export function processoFormatado(processo: { numero: number; ano: number }) {
+  return `PROCESSO INTERNO ${String(processo.numero).padStart(3, "0")}/${processo.ano}`;
+}
+
+export function identificacaoDocumento(doc: Documento) {
+  return doc.processo ? `${doc.tipo.toUpperCase()} ${String(doc.numero).padStart(3, "0")} - ${processoFormatado(doc.processo)}` : numeroFormatado(doc);
+}
+
+export function numeroValido(numero: number) {
+  return Number.isSafeInteger(numero) && numero > 0;
+}
+
 export function hojeISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -66,12 +79,11 @@ export function modeloGravacao(numero: number, titular?: {nome: string; funcao: 
     sigla: "CEMXXXIII/CCM",
     cidade: "Boa Vista",
     data: hojeISO(),
-    para: "Gestão Administrativa",
+    para: "",
     de: titular ? `${titular.nome} — ${titular.funcao}` : "Coordenação de Comunicação e Mídia do CEMXXXIII",
-    assunto: "Solicitação de autorização para gravação",
-    vocativo: "Prezada Gestora Administrativa,",
-    corpo:
-      "Venho, por meio deste, solicitar autorização para a realização de gravação [descreva o conteúdo], no dia [data], às [horário], no(a) [local].\n\nA gravação tem por finalidade [objetivo], sendo conduzida pela equipe da Coordenação de Comunicação e Mídia.",
+    assunto: "",
+    vocativo: "",
+    corpo: "",
     tituloLista: "Equipe envolvida",
     lista: [],
     fecho: "Sem mais para o momento, coloco-me à disposição para quaisquer esclarecimentos.",

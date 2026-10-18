@@ -1,4 +1,4 @@
-import { dataExtenso, numeroFormatado, type Documento } from "@/lib/documento";
+import { dataExtenso, identificacaoDocumento, type Documento } from "@/lib/documento";
 import { richParagraphs } from "@/lib/rich-text";
 export function DocumentPreview({ doc }: { doc: Documento }) {
   const paras = doc.corpo.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
@@ -11,7 +11,8 @@ export function DocumentPreview({ doc }: { doc: Documento }) {
         </div>
         <img src="/brand/midia.png" alt="" className="w-[15%]" />
       </div>
-      <p className="mt-4 text-[1.1em] font-bold">{numeroFormatado(doc)}</p>
+      <p className="mt-4 text-[1.1em] font-bold">{identificacaoDocumento(doc)}</p>
+      {doc.processo && <p className="mt-1 text-center font-bold break-words">{doc.processo.tema}</p>}
       <p className="text-right font-bold">{doc.cidade} - {dataExtenso(doc.data)}</p>
       <p className="mt-3 text-justify"><b>Para:</b> {doc.para}</p>
       <p className="text-justify"><b>De:</b> {doc.de}</p>
