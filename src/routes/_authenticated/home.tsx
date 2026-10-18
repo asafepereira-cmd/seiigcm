@@ -52,7 +52,7 @@ function Home() {
     { label: 'Acessar processos', to: '/processos', icon: ClipboardList, show: true },
     { label: 'Acessar painel de contas', to: '/contas', icon: Users, show: admin },
     { label: 'Novo painel SEII', to: '/painel', icon: Users, show: admin },
-  ].filter(b => b.show);
+  ].filter(b => b.show && !(admin && ['Acessar painel para assinaturas', 'Novo processo', 'Acessar arquivos'].includes(b.label)));
   return (
     <div className="flex min-h-screen flex-col bg-primary">
       <AppHeader />

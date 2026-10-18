@@ -19,7 +19,7 @@ import { gerarPDF } from "@/lib/pdf";
 import { carregarExtras } from "@/lib/assinaturas-eletronicas";
 import { podeEditarDocumento } from "@/lib/document-access";
 import { lerAssinaturaPng } from "@/lib/assinatura";
-import { dataExtenso, modeloGravacao, numeroFormatado, type Documento, type Participante } from "@/lib/documento";
+import { dataExtenso, modeloGravacao, numeroFormatado, numeroValido, type Documento, type Participante } from "@/lib/documento";
 
 export const Route = createFileRoute("/")({
   validateSearch: (s: Record<string, unknown>): { id?: string; processo?: string } => ({ ...(typeof s["id"] === "string" ? {id:s["id"]} : {}), ...(typeof s["processo"] === "string" ? {processo:s["processo"]} : {}) }),
@@ -66,11 +66,18 @@ function Editor() {
   const [generating, setGenerating] = useState(false);
   const signatureInput = useRef<HTMLInputElement>(null);
 
+  async function comProcesso(documento: Documento, processoId?: string | null) {
+    if (!processoId) return documento;
+    const { data, error } = await supabase.from('processos').select('numero,tema,created_at').eq('id', processoId).single();
+    if (error || !data) { toast.error('Não foi possível carregar o processo.'); return documento; }
+    return { ...documento, processo: { numero: data.numero, ano: new Date(data.created_at).getFullYear(), tema: data.tema } };
+  }
+
   useEffect(() => {
     if (!ready) return;
     setDocId(id);
     if (id) {
-      supabase.from("documentos").select("dados,criado_por,status,analise_admin").eq("id", id).single().then(({ data }) => {
+      supabase.from("documentos").select("dados,criado_por,status,analise_admin,processo_id").eq("id", id).single().then(async ({ data }) => {
         if (!data || !podeEditarDocumento(isAdmin, session?.user.id ?? '', data)) {
           toast.error("Este documento não está disponível para edição.");
           navigate({to:'/historico'});
@@ -78,18 +85,18 @@ function Editor() {
         }
         if (data) {
           const d = data.dados as unknown as Documento;
-          setDoc(d);
+          setDoc(await comProcesso(d, data.processo_id));
           setListaTexto(listaParaTexto(d.lista));
         }
       });
     } else {
-      Promise.all([proximoNumero(new Date().getFullYear()), supabase.from('paineis').select('nome,funcao').eq('user_id',session?.user.id ?? '').maybeSingle()]).then(([n, {data: titular}]) => {
+      Promise.all([proximoNumero(new Date().getFullYear()), supabase.from('paineis').select('nome,funcao').eq('user_id',session?.user.id ?? '').maybeSingle()]).then(async ([n, {data: titular}]) => {
         if (!isAdmin && !titular) { toast.error('Seu painel precisa de nome e função.'); navigate({to:'/painel'}); return; }
-        setDoc(modeloGravacao(n, !isAdmin && titular ? titular : undefined));
+        setDoc(await comProcesso(modeloGravacao(n, !isAdmin && titular ? titular : undefined), processo));
         setListaTexto("");
       });
     }
-  }, [ready, id, isAdmin, session?.user.id]);
+  }, [ready, id, isAdmin, session?.user.id, processo]);
 
   if (!ready || !doc) return null;
   const set = <K extends keyof Documento>(k: K, v: Documento[K]) => setDoc({ ...doc, [k]: v });
@@ -114,11 +121,12 @@ function Editor() {
 
   async function salvar() {
     if (!session?.user.id) { toast.error('Entre novamente para salvar.'); return; }
+    if (!numeroValido(full.numero)) { toast.error('Informe um número inteiro maior que zero.'); return; }
     setSaving(true);
     const {data:saved,error} = await supabase.rpc('salvar_documento',{_id:(docId ?? null) as string,_dados:full as never,_processo:(processo ?? null) as string});
     const res = error || !saved ? {error:error??new Error('Falha'),data:null} : await supabase.from('documentos').select('id,dados').eq('id',saved).single();
     setSaving(false);
-    if (res.error || !res.data) return toast.error("Erro ao salvar"), undefined;
+    if (res.error || !res.data) return toast.error(res.error?.message ?? "Erro ao salvar"), undefined;
     setDocId(res.data.id);
     setDoc(res.data.dados as unknown as Documento);
     toast.success("Documento salvo");
@@ -148,7 +156,7 @@ function Editor() {
                   <option>Memorando</option>
                 </select>
               </F>
-              <F label="Número"><Input type="number" disabled min={1} value={doc.numero} onChange={(e) => set("numero", Number(e.target.value))} /></F>
+              <F label="Número"><Input aria-label="Número do documento" type="number" min={1} step={1} value={doc.numero} onChange={(e) => set("numero", Number(e.target.value))} /></F>
               <F label="Ano"><Input type="number" disabled={!!docId} value={doc.ano} onChange={(e) => set("ano", Number(e.target.value))} /></F>
               <F label="Sigla"><Input value={doc.sigla} onChange={(e) => set("sigla", e.target.value)} /></F>
               <F label="Cidade"><Input value={doc.cidade} onChange={(e) => set("cidade", e.target.value)} /></F>

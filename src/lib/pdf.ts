@@ -1,5 +1,5 @@
 import type { Documento } from "./documento";
-import { assinantesDespacho, dataExtenso, numeroFormatado } from "./documento";
+import { assinantesDespacho, dataExtenso, identificacaoDocumento } from "./documento";
 import { dataHora, gestorasDoDespacho, SISTEMA, type ExtrasPDF } from "./assinaturas-eletronicas";
 import { GESTORAS } from "./documento";
 import { fontStyle, richParagraphs, wrapRichParagraph, type TextRun } from "./rich-text";
@@ -65,8 +65,15 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
 
   pdf.setFont("times", "bold");
   pdf.setFontSize(13);
-  pdf.text(numeroFormatado(doc), ML, y);
-  y += 6;
+  const identification = pdf.splitTextToSize(identificacaoDocumento(doc), TW) as string[];
+  pdf.text(identification, ML, y);
+  y += identification.length * 6;
+  if (doc.processo) {
+    pdf.setFontSize(12);
+    const tema = pdf.splitTextToSize(doc.processo.tema, TW) as string[];
+    pdf.text(tema, W / 2, y, { align: "center" });
+    y += tema.length * 6;
+  }
   pdf.setFontSize(12);
   pdf.text(`${doc.cidade} - ${dataExtenso(doc.data)}`, W - MR, y, { align: "right" });
   y += 13;

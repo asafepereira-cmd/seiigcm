@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, FilePlus2, Upload } from "lucide-react";
+import { Download, FilePlus2, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { numeroFormatado, type Documento } from "@/lib/documento";
+import { DocumentViewer } from "@/components/DocumentViewer";
+import { processoFormatado, numeroFormatado, type Documento } from "@/lib/documento";
 
 export const Route = createFileRoute("/processos")({
   head: () => ({
@@ -28,10 +29,12 @@ export const Route = createFileRoute("/processos")({
 
 type Processo = { id: string; numero: number; tema: string; assunto: string; descricao: string; acessos: string[]; oficio_id: string | null; aberto_em: string | null; created_at: string };
 type Doc = { id: string; dados: Documento; status: string };
-type Anexo = { id: string; nome: string; caminho: string; created_at: string };
+type Anexo = { criado_por: string; id: string; nome: string; caminho: string; created_at: string };
 
 function Processos() {
-  const { ready } = useRequireSession(false);
+  const { ready, session, isAdmin } = useRequireSession(false);
+  const [podeEmitir, setPodeEmitir] = useState(false);
+  const [visualizandoDoc, setVisualizandoDoc] = useState<string | null>(null);
   const [rows, setRows] = useState<Processo[] | null>(null);
   const [paineis, setPaineis] = useState<{ user_id: string; nome: string }[]>([]);
   const [aberto, setAberto] = useState<Processo | null>(null);
@@ -57,14 +60,15 @@ function Processos() {
   useEffect(() => {
     if (!ready) return;
     load();
+    supabase.from('paineis').select('pode_emitir').eq('user_id', session?.user.id ?? '').maybeSingle().then(({ data }) => setPodeEmitir(isAdmin || !!data?.pode_emitir));
     supabase.from("paineis").select("user_id,nome").eq("ativo", true).order("nome").then(({ data }) => setPaineis(data ?? []));
-  }, [ready]);
+  }, [ready, isAdmin, session?.user.id]);
 
   async function abrirDetalhes(p: Processo) {
     setAberto(p); setDocs([]); setAnexos([]);
     const [d, a] = await Promise.all([
       supabase.from("documentos").select("id,dados,status").eq("processo_id", p.id),
-      supabase.from("processo_anexos").select("id,nome,caminho,created_at").eq("processo_id", p.id).order("created_at"),
+      supabase.from("processo_anexos").select("id,nome,caminho,created_at,criado_por").eq("processo_id", p.id).order("created_at"),
     ]);
     setDocs((d.data as unknown as Doc[]) ?? []);
     setAnexos((a.data as Anexo[]) ?? []);
@@ -117,6 +121,15 @@ function Processos() {
     window.open(data.signedUrl, "_blank", "noopener");
   }
 
+  async function excluirAnexo(a: Anexo) {
+    if (!aberto || !window.confirm(`Excluir ${a.nome} deste processo?`)) return;
+    const { error } = await supabase.rpc('excluir_anexo_processo', { _id: a.id });
+    if (error) { toast.error('Não foi possível excluir o anexo.'); return; }
+    toast.success('Anexo excluído');
+    setAnexos(current => current.filter(item => item.id !== a.id));
+  }
+
+  const tituloProcesso = (p: Processo) => processoFormatado({ numero: p.numero, ano: new Date(p.created_at).getFullYear() });
   if (!ready) return null;
   return (
     <div className="min-h-screen">
@@ -124,7 +137,7 @@ function Processos() {
       <main className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6 flex flex-wrap items-center gap-2">
           <h1 className="mr-auto text-2xl font-bold text-primary-foreground">Processos</h1>
-          <Button onClick={() => { setNovo(true); proximoNumero(); }}><FilePlus2 className="h-4 w-4" /> Novo processo</Button>
+          {podeEmitir && <Button onClick={() => { setNovo(true); proximoNumero(); }}><FilePlus2 className="h-4 w-4" /> Novo processo</Button>}
         </div>
         {rows === null ? (
           <p className="text-primary-foreground">Carregando...</p>
@@ -135,7 +148,7 @@ function Processos() {
             {rows.map((p) => (
               <li key={p.id} className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center">
                 <div className="mr-auto min-w-0">
-                  <p className="font-sans font-bold">Processo Nº {String(p.numero).padStart(3, "0")} — {p.tema}</p>
+                  <p className="font-sans font-bold">{tituloProcesso(p)} — {p.tema}</p>
                   <p className="break-words text-sm text-muted-foreground">{p.assunto}</p>
                   <p className="text-xs text-muted-foreground">{p.aberto_em ? `Aberto em ${new Date(p.aberto_em).toLocaleDateString("pt-BR", { timeZone: "America/Boa_Vista" })}` : "Aguardando abertura"}</p>
                 </div>
@@ -172,35 +185,39 @@ function Processos() {
       </Dialog>
 
       <Dialog open={!!aberto} onOpenChange={(o) => !o && setAberto(null)}>
-        <DialogContent className="max-h-[85svh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{aberto ? `Processo Nº ${String(aberto.numero).padStart(3, "0")} — ${aberto.tema}` : "Processo"}</DialogTitle></DialogHeader>
+        <DialogContent className="h-svh max-h-svh w-screen max-w-none rounded-none overflow-y-auto sm:rounded-none content-start">
+          <DialogHeader><DialogTitle className="pr-8">{aberto ? tituloProcesso(aberto) : "Processo"}</DialogTitle></DialogHeader>
           {aberto && (
-            <div className="space-y-4">
+            <div className="mx-auto w-full max-w-6xl space-y-4">
+              <h2 className="text-center text-xl font-bold">{aberto.tema}</h2>
+              <p className="font-semibold">{aberto.assunto}</p>
               <p className="whitespace-pre-line text-sm">{aberto.descricao}</p>
-              {aberto.aberto_em && (
+              {aberto.aberto_em && podeEmitir && (
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/" search={{ processo: aberto.id }}><FilePlus2 className="h-4 w-4" /> Novo documento neste processo</Link>
                 </Button>
               )}
               <h3 className="font-semibold">Documentos do processo</h3>
               {docs.length === 0 && <p className="text-sm text-muted-foreground">Nenhum documento vinculado.</p>}
-              {docs.map((d) => <p key={d.id} className="text-sm">{numeroFormatado(d.dados)} — {d.status}</p>)}
+              {docs.map((d) => <div key={d.id} className="flex flex-wrap items-center gap-3 border-b pb-3"><p className="mr-auto text-sm">{numeroFormatado(d.dados)} — {d.status}</p><Button size="sm" variant="outline" onClick={() => setVisualizandoDoc(d.id)}>Visualizar documento</Button></div>)}
               <h3 className="font-semibold">Anexos externos</h3>
               {anexos.map((a) => (
                 <div key={a.id} className="flex items-center gap-2">
                   <p className="min-w-0 flex-1 truncate text-sm">{a.nome}</p>
-                  <Button size="sm" variant="outline" onClick={() => baixarAnexo(a)}><Download className="h-4 w-4" /></Button>
+                  <Button aria-label={`Baixar ${a.nome}`} title="Baixar anexo" size="sm" variant="outline" onClick={() => baixarAnexo(a)}><Download className="h-4 w-4" /></Button>
+                  {podeEmitir && (isAdmin || a.criado_por === session?.user.id) && <Button variant="outline" size="icon" title="Excluir anexo" aria-label={`Excluir ${a.nome}`} onClick={() => excluirAnexo(a)}><Trash2 className="h-4 w-4" /></Button>}
                 </div>
               ))}
               <input ref={uploadRef} type="file" accept="application/pdf,.pdf" className="hidden" aria-label="Anexar PDF externo"
                 onChange={(e) => { const f = e.currentTarget.files?.[0]; e.currentTarget.value = ""; if (f) enviarAnexo(f); }} />
-              <Button variant="outline" disabled={enviando || !aberto.aberto_em} onClick={() => uploadRef.current?.click()}>
+              {podeEmitir && <Button variant="outline" disabled={enviando || !aberto.aberto_em} onClick={() => uploadRef.current?.click()}>
                 <Upload className="h-4 w-4" /> {enviando ? "Enviando…" : "Anexar PDF externo"}
-              </Button>
+              </Button>}
             </div>
           )}
         </DialogContent>
       </Dialog>
+      <DocumentViewer id={visualizandoDoc} onClose={() => setVisualizandoDoc(null)} />
     </div>
   );
 }
