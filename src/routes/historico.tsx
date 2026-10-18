@@ -14,7 +14,6 @@ import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isStatusDocumento, ordenarEmitidos, STATUS_DOCUMENTO, type StatusDocumento } from "@/lib/emitidos";
-import { gerarPDF } from "@/lib/pdf";
 import { numeroFormatado, type Documento } from "@/lib/documento";
 import { podeEditarDocumento, podeComentarDocumento } from "@/lib/document-access";
 
@@ -89,7 +88,7 @@ function Historico() {
   }
 
   async function baixar(row: Row) {
-    try { await gerarPDF(row.dados, true, await carregarExtras(row.id)); }
+    try { const [{ gerarPDF }, extrasPDF] = await Promise.all([import("@/lib/pdf"), carregarExtras(row.id)]); await gerarPDF(row.dados, true, extrasPDF); }
     catch { toast.error("Não foi possível gerar o PDF."); }
   }
 
@@ -123,8 +122,14 @@ function Historico() {
   }
 
   useEffect(() => {
-    if (ready) { load(); supabase.from("paineis").select("user_id,nome,funcao").order("nome").then(({data})=>setPaineis(data??[])); supabase.from("funcoes_predefinidas").select("nome").order("nome").then(({data})=>setFuncoes((data??[]).map(f=>f.nome))); }
+    if (ready) load();
   }, [ready]);
+
+  useEffect(() => {
+    if (!envio) return;
+    supabase.from("paineis").select("user_id,nome,funcao").order("nome").then(({data})=>setPaineis(data??[]));
+    supabase.from("funcoes_predefinidas").select("nome").order("nome").then(({data})=>setFuncoes((data??[]).map(f=>f.nome)));
+  }, [!!envio]);
 
   if (!ready) return null;
   return (

@@ -82,7 +82,7 @@ function Processos() {
       const { data: user } = await supabase.auth.getUser();
       const uid = user.user?.id ?? "";
       const { data: criado, error } = await supabase.from("processos")
-        .insert({ tema: tema.trim(), assunto: assunto.trim(), descricao: descricao.trim(), acessos: Array.from(new Set([uid, ...acessos])) })
+        .insert({ numero: Number(numero), tema: tema.trim(), assunto: assunto.trim(), descricao: descricao.trim(), acessos: Array.from(new Set([uid, ...acessos])) })
         .select("id").single();
       if (error || !criado) throw new Error("Falha ao criar");
       const { error: abertura } = await supabase.rpc("abrir_processo_simples", { _id: criado.id, _numero: Number(numero) });
@@ -137,7 +137,7 @@ function Processos() {
                 <div className="mr-auto min-w-0">
                   <p className="font-sans font-bold">Processo Nº {String(p.numero).padStart(3, "0")} — {p.tema}</p>
                   <p className="break-words text-sm text-muted-foreground">{p.assunto}</p>
-                  <p className="text-xs text-muted-foreground">{p.aberto_em ? `Aberto em ${new Date(p.aberto_em).toLocaleDateString("pt-BR", { timeZone: "America/Boa_Vista" })}` : "Aguardando ofício de abertura"}</p>
+                  <p className="text-xs text-muted-foreground">{p.aberto_em ? `Aberto em ${new Date(p.aberto_em).toLocaleDateString("pt-BR", { timeZone: "America/Boa_Vista" })}` : "Aguardando abertura"}</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => abrirDetalhes(p)}>Visualizar</Button>
               </li>
