@@ -13,7 +13,9 @@
 - [x] Processos sem ofício de abertura (tema, assunto, acessos, descrição + numeração)
 - [x] Carimbo de assinatura no padrão SEII ("conforme portaria interna de legalização" + autenticidade por código verificador)
 - [x] Links de assinatura: excluir solicitação pendente e adicionar signatário (admin)
-- [x] Conferir rodapé "Salvo em PDF por" em PDF real baixado
+- [x] Remover rodapé "Salvo em PDF por" e conferir PDF real
 - [x] Liberar numeração e limpar campos de novos documentos
 - [x] Processos em tela inteira, identificação nos documentos e exclusão de anexos
 - [x] Ajustar contraste, Home admin e logo no login
+- [x] Separar sugestões de numeração por tipo e ano, inclusive termos
+- [x] Carimbo com selo original preto, nome/função em negrito e QR conforme modelo enviado
