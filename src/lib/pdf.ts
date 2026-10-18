@@ -330,15 +330,9 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
 
   const nome = `${doc.tipo.toUpperCase().replace(/[^A-Z]/gi, "_")}_${String(doc.numero).padStart(3, "0")}_${doc.ano}.pdf`;
   if (salvar) {
-    const blob = pdf.output("blob");
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = nome;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    // jsPDF's saver handles Safari's Blob-download fallback and keeps the
+    // download URL alive long enough for the browser to finish saving it.
+    await pdf.save(nome, { returnPromise: true });
   }
   return pdf;
 }
