@@ -17,6 +17,7 @@ import { Route as ProcessosRouteImport } from './routes/processos'
 import { Route as AuthenticatedContasRouteImport } from './routes/_authenticated/contas'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedTermosRouteImport } from './routes/_authenticated/termos'
 import { Route as AssinarTokenRouteImport } from './routes/assinar.$token'
 import { Route as VerificarIdRouteImport } from './routes/verificar.$id'
 
@@ -59,6 +60,11 @@ const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTermosRoute = AuthenticatedTermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AssinarTokenRoute = AssinarTokenRouteImport.update({
   id: '/assinar/$token',
   path: '/assinar/$token',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/contas': typeof AuthenticatedContasRoute
   '/home': typeof AuthenticatedHomeRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/termos': typeof AuthenticatedTermosRoute
   '/assinar/$token': typeof AssinarTokenRoute
   '/verificar/$id': typeof VerificarIdRoute
 }
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/contas': typeof AuthenticatedContasRoute
   '/home': typeof AuthenticatedHomeRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/termos': typeof AuthenticatedTermosRoute
   '/assinar/$token': typeof AssinarTokenRoute
   '/verificar/$id': typeof VerificarIdRoute
 }
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/_authenticated/contas': typeof AuthenticatedContasRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
+  '/_authenticated/termos': typeof AuthenticatedTermosRoute
   '/assinar/$token': typeof AssinarTokenRoute
   '/verificar/$id': typeof VerificarIdRoute
 }
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/contas'
     | '/home'
     | '/painel'
+    | '/termos'
     | '/assinar/$token'
     | '/verificar/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/contas'
     | '/home'
     | '/painel'
+    | '/termos'
     | '/assinar/$token'
     | '/verificar/$id'
   id:
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/_authenticated/contas'
     | '/_authenticated/home'
     | '/_authenticated/painel'
+    | '/_authenticated/termos'
     | '/assinar/$token'
     | '/verificar/$id'
   fileRoutesById: FileRoutesById
@@ -210,6 +222,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/termos': {
+      id: '/_authenticated/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof AuthenticatedTermosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/assinar/$token': {
       id: '/assinar/$token'
       path: '/assinar/$token'
@@ -231,12 +250,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContasRoute: typeof AuthenticatedContasRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
+  AuthenticatedTermosRoute: typeof AuthenticatedTermosRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContasRoute: AuthenticatedContasRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
+  AuthenticatedTermosRoute: AuthenticatedTermosRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
