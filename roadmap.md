@@ -14,3 +14,6 @@
 - [x] Carimbo de assinatura no padrão SEII ("conforme portaria interna de legalização" + autenticidade por código verificador)
 - [x] Links de assinatura: excluir solicitação pendente e adicionar signatário (admin)
 - [ ] Conferir rodapé "Salvo em PDF por" em PDF real baixado
+- [ ] Liberar numeração e limpar campos de novos documentos
+- [ ] Processos em tela inteira, identificação nos documentos e exclusão de anexos
+- [ ] Ajustar contraste, Home admin e logo no login
