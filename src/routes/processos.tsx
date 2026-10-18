@@ -42,8 +42,7 @@ function Processos() {
   const [assunto, setAssunto] = useState("");
   const [descricao, setDescricao] = useState("");
   const [acessos, setAcessos] = useState<string[]>([]);
-  const [oficios, setOficios] = useState<Doc[]>([]);
-  const [oficioId, setOficioId] = useState("");
+  const [numero, setNumero] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
@@ -71,13 +70,13 @@ function Processos() {
     setAnexos((a.data as Anexo[]) ?? []);
   }
 
-  async function carregarOficios() {
-    const { data } = await supabase.from("documentos").select("id,dados,status").eq("status", "assinado").is("processo_id", null);
-    setOficios(((data as unknown as Doc[]) ?? []).filter((d) => d.dados.tipo.toUpperCase().startsWith("OF")));
+  async function proximoNumero() {
+    const { data } = await supabase.from("processos").select("numero").order("numero", { ascending: false }).limit(1);
+    setNumero(String(((data?.[0]?.numero as number | undefined) ?? 0) + 1));
   }
 
   async function criarProcesso() {
-    if (!tema.trim() || !assunto.trim() || !descricao.trim() || !oficioId) return;
+    if (!tema.trim() || !assunto.trim() || !descricao.trim() || !numero.trim()) return;
     setSalvando(true);
     try {
       const { data: user } = await supabase.auth.getUser();
@@ -86,13 +85,13 @@ function Processos() {
         .insert({ tema: tema.trim(), assunto: assunto.trim(), descricao: descricao.trim(), acessos: Array.from(new Set([uid, ...acessos])) })
         .select("id").single();
       if (error || !criado) throw new Error("Falha ao criar");
-      const { error: abertura } = await supabase.rpc("abrir_processo", { _id: criado.id, _oficio: oficioId });
+      const { error: abertura } = await supabase.rpc("abrir_processo_simples", { _id: criado.id, _numero: Number(numero) });
       if (abertura) throw abertura;
       toast.success("Processo aberto para tramitação");
-      setNovo(false); setTema(""); setAssunto(""); setDescricao(""); setAcessos([]); setOficioId("");
+      setNovo(false); setTema(""); setAssunto(""); setDescricao(""); setAcessos([]); setNumero("");
       load();
     } catch {
-      toast.error("Não foi possível abrir o processo. O ofício precisa estar assinado pela gestão.");
+      toast.error("Não foi possível abrir o processo. Confira se a numeração já foi utilizada.");
     } finally { setSalvando(false); }
   }
 
@@ -125,7 +124,7 @@ function Processos() {
       <main className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6 flex flex-wrap items-center gap-2">
           <h1 className="mr-auto text-2xl font-bold text-primary-foreground">Processos</h1>
-          <Button onClick={() => { setNovo(true); carregarOficios(); }}><FilePlus2 className="h-4 w-4" /> Novo processo</Button>
+          <Button onClick={() => { setNovo(true); proximoNumero(); }}><FilePlus2 className="h-4 w-4" /> Novo processo</Button>
         </div>
         {rows === null ? (
           <p className="text-primary-foreground">Carregando...</p>
@@ -164,15 +163,8 @@ function Processos() {
                 })}
               </div>
             </div>
-            <div>
-              <Label htmlFor="oficio">Ofício de abertura (assinado pela gestão)</Label>
-              <select id="oficio" className="h-9 w-full rounded-md border border-input bg-card px-2 text-sm" value={oficioId} onChange={(e) => setOficioId(e.target.value)}>
-                <option value="">Selecione um ofício assinado…</option>
-                {oficios.map((d) => <option key={d.id} value={d.id}>{numeroFormatado(d.dados)} — {d.dados.assunto}</option>)}
-              </select>
-              <p className="mt-1 text-xs text-muted-foreground">O sistema valida se o ofício foi assinado pela gestão antes de abrir o processo.</p>
-            </div>
-            <Button className="w-full" disabled={salvando || !tema.trim() || !assunto.trim() || !descricao.trim() || !oficioId} onClick={criarProcesso}>
+            <div><Label htmlFor="numero-proc">Numeração do processo</Label><Input id="numero-proc" type="number" min={1} required value={numero} onChange={(e) => setNumero(e.target.value)} /></div>
+            <Button className="w-full" disabled={salvando || !tema.trim() || !assunto.trim() || !descricao.trim() || !numero.trim()} onClick={criarProcesso}>
               {salvando ? "Abrindo…" : "Abrir processo"}
             </Button>
           </div>
