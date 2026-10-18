@@ -1,7 +1,7 @@
 # Roadmap
 
 - [x] Corrigir numeração obrigatória na criação de processos
-- [ ] Cabeçalho somente com imagem original transparente
+- [x] Cabeçalho somente com imagem original transparente
 - [x] Reduzir consultas sequenciais em Home e Docs
 
 - [x] Corrigir erro de salvar novo documento (PGRST202)

@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import brasao from "@/assets/brasao-interface.png";
-import seiiLogo from "@/assets/seii-logo.png.asset.json";
+import seiiLogo from "@/assets/seii-transparent.png";
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -26,8 +25,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-20 border-b bg-primary text-primary-foreground">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
         <Link to="/home" className="mr-auto flex items-center gap-2" aria-label="SEII GCM — início">
-          <img src={seiiLogo.url} alt="seii! Sistema eletrônico interno de informações do CEM XXXIII" className="h-8 w-auto object-contain" />
-          <img src={brasao} alt="Brasão CEM XXXIII" className="h-9 w-9 object-contain" />
+          <img src={seiiLogo} alt="seii! Sistema eletrônico interno de informações do CEM XXXIII" className="h-8 w-auto object-contain" />
         </Link>
         <nav className="flex items-center flex-wrap justify-end gap-1 text-xs sm:text-sm">
           <Link to="/home" className="rounded-md px-2 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }}>Home</Link>
