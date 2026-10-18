@@ -1,21 +1,11 @@
-- [x] Ajustar entrelinhas e justificação na prévia e no PDF.
-- [x] Aplicar visual azul e branco e fontes sem serifa da referência à interface.
-- [x] Conferir interface e PDF após as alterações; corrigir contraste dos campos e botões e justificação no PDF.
-- [x] Adicionar negrito, itálico, sublinhado e caixa alta ao editor, prévia e PDF; conferir salvamento.
-- [x] Conferir e recuperar falhas de importação de página sem ciclos de recarregamento.
-- [x] Ajustar acabamento da logo e renomear navegação para Emitidos.
-- [x] Ordenar documentos e adicionar status persistentes com cores.
-- [x] Conferir alterações e status salvos na interface.
-- [x] Retomar versão enxuta: acesso individual e painel das gestoras.
-- [x] Adicionar prioridade, prazo, funções e signatários extras ao envio.
-- [x] Conferir envio autenticado, três assinaturas independentes, status automático, download do PDF e interface móvel.
-- [ ] Personalizar modelos dos emissores e limitar alterações aos próprios documentos.
-- [ ] Adicionar comentários, análise prévia do administrador e acompanhamento da abertura pelas gestoras.
-- [ ] Conferir permissões e fluxo autenticado de análise.
-- [x] Corrigir leitura de documentos atribuídos à Ana Beatriz e atualização automática do painel; testes passaram e atualização automática conferida no administrador.
-- [ ] Conferir o documento recebido dentro da conta de Ana Beatriz — acesso de teste não autorizado.
-- [ ] Preservar versões com mesmo número e adicionar assinantes após envio, com deferimento ou ciência.
-- [ ] Unificar visualização, comentários e exportação identificada em todos os painéis.
-- [ ] Administrar todas as contas e permissões, incluindo painéis sem emissão.
-- [ ] Criar processos com ofício validado, acessos restritos, documentos internos e anexos PDF.
-- [ ] Testar regras e conferir fluxo autenticado das novas opções.
+# Roadmap
+
+- [ ] Corrigir erro ao salvar novo documento
+- [ ] Novo logo SEII (header + interfaces)
+- [ ] Assinatura eletrônica no padrão SEI (carimbo com cadeado + texto + QR)
+- [ ] Home com botões por perfil (admin e gestoras)
+- [ ] Painel de contas: listar contas, alterar e-mail/senha, excluir, editar permissões (checkboxes)
+- [ ] Painel de contratos e termos: questionário + minuta com IA + envio para assinatura (contratos em desenvolvimento)
+- [ ] Links de assinatura: excluir e adicionar solicitações
+- [ ] Navegação do rodapé: Home, Docs, Processos, Admin
+- [ ] Processos: abrir sem ofício, só informações + numeração
