@@ -231,10 +231,12 @@ function Historico() {
                 <div className="flex gap-2">
                   <input readOnly value={url} className="min-w-0 flex-1 rounded border bg-paper px-2 text-xs text-paper-ink" />
                   <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /></Button>
+                  {isAdmin && !i.assinado_em && <Button size="sm" variant="destructive" onClick={async () => { if (!links || !confirm("Excluir esta solicitação de assinatura?")) return; const { error } = await supabase.rpc("excluir_solicitacao", { _id: i.id }); if (error) toast.error("Não foi possível excluir."); else { toast.success("Solicitação excluída"); abrirLinks(links.row); } }}><Trash2 className="h-4 w-4" /></Button>}
                 </div>
               </div>
             );
           })}
+          {isAdmin && links && <Button variant="outline" onClick={() => { const row = links.row; setLinks(null); setEnvio({ row, opcao: "ambas" }); }}>Adicionar signatário</Button>}
         </DialogContent>
       </Dialog>
     </div>
