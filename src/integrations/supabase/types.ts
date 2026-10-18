@@ -430,6 +430,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      excluir_solicitacao: { Args: { _id: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

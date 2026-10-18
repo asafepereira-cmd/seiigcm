@@ -228,7 +228,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     pdf.addImage(qr, "PNG", ML, top, 20, 20);
     pdf.setFont("times", "normal");
     pdf.setFontSize(8.5);
-    pdf.text(["A autenticidade deste documento pode ser conferida em:", extras.verificarUrl, `Sistema ${SISTEMA}`], ML + 24, top + 7, { lineHeightFactor: 1.3 });
+    pdf.text(["A autenticidade do documento pode ser conferida no endereço:", extras.verificarUrl, `informando o código verificador do documento. Sistema ${SISTEMA}`], ML + 24, top + 7, { lineHeightFactor: 1.3 });
   };
 
   if (extras.emitidoEm) {
@@ -236,7 +236,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     pdf.setFontSize(12);
     y += 8;
     ensure(18);
-    y += carimbo(`Documento emitido eletronicamente por ${doc.assinante.toUpperCase()}, ${doc.cargo}, em ${data}, às ${hora}, via ${SISTEMA}.`, y);
+    y += carimbo(`Documento assinado eletronicamente por ${doc.assinante.toUpperCase()}, ${doc.cargo}, em ${data}, às ${hora}, conforme portaria interna de legalização do ${SISTEMA}.`, y);
   }
 
   const gestoras = assinantesDespacho(doc.despacho);
@@ -287,7 +287,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
       const g = gestoras[i];
       if (!g) return;
       const { data, hora } = dataHora(a.assinadoEm);
-      yy += carimbo(`Documento assinado eletronicamente por ${g.nome}, ${g.cargo}, em ${data}, às ${hora}, via ${SISTEMA}. Decisão: ${a.decisao === "indeferido" ? "Indeferido" : "Deferido"}.`, yy) + 3;
+      yy += carimbo(`Documento assinado eletronicamente por ${g.nome}, ${g.cargo}, em ${data}, às ${hora}, conforme portaria interna de legalização do ${SISTEMA}. Decisão: ${a.decisao === "indeferido" ? "Indeferido" : "Deferido"}.`, yy) + 3;
     });
     y = yy;
     blocoQR(yy + 2);

@@ -115,7 +115,7 @@ function Editor() {
   async function salvar() {
     if (!session?.user.id) { toast.error('Entre novamente para salvar.'); return; }
     setSaving(true);
-    const {data:saved,error} = await supabase.rpc('salvar_documento',{_id:docId ?? null,_dados:full as never,_processo:processo ?? null});
+    const {data:saved,error} = await supabase.rpc('salvar_documento',{_id:(docId ?? null) as string,_dados:full as never,_processo:(processo ?? null) as string});
     const res = error || !saved ? {error:error??new Error('Falha'),data:null} : await supabase.from('documentos').select('id,dados').eq('id',saved).single();
     setSaving(false);
     if (res.error || !res.data) return toast.error("Erro ao salvar"), undefined;

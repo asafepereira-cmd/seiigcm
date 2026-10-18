@@ -92,6 +92,13 @@
       "when": 1792348642815,
       "tag": "0012_abrir_processo_sem_oficio",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792348803893,
+      "tag": "0013_excluir_solicitacao_assinatura",
+      "breakpoints": true
     }
   ]
 }

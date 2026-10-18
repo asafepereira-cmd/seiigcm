@@ -42,7 +42,7 @@ export async function enviarParaAssinatura(documentoId: string, gestoras: Gestor
 
 export async function carregarSolicitacoes(documentoId: string) {
   const { data } = await supabase.from("solicitacoes_assinatura")
-    .select("gestora, signatario_nome, signatario_funcao, token, decisao, observacoes, assinado_em").eq("documento_id", documentoId);
+    .select("id, gestora, signatario_nome, signatario_funcao, token, decisao, observacoes, assinado_em").eq("documento_id", documentoId);
   return data ?? [];
 }
 

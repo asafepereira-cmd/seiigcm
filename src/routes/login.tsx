@@ -30,7 +30,7 @@ function Login() {
   const [setup, setSetup] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => data.session && navigate({ to: "/" }));
+    supabase.auth.getSession().then(({ data }) => data.session && navigate({ to: "/home" }));
     getSetupStatus().then((r) => setSetup(r.needsSetup)).catch(() => {});
   }, [navigate]);
 
@@ -44,7 +44,7 @@ function Login() {
       }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw new Error("E-mail ou senha incorretos.");
-      navigate({ to: "/" });
+      navigate({ to: "/home" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao entrar");
     } finally {
