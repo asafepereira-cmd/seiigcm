@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Corrigir erro ao salvar novo documento
+- [x] Corrigir erro ao salvar novo documento
 - [ ] Novo logo SEII (header + interfaces)
 - [ ] Assinatura eletrônica no padrão SEI (carimbo com cadeado + texto + QR)
 - [ ] Home com botões por perfil (admin e gestoras)
