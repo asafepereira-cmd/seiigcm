@@ -284,7 +284,7 @@ export type Database = {
           criado_por?: string
           descricao?: string
           id?: string
-          numero?: never
+          numero?: number
           oficio_id?: string | null
           oficio_versao?: number | null
           tema: string
@@ -297,7 +297,7 @@ export type Database = {
           criado_por?: string
           descricao?: string
           id?: string
-          numero?: never
+          numero?: number
           oficio_id?: string | null
           oficio_versao?: number | null
           tema?: string
