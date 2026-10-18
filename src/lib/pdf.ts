@@ -3,6 +3,15 @@ import { assinantesDespacho, dataExtenso, numeroFormatado } from "./documento";
 import { dataHora, gestorasDoDespacho, SISTEMA, type ExtrasPDF } from "./assinaturas-eletronicas";
 import { GESTORAS } from "./documento";
 import { fontStyle, richParagraphs, wrapRichParagraph, type TextRun } from "./rich-text";
+import { textoExportacao } from "./workflow";
+import { supabase } from "@/integrations/supabase/client";
+
+async function nomePainelAtual(): Promise<string> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return "Usuário não identificado";
+  const { data: p } = await supabase.from("paineis").select("nome").eq("user_id", u.user.id).maybeSingle();
+  return p?.nome ?? "Asafe Pereira da Silva Felix — Coordenação de Comunicação e Mídia";
+}
 
 async function loadImage(src: string): Promise<string> {
   const res = await fetch(src);
@@ -297,6 +306,11 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     }
     ensure(24); blocoQR(y+2);
   }
+
+  ensure(12);
+  pdf.setFont("times", "bold");
+  pdf.setFontSize(7);
+  pdf.text(textoExportacao(await nomePainelAtual(), new Date().toISOString()), ML, y + 6);
 
   const nome = `${doc.tipo.toUpperCase().replace(/[^A-Z]/gi, "_")}_${String(doc.numero).padStart(3, "0")}_${doc.ano}.pdf`;
   if (salvar) {
