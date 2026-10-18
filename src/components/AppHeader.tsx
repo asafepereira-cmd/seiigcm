@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import brasao from "@/assets/brasao-interface.png";
-import seiiLogo from "@/assets/seii-branco.png.asset.json";
+import seiiLogo from "@/assets/seii-logo.png.asset.json";
 
 export function AppHeader() {
   const navigate = useNavigate();
