@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PERGUNTAS_TERMO, montarMinutaTermo, type RespostasTermo } from '@/lib/termo';
-import { numeroFormatado } from '@/lib/documento';
+import { modeloGravacao, numeroFormatado } from '@/lib/documento';
+import { proximoNumeroDocumento } from '@/lib/document-numbering';
 
 export const Route = createFileRoute('/_authenticated/termos')({
   head: () => ({ meta: [
@@ -47,10 +48,12 @@ function Termos() {
     try {
       const minuta = montarMinutaTermo(r);
       const ano = new Date().getFullYear();
+      const numero = await proximoNumeroDocumento('Termo', ano);
       const dados = {
-        tipo: 'Termo', ano, sigla: 'CEMXXXIII/CCM', assunto: minuta.assunto, corpo: minuta.corpo,
-        data: new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Boa_Vista', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
-        destinatario: '', assinante: r.nomeSignatario.trim() ? `${r.nomeSignatario.trim().toUpperCase()}\n${r.funcaoSignatario.trim()}` : 'ASAFE PEREIRA DA SILVA FELIX\nCoordenador de Comunicação e Mídia',
+        ...modeloGravacao(numero),
+        tipo: 'Termo', ano, assunto: minuta.assunto, corpo: minuta.corpo,
+        assinante: r.nomeSignatario.trim().toUpperCase() || 'ASAFE PEREIRA DA SILVA FELIX',
+        cargo: r.funcaoSignatario.trim() || 'Coordenador de Comunicação e Mídia',
         signatarioTermo: r.nomeSignatario.trim(), respostasTermo: r, pendenciasTermo: minuta.pendencias,
       };
       const { data: id, error } = await supabase.rpc('salvar_documento', { _id: null as unknown as string, _dados: dados as never, _processo: null as unknown as string });

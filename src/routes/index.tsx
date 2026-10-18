@@ -19,6 +19,7 @@ import { gerarPDF } from "@/lib/pdf";
 import { carregarExtras } from "@/lib/assinaturas-eletronicas";
 import { podeEditarDocumento } from "@/lib/document-access";
 import { lerAssinaturaPng } from "@/lib/assinatura";
+import { proximoNumeroDocumento } from "@/lib/document-numbering";
 import { dataExtenso, modeloGravacao, numeroFormatado, numeroValido, type Documento, type Participante } from "@/lib/documento";
 
 export const Route = createFileRoute("/")({
@@ -46,11 +47,6 @@ const textoParaLista = (t: string): Participante[] =>
       const m = l.split(/\s+[–-]\s+/);
       return { nome: m[0] ?? "", funcao: m.slice(1).join(" – ") };
     });
-
-async function proximoNumero(ano: number) {
-  const { data } = await supabase.from("documentos").select("numero").eq("ano", ano).order("numero", { ascending: false }).limit(1);
-  return (data?.[0]?.numero ?? 0) + 1;
-}
 
 function Editor() {
   const { ready, session, isAdmin } = useRequireSession();
@@ -90,11 +86,11 @@ function Editor() {
         }
       });
     } else {
-      Promise.all([proximoNumero(new Date().getFullYear()), supabase.from('paineis').select('nome,funcao').eq('user_id',session?.user.id ?? '').maybeSingle()]).then(async ([n, {data: titular}]) => {
+      Promise.all([proximoNumeroDocumento('Ofício', new Date().getFullYear()), supabase.from('paineis').select('nome,funcao').eq('user_id',session?.user.id ?? '').maybeSingle()]).then(async ([n, {data: titular}]) => {
         if (!isAdmin && !titular) { toast.error('Seu painel precisa de nome e função.'); navigate({to:'/painel'}); return; }
         setDoc(await comProcesso(modeloGravacao(n, !isAdmin && titular ? titular : undefined), processo));
         setListaTexto("");
-      });
+      }).catch(error => toast.error(error instanceof Error ? error.message : 'Falha ao consultar numeração.'));
     }
   }, [ready, id, isAdmin, session?.user.id, processo]);
 
@@ -151,9 +147,18 @@ function Editor() {
           <Group title="Identificação">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <F label="Tipo">
-                <select disabled={!!docId} className="h-9 w-full rounded-md border border-input bg-card px-2 text-sm" value={doc.tipo} onChange={(e) => set("tipo", e.target.value)}>
+                <select disabled={!!docId || saving} aria-label="Tipo do documento" className="h-9 w-full rounded-md border border-input bg-card px-2 text-sm" value={doc.tipo} onChange={async (e) => {
+                  const tipo = e.target.value;
+                  setSaving(true);
+                  try {
+                    const numero = await proximoNumeroDocumento(tipo, doc.ano);
+                    setDoc(current => current ? { ...current, tipo, numero } : current);
+                  } catch (error) { toast.error(error instanceof Error ? error.message : 'Falha ao consultar numeração.'); }
+                  finally { setSaving(false); }
+                }}>
                   <option>Ofício</option>
                   <option>Memorando</option>
+                  {doc.tipo !== 'Ofício' && doc.tipo !== 'Memorando' && <option>{doc.tipo}</option>}
                 </select>
               </F>
               <F label="Número"><Input aria-label="Número do documento" type="number" min={1} step={1} value={doc.numero} onChange={(e) => set("numero", Number(e.target.value))} /></F>
