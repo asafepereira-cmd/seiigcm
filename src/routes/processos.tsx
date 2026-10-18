@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { numeroFormatado, type Documento } from "@/lib/documento";
+import { numeroFormatado } from "@/lib/documento";
 
 export const Route = createFileRoute("/processos")({
   head: () => ({
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/processos")({
 });
 
 type Processo = { id: string; numero: number; tema: string; assunto: string; descricao: string; acessos: string[]; oficio_id: string | null; aberto_em: string | null; created_at: string };
-type Doc = { id: string; dados: Documento; status: string };
+type Doc = { id: string; dados: { tipo: string; numero: number; ano: number; assunto: string; sigla: string }; status: string };
 type Anexo = { id: string; nome: string; caminho: string; created_at: string };
 
 function Processos() {
