@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as HistoricoRouteImport } from './routes/historico'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProcessosRouteImport } from './routes/processos'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AssinarTokenRouteImport } from './routes/assinar.$token'
 import { Route as VerificarIdRouteImport } from './routes/verificar.$id'
@@ -36,6 +37,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProcessosRoute = ProcessosRouteImport.update({
+  id: '/processos',
+  path: '/processos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   id: '/painel',
   path: '/painel',
@@ -56,6 +62,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
+  '/processos': typeof ProcessosRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/assinar/$token': typeof AssinarTokenRoute
   '/verificar/$id': typeof VerificarIdRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
+  '/processos': typeof ProcessosRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/assinar/$token': typeof AssinarTokenRoute
   '/verificar/$id': typeof VerificarIdRoute
@@ -74,6 +82,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
+  '/processos': typeof ProcessosRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/assinar/$token': typeof AssinarTokenRoute
   '/verificar/$id': typeof VerificarIdRoute
@@ -84,6 +93,7 @@ export interface FileRouteTypes {
     | '/'
     | '/historico'
     | '/login'
+    | '/processos'
     | '/painel'
     | '/assinar/$token'
     | '/verificar/$id'
@@ -92,6 +102,7 @@ export interface FileRouteTypes {
     | '/'
     | '/historico'
     | '/login'
+    | '/processos'
     | '/painel'
     | '/assinar/$token'
     | '/verificar/$id'
@@ -101,6 +112,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/historico'
     | '/login'
+    | '/processos'
     | '/_authenticated/painel'
     | '/assinar/$token'
     | '/verificar/$id'
@@ -111,6 +123,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   HistoricoRoute: typeof HistoricoRoute
   LoginRoute: typeof LoginRoute
+  ProcessosRoute: typeof ProcessosRoute
   AssinarTokenRoute: typeof AssinarTokenRoute
   VerificarIdRoute: typeof VerificarIdRoute
 }
@@ -143,6 +156,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/processos': {
+      id: '/processos'
+      path: '/processos'
+      fullPath: '/processos'
+      preLoaderRoute: typeof ProcessosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/painel': {
@@ -185,6 +205,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   HistoricoRoute: HistoricoRoute,
   LoginRoute: LoginRoute,
+  ProcessosRoute: ProcessosRoute,
   AssinarTokenRoute: AssinarTokenRoute,
   VerificarIdRoute: VerificarIdRoute,
 }
