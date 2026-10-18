@@ -401,6 +401,10 @@ export type Database = {
         Args: { _id: string; _oficio: string }
         Returns: undefined
       }
+      abrir_processo_simples: {
+        Args: { _id: string; _numero: number }
+        Returns: undefined
+      }
       acesso_processo: { Args: { _id: string; _uid: string }; Returns: boolean }
       conta_ativa: { Args: { _uid: string }; Returns: boolean }
       devolver_analise: { Args: { _id: string }; Returns: undefined }
