@@ -53,7 +53,7 @@ function Termos() {
         destinatario: '', assinante: r.nomeSignatario.trim() ? `${r.nomeSignatario.trim().toUpperCase()}\n${r.funcaoSignatario.trim()}` : 'ASAFE PEREIRA DA SILVA FELIX\nCoordenador de Comunicação e Mídia',
         signatarioTermo: r.nomeSignatario.trim(), respostasTermo: r, pendenciasTermo: minuta.pendencias,
       };
-      const { data: id, error } = await supabase.rpc('salvar_documento', { _id: null, _dados: dados as never, _processo: null });
+      const { data: id, error } = await supabase.rpc('salvar_documento', { _id: null as unknown as string, _dados: dados as never, _processo: null as unknown as string });
       if (error || !id) throw new Error(error?.message ?? 'Falha ao salvar');
       if (minuta.pendencias.length) toast.warning(`Minuta gerada com pendências: ${minuta.pendencias.join(' ')}`);
       else toast.success('Minuta gerada. Revise e envie para assinatura.');
