@@ -27,6 +27,7 @@ export const PERGUNTAS_TERMO = [
 ];
 
 function lista(itens: string[]) {
+  if (itens.length === 0) return '';
   if (itens.length === 1) return itens[0]!.toLowerCase();
   return `${itens.slice(0, -1).map(i => i.toLowerCase()).join(', ')} e ${itens[itens.length - 1]!.toLowerCase()}`;
 }
