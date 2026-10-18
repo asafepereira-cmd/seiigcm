@@ -203,8 +203,10 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     const prefix = 'Documento assinado eletronicamente por ';
     const end = text.indexOf(', em ', prefix.length);
     const runs: TextRun[] = end > 0 ? [
-      { text: prefix }, { text: text.slice(prefix.length, end), bold: true }, { text: text.slice(end) },
-    ] : [{ text }];
+      { text: prefix, bold: false, italic: false, underline: false },
+      { text: text.slice(prefix.length, end), bold: true, italic: false, underline: false },
+      { text: text.slice(end), bold: false, italic: false, underline: false },
+    ] : [{ text, bold: false, italic: false, underline: false }];
     pdf.setFontSize(10);
     return wrapRichParagraph(runs, TW - 30, run => {
       pdf.setFont('times', fontStyle(run));
