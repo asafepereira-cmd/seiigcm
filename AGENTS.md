@@ -16,7 +16,7 @@
 - The main-body editor uses Tiptap with optional structured JSON alongside plain body text; shared rich-text helpers drive safe preview spans and styled PDF wrapping. Why: retain selection-level formatting without breaking older documents or sending markup to AI.
 - Recover recognized client module-load failures with a session-scoped, rate-limited full reload and a manual retry fallback. Why: dependency updates can invalidate cached route modules, especially in Safari, and router invalidation alone reuses the failed import.
 - Document lifecycle status is stored in the dedicated documentos.status column, not document JSON; list ordering and status validation live in a shared browser-safe helper. Why: editor saves must not overwrite independently updated lifecycle status.
-- Interface school branding uses a transparent derivative of the original crest; PDF and document-preview branding keep their original assets. Why: remove interface background edges without changing the official document model.
+- Interface branding uses a pixel-preserving transparent derivative of the supplied logo; PDF and document-preview branding keep their original assets. Why: remove background edges without changing official artwork.
 
 - Manager panels live under the client-only authenticated layout; emission screens additionally validate the admin role, and database RLS enforces every read/write. Why: managers only access assigned approvals.
 - Document dispatch and final signature status are atomic PostgreSQL functions locking the document row. Why: concurrent signatures must not leave the lifecycle status stale.

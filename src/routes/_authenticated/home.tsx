@@ -31,11 +31,13 @@ function Home() {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user?.id ?? '';
-      const { data: roles } = await supabase.from('user_roles').select('role');
+      const [{ data: roles }, { data: p }] = await Promise.all([
+        supabase.from('user_roles').select('role'),
+        supabase.from('paineis').select('nome,funcao,pode_emitir').eq('user_id', uid).maybeSingle(),
+      ]);
       const rs = (roles ?? []).map(r => r.role as string);
       const adm = rs.includes('admin');
       setAdmin(adm);
-      const { data: p } = await supabase.from('paineis').select('nome,funcao,pode_emitir').eq('user_id', uid).maybeSingle();
       setPodeEmitir(adm || (p?.pode_emitir ?? false));
       setNome(adm ? 'Asafe Felix' : primeiroEUltimo(p?.nome ?? ''));
       setFuncao(adm ? 'Coordenador de Comunicação e Mídia' : (p?.funcao ?? ''));

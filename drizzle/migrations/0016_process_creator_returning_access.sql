@@ -1,0 +1,1 @@
+CREATE POLICY processos_creator_read ON public.processos FOR SELECT TO authenticated USING (criado_por = auth.uid() AND public.conta_ativa(auth.uid()));
