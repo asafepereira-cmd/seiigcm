@@ -251,8 +251,9 @@ function Editor() {
                 try {
                   const savedId = await salvar();
                   if (!savedId) return;
-                  const {data:saved} = await supabase.from("documentos").select("dados").eq("id",savedId).single();
-                  if(saved) await gerarPDF(saved.dados as unknown as Documento, true, await carregarExtras(savedId));
+                  const {data:saved,error} = await supabase.from("documentos").select("dados").eq("id",savedId).single();
+                  if (error || !saved) throw new Error("Não foi possível carregar o documento para gerar o PDF. Tente novamente.");
+                  await gerarPDF(saved.dados as unknown as Documento, true, await carregarExtras(savedId));
                 } catch (error) {
                   toast.error(error instanceof Error ? error.message : "Não foi possível gerar o PDF.");
                 } finally { setGenerating(false); }
