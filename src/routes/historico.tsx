@@ -63,7 +63,7 @@ function Historico() {
       });
 
   const [envio, setEnvio] = useState<{ row: Row; opcao: Despacho } | null>(null);
-  const [links, setLinks] = useState<{ row: Row; itens: { gestora: string; signatario_nome: string | null; token: string; assinado_em: string | null }[] } | null>(null);
+  const [links, setLinks] = useState<{ row: Row; itens: { id: string; gestora: string; signatario_nome: string | null; token: string; assinado_em: string | null }[] } | null>(null);
   const [prioridade,setPrioridade] = useState("normal");
   const [prazo,setPrazo] = useState("");
   const [termo,setTermo] = useState("");
