@@ -404,6 +404,7 @@ export type Database = {
       acesso_processo: { Args: { _id: string; _uid: string }; Returns: boolean }
       conta_ativa: { Args: { _uid: string }; Returns: boolean }
       devolver_analise: { Args: { _id: string }; Returns: undefined }
+      documento_existe: { Args: { _id: string }; Returns: boolean }
       encaminhar_documento: {
         Args: {
           _id: string
