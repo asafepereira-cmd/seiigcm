@@ -90,17 +90,11 @@ function Historico() {
     if (!isStatusDocumento(status)) return;
     const documento=rows?.find(r=>r.id===id);
     if (!documento || !podeEditarDocumento(isAdmin,session?.user.id??'',documento)) return;
-    if (!isAdmin && status === 'enviado') {
-      const {error}=await supabase.rpc('submeter_analise',{_id:id});
-      if(error) toast.error('Não foi possível enviar para análise.');
-      else {toast.success('Enviado para análise do administrador');load();}
-      return;
-    }
-    if (!isAdmin) return;
     if (status === "enviado") {
       const row = rows?.find(r => r.id === id);
       if (row) { setExtras([]); setPrazo(""); setPrioridade("normal"); setTermo(""); setEnvio({ row, opcao: row.dados.despacho ?? "ambas" }); return; }
     }
+    if (!isAdmin) return;
     setUpdating(current => [...current, id]);
     try {
       const { data, error } = await supabase.from("documentos")
@@ -144,12 +138,11 @@ function Historico() {
                 <div className="mr-auto min-w-0">
                   <p className="font-sans font-bold">{numeroFormatado(r.dados)}</p>
                   <p className="break-words text-sm opacity-80">{r.assunto}</p>
-                  {r.analise_admin && <p className="text-sm font-semibold">Em análise pelo administrador</p>}
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold">{STATUS_DOCUMENTO[r.status].label}</span>
                   {isAdmin && <Button size="sm" onClick={()=>alterarStatus(r.id,"enviado")}>Encaminhar assinaturas</Button>}
-                  {!isAdmin && panelType!=='setor' && podeEditarDocumento(false,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,'enviado')}>Enviar para análise</Button>}
+                  {!isAdmin && panelType!=='setor' && podeEditarDocumento(false,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,'enviado')}>Enviar para assinatura</Button>}
                   <Button size="sm" variant="outline" onClick={()=>setView(r.id)}>Visualizar</Button>
                   {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" variant="outline" asChild>
                     <Link to="/" search={{ id: r.id }}>
