@@ -9,12 +9,14 @@ export function AppHeader() {
   const navigate = useNavigate();
   const [admin, setAdmin] = useState(false);
   const [nome, setNome] = useState("");
+  const [mostrarAviso, setMostrarAviso] = useState(false);
   useEffect(() => { supabase.from("user_roles").select("role").then(async ({ data }) => {
     const roles = (data ?? []).map(r => r.role as string);
     setAdmin(roles.includes("admin"));
     let completo = roles.includes("admin") ? "Asafe Felix" : roles.includes("pedagogica") ? "Nubia Andrade" : roles.includes("administrativa") ? "Adriana Domingues" : "";
     if (!roles.includes("admin")) {
       const { data: u } = await supabase.auth.getUser();
+      setMostrarAviso(!!u.user && u.user.email?.toLowerCase() !== "ca.gestaosei@gmail.com");
       const { data: p } = await supabase.from("paineis").select("nome,pode_emitir,ativo").eq("user_id", u.user?.id ?? "").maybeSingle();
       completo = p?.nome ?? completo;
     }
@@ -22,6 +24,7 @@ export function AppHeader() {
     setNome(partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1]}` : partes[0] ?? "");
   }); }, []);
   return (
+    <>
     <header className="sticky top-0 z-20 border-b bg-primary text-primary-foreground">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
         <Link to="/home" className="mr-auto flex items-center gap-2" aria-label="SEII GCM — início">
@@ -48,6 +51,14 @@ export function AppHeader() {
       </div>
       <p className="sr-only">{nome ? `Olá! ${nome}` : ""}</p>
     </header>
+    {mostrarAviso && <aside role="status" className="border-b bg-card px-4 py-4 text-card-foreground">
+      <div className="mx-auto max-w-7xl space-y-2 text-sm">
+        <p className="font-bold">Sistema em desenvolvimento e atualização — retorno em 22/09.</p>
+        <p>As assinaturas serão realizadas normalmente por meio de link, se necessário, somente para documentos emitidos pela Coordenação de Comunicação e Mídia (CCM).</p>
+        <p>Dúvidas? Entre em contato com o desenvolvedor: <a className="font-semibold underline" href="tel:+5595991120610">(95) 991120610</a>.</p>
+      </div>
+    </aside>}
+    </>
   );
 }
 

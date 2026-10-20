@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Aviso de atualização nos painéis, exceto administrador e Corpo de Alunos; cadastro sem validação local de formato do e-mail (serviço de acesso mantém suas exigências).
+
 - [x] Retirar análise administrativa obrigatória e liberar encaminhamento direto dos documentos próprios; seis testes passaram, regras e desbloqueio conferidos (verificação visual autenticada indisponível)
 
 - [x] Retomar pendências: envio direto de setor, PDFs unificados, exclusão de termos e avisos no SEII; verificados com administrador e Corpo de Alunos
