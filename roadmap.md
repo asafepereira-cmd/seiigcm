@@ -1,14 +1,14 @@
 # Roadmap
 
-- [ ] Retomar pendências: envio direto de setor, PDFs unificados, exclusão de termos e avisos no SEII; verificar por fluxos reais
+- [x] Retomar pendências: envio direto de setor, PDFs unificados, exclusão de termos e avisos no SEII; verificados com administrador e Corpo de Alunos
 
 - [x] Corrigir validação indevida de setor na alteração de e-mail e senha
 
-- [ ] PDFs em todos os painéis e após assinatura; corrigir exclusão de termos
-- [ ] Cadastro e edição de contas individuais/setores, isolamento e numeração por setor
-- [ ] Assinatura de setor com identificação e senha; envio direto com pesquisa de destinatário
-- [ ] Solicitações no painel e recebimento no administrador; retirar acompanhamento de datas
-- [ ] Aviso no SEII após todas assinaturas
+- [x] PDFs compartilhados em Docs, painéis, processos e termos; download após assinatura e exclusão de termo testados
+- [x] Cadastro e edição individuais/setores; nome normalizado e numeração por setor conferidos
+- [x] Assinatura de setor exige identificação e senha; envio direto com pesquisa de destinatário testado (assinatura com senha real do setor não exercitada)
+- [x] Solicitações no painel e recebimento no administrador testados; sem acompanhamento de datas no admin
+- [x] Aviso no SEII após todas assinaturas: assinatura, conclusão, aviso e PDF testados entre setor e admin
 - [ ] Aviso por e-mail com link para PDF — depende de domínio de envio configurado
 
 - [x] Corrigir numeração obrigatória na criação de processos
