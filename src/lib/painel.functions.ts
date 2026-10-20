@@ -18,7 +18,7 @@ export const getPainel = createServerFn({ method: 'GET' }).middleware([requireSu
 });
 
 export const criarGestora = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
-.inputValidator((d:unknown) => z.object({email:z.string().email(),password:z.string().min(8).max(128),role:z.enum(['pedagogica','administrativa','emissor']),nome:z.string().trim().max(200).optional(),funcao:z.string().trim().max(200).optional(),tipo_painel:z.enum(['individual','setor']).default('individual'),setor:z.string().trim().max(200).default(''),responsavel:z.string().trim().max(200).default('')}).refine(v=>v.role!=='emissor'||(v.tipo_painel==='setor'?v.setor.length>2:(v.nome&&v.funcao)),'Informe nome e função.').parse(d))
+.inputValidator((d:unknown) => z.object({email:z.string().trim().min(1).max(320),password:z.string().min(8).max(128),role:z.enum(['pedagogica','administrativa','emissor']),nome:z.string().trim().max(200).optional(),funcao:z.string().trim().max(200).optional(),tipo_painel:z.enum(['individual','setor']).default('individual'),setor:z.string().trim().max(200).default(''),responsavel:z.string().trim().max(200).default('')}).refine(v=>v.role!=='emissor'||(v.tipo_painel==='setor'?v.setor.length>2:(v.nome&&v.funcao)),'Informe nome e função.').parse(d))
 .handler(async ({data,context}) => {
   const {data: admin,error} = await context.supabase.rpc('has_role',{_user_id:context.userId,_role:'admin'});
   if(error || !admin) throw new Error('Acesso restrito.');
@@ -27,7 +27,7 @@ export const criarGestora = createServerFn({method:'POST'}).middleware([requireS
   if(lookupError) throw new Error('Não foi possível conferir os acessos.');
   if(data.role!=='emissor' && existing?.length) throw new Error('Esta gestora já possui um acesso.');
   const {data: user,error: createError} = await supabaseAdmin.auth.admin.createUser({email:data.email,password:data.password,email_confirm:true});
-  if(createError || !user.user) throw new Error('Não foi possível criar o acesso. Confira o e-mail.');
+  if(createError || !user.user) throw new Error(createError?.code === 'email_address_invalid' ? 'O serviço de acesso exige um endereço de e-mail válido, mesmo sem a validação de formato no cadastro.' : 'Não foi possível criar o acesso. O endereço pode já estar cadastrado ou não ser aceito pelo serviço de acesso.');
   const {error: roleError} = await supabaseAdmin.from('user_roles').insert({user_id:user.user.id,role:data.role});
   const {error: painelError} = data.role==='emissor' ? await supabaseAdmin.from('paineis').insert({user_id:user.user.id,nome:data.tipo_painel==='setor'?data.setor:(data.nome??''),funcao:data.tipo_painel==='setor'?'Setor':(data.funcao??''),tipo_painel:data.tipo_painel,setor:data.setor,responsavel:data.responsavel}) : {error:null};
   if(roleError || painelError) { await supabaseAdmin.auth.admin.deleteUser(user.user.id); throw new Error('Não foi possível atribuir o acesso.'); }

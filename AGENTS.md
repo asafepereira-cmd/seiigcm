@@ -29,3 +29,4 @@
 
 - Shared DocumentViewer controls authorized content, versioned records, comments and PDF exports across panels; sector exports require signed status. Why: keep all viewing paths aligned with shared-panel restrictions.
 - In-app completion notices are user subscriptions in documento_avisos read against the current document lifecycle. Why: every current-version signature must finish before presenting download readiness.
+- Panel maintenance notices are rendered by the shared AppHeader after authenticated identity is resolved, never on public signature pages. Why: keep panel messaging consistent without interrupting signature links.
