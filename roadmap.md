@@ -1,5 +1,12 @@
 # Roadmap
 
+- [ ] PDFs em todos os painéis e após assinatura; corrigir exclusão de termos
+- [ ] Cadastro e edição de contas individuais/setores, isolamento e numeração por setor
+- [ ] Assinatura de setor com identificação e senha; envio direto com pesquisa de destinatário
+- [ ] Solicitações no painel e recebimento no administrador; retirar acompanhamento de datas
+- [ ] Aviso no SEII após todas assinaturas
+- [ ] Aviso por e-mail com link para PDF — depende de domínio de envio configurado
+
 - [x] Corrigir numeração obrigatória na criação de processos
 - [x] Cabeçalho somente com imagem original transparente
 - [x] Reduzir consultas sequenciais em Home e Docs
