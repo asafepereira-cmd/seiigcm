@@ -23,7 +23,7 @@
 
 - Manager panels live under the client-only authenticated layout; emission screens additionally validate the admin role, and database RLS enforces every read/write. Why: managers only access assigned approvals.
 - Document dispatch and final signature status are atomic PostgreSQL functions locking the document row. Why: concurrent signatures must not leave the lifecycle status stale.
-- Emission panels use the 'emissor' role plus a paineis identity for new document defaults; RLS restricts mutation to owned unlocked drafts, and individual emitters submit through submeter_analise() while sector panels directly dispatch their own documents through enviar_documento_setor(). Why: every custom panel preserves its identity without bypassing administrator review.
+- Emission panels use a paineis identity for document defaults and dispatch their own documents directly through authenticated RPCs without administrator review; ownership and panel permissions remain enforced. Why: all authorized emitters have independent document workflows without widening access to other panels.
 - Document comments and signature opening/analysis timestamps are persisted with RLS and authenticated RPCs; public token reads only record first opening. Why: approval progress remains auditable across panels.
 - Assigned document SELECT policies include individual user signers as well as manager roles; panel queries refresh periodically and on focus/reconnection. Why: custom emission panels must receive pending signatures without broadening edit permissions or requiring manual refresh.
 

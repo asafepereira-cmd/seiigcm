@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Retirar análise administrativa obrigatória e liberar encaminhamento direto dos documentos próprios
+
 - [x] Retomar pendências: envio direto de setor, PDFs unificados, exclusão de termos e avisos no SEII; verificados com administrador e Corpo de Alunos
 
 - [x] Corrigir validação indevida de setor na alteração de e-mail e senha
