@@ -37,7 +37,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     pdf.addImage(midia, "PNG", 170, 11, 28, 10);
     pdf.setFont("times", "bold");
     pdf.setFontSize(8.5);
-    HEADER.forEach((l, i) => pdf.text(despacho && i === 3 ? 'GRUPAMENTO DE COMUNICAÇÃO E MÍDIA - "CEMXXXIII NA MÍDIA"' : l, 105, 12 + i * HEADER_LH, { align: "center" }));
+    HEADER.forEach((l, i) => pdf.text(i === 3 && doc.setor ? doc.setor.toUpperCase() : despacho && i === 3 ? 'GRUPAMENTO DE COMUNICAÇÃO E MÍDIA - "CEMXXXIII NA MÍDIA"' : l, 105, 12 + i * HEADER_LH, { align: "center" }));
     pdf.setLineWidth(0.2);
     pdf.line(46, 28, 158, 28);
   };

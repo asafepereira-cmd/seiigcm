@@ -1,0 +1,16 @@
+CREATE OR REPLACE FUNCTION public.enviar_documento_setor(_id uuid,_destino uuid,_assinar boolean,_finalidade text DEFAULT 'deferimento') RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE d public.documentos; nome text; cargo text; BEGIN SELECT * INTO d FROM public.documentos WHERE id=_id FOR UPDATE;
+IF d.id IS NULL OR NOT public.conta_ativa(auth.uid()) OR NOT (public.has_role(auth.uid(),'admin') OR (public.e_setor(auth.uid()) AND public.pode_emitir(auth.uid()) AND d.criado_por=auth.uid())) THEN RAISE EXCEPTION 'Envio não autorizado'; END IF;
+SELECT coalesce(p.nome,CASE r.role WHEN 'admin' THEN 'Asafe Felix' WHEN 'pedagogica' THEN 'Gestora Pedagógica' WHEN 'administrativa' THEN 'Gestora Administrativa' END),coalesce(nullif(p.funcao,''),'Responsável') INTO nome,cargo FROM public.user_roles r LEFT JOIN public.paineis p ON p.user_id=r.user_id WHERE r.user_id=_destino LIMIT 1;
+IF nome IS NULL OR NOT public.conta_ativa(_destino) THEN RAISE EXCEPTION 'Destinatário indisponível'; END IF;
+INSERT INTO public.documento_destinatarios(documento_id,user_id) VALUES(_id,_destino) ON CONFLICT DO NOTHING;
+IF _assinar THEN PERFORM public.encaminhar_documento(_id,jsonb_build_array(jsonb_build_object('nome',nome,'funcao',cargo,'user_id',_destino,'finalidade',_finalidade)));
+ELSE UPDATE public.documentos SET emitido_em=coalesce(emitido_em,now()),status=CASE WHEN status='assinado' THEN status ELSE 'enviado' END,updated_at=now() WHERE id=_id; END IF; END $$;
+REVOKE ALL ON FUNCTION public.enviar_documento_setor(uuid,uuid,boolean,text) FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.enviar_documento_setor(uuid,uuid,boolean,text) TO authenticated;
+REVOKE ALL ON FUNCTION public.registrar_assinatura(text,text,text) FROM PUBLIC,anon,authenticated; GRANT EXECUTE ON FUNCTION public.registrar_assinatura(text,text,text) TO service_role;
+CREATE OR REPLACE FUNCTION public.assinar_identificado(_token text,_decisao text,_observacoes text,_nome text DEFAULT NULL,_funcao text DEFAULT NULL,_cpf text DEFAULT NULL) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE r public.solicitacoes_assinatura; BEGIN SELECT * INTO r FROM public.solicitacoes_assinatura WHERE token=_token FOR UPDATE; IF r.id IS NULL THEN RAISE EXCEPTION 'Link inválido'; END IF;
+IF r.gestora LIKE 'user:%' AND public.e_setor(substring(r.gestora FROM 6)::uuid) THEN
+IF length(trim(coalesce(_nome,'')))<3 OR length(trim(coalesce(_funcao,'')))<2 OR coalesce(_cpf,'') !~ '^[0-9]{11}$' THEN RAISE EXCEPTION 'Identificação obrigatória'; END IF;
+INSERT INTO public.assinante_identidades(solicitacao_id,nome,funcao,cpf) VALUES(r.id,trim(_nome),trim(_funcao),_cpf); UPDATE public.solicitacoes_assinatura SET signatario_nome=trim(_nome),signatario_funcao=trim(_funcao) WHERE id=r.id; END IF;
+PERFORM public.registrar_assinatura(_token,_decisao,_observacoes); END $$;
+REVOKE ALL ON FUNCTION public.assinar_identificado(text,text,text,text,text,text) FROM PUBLIC,anon,authenticated; GRANT EXECUTE ON FUNCTION public.assinar_identificado(text,text,text,text,text,text) TO service_role;
+NOTIFY pgrst,'reload schema';

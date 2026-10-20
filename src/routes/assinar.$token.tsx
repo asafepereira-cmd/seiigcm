@@ -3,6 +3,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { gerarPDF } from "@/lib/pdf";
+import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { getSignRequest, signDocument } from "@/lib/assinatura.functions";
 import { GESTORAS, numeroFormatado } from "@/lib/documento";
@@ -30,7 +33,8 @@ function Assinar() {
   const fetchReq = useServerFn(getSignRequest);
   const sign = useServerFn(signDocument);
   const [req, setReq] = useState<Req | null>(null);
-  const [decisao, setDecisao] = useState<"deferido" | "indeferido" | null>(null);
+  const [decisao, setDecisao] = useState<"deferido" | "indeferido" | "ciente" | null>(null);
+  const [nome,setNome]=useState('');const [funcao,setFuncao]=useState('');const [cpf,setCpf]=useState('');const [password,setPassword]=useState('');
   const [obs, setObs] = useState("");
   const [ciente, setCiente] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -42,8 +46,8 @@ function Assinar() {
   async function assinar() {
     if (!decisao) return;
     setBusy(true); setErro("");
-    try { await sign({ data: { token, decisao, observacoes: obs } }); await load(); }
-    catch { setErro("Não foi possível assinar. O link pode já ter sido usado."); }
+    try { await sign({ data: { token, decisao, observacoes: obs,concordo:true,nome,funcao,cpf,password } }); await load(); }
+    catch(e) { setErro(e instanceof Error ? e.message : "Não foi possível assinar."); }
     finally { setBusy(false); }
   }
 
@@ -53,9 +57,10 @@ function Assinar() {
         {req === null ? <p>Carregando...</p> : !req.found ? (
           <p>Link de assinatura inválido.</p>
         ) : (() => {
-          const g = req.nome ? {nome:req.nome,cargo:req.cargo ?? ""} : GESTORAS[req.gestora];
+          const g = req.nome ? {nome:req.nome,cargo:req.cargo ?? ""} : GESTORAS[req.gestora as keyof typeof GESTORAS] ?? {nome:"Signatário",cargo:""};
           return (
             <div className="space-y-4">
+              {req.completo && <Button disabled={busy} onClick={async()=>{setBusy(true);try{await gerarPDF(req.doc,true,{...req.extras,verificarUrl:`${window.location.origin}/verificar/${req.documentoId}`});}catch{toast.error("Não foi possível baixar o PDF.");}finally{setBusy(false);}}}>Baixar PDF assinado</Button>}
               <div>
                 <p className="text-sm text-muted-foreground">Assinatura eletrônica · S.E.I.GCM-CEMXXXIII</p>
                 <h1 className="text-xl font-bold">{numeroFormatado(req.doc)}</h1>
@@ -73,9 +78,10 @@ function Assinar() {
                   {req.termo && <p className="whitespace-pre-line text-sm">{req.termo}</p>}
                   <p className="text-sm">Eu, <b>{g.nome}</b>, {g.cargo}, declaro que li e tomei ciência do conteúdo deste documento, emitido por {req.doc.assinante}, e registro abaixo meu despacho.</p>
                   <div className="flex gap-2">
-                    <Button variant={decisao === "deferido" ? "default" : "outline"} onClick={() => setDecisao("deferido")}>Deferido</Button>
-                    <Button variant={decisao === "indeferido" ? "default" : "outline"} onClick={() => setDecisao("indeferido")}>Indeferido</Button>
+                    {req.finalidade === "ciencia" ? <Button onClick={()=>setDecisao("ciente")}>Declarar ciência</Button> : <><Button variant={decisao === "deferido" ? "default" : "outline"} onClick={() => setDecisao("deferido")}>Deferido</Button>
+                    <Button variant={decisao === "indeferido" ? "default" : "outline"} onClick={() => setDecisao("indeferido")}>Indeferido</Button></>}
                   </div>
+                  {req.setor && <div className="space-y-2"><Input aria-label="Nome completo do assinante" placeholder="Nome completo" value={nome} onChange={e=>setNome(e.target.value)}/><Input aria-label="Função do assinante" placeholder="Função" value={funcao} onChange={e=>setFuncao(e.target.value)}/><Input aria-label="CPF do assinante" placeholder="CPF" value={cpf} onChange={e=>setCpf(e.target.value)}/><Input aria-label="Senha do painel" placeholder="Senha do painel" type="password" value={password} onChange={e=>setPassword(e.target.value)}/></div>}
                   <div>
                     <label htmlFor="obs" className="text-sm font-medium">Observações (opcional)</label>
                     <Textarea id="obs" maxLength={600} value={obs} onChange={e => setObs(e.target.value)} rows={4} />

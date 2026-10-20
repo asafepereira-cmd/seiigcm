@@ -34,7 +34,7 @@ export const Route = createFileRoute("/historico")({
 type Row = { id: string; tipo: string; numero: number; ano: number; status: StatusDocumento; assunto: string; created_at: string; dados: Documento; criado_por:string|null; analise_admin:boolean; enviado_analise_em:string|null; emitido_em:string|null };
 
 function Historico() {
-  const { ready, session, isAdmin } = useRequireSession();
+  const { ready, session, isAdmin } = useRequireSession(false);
   const [detalhes,setDetalhes] = useState<Row|null>(null);
   const [comentario,setComentario] = useState('');
   const [comentarios,setComentarios] = useState<{id:string;texto:string;created_at:string}[]>([]);
@@ -153,16 +153,8 @@ function Historico() {
                   {r.analise_admin && <p className="text-sm font-semibold">Em análise pelo administrador</p>}
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  {isAdmin ? <Select value={r.status} disabled={updating.includes(r.id)} onValueChange={value => alterarStatus(r.id, value)}>
-                    <SelectTrigger aria-label={`Status de ${numeroFormatado(r.dados)}`} className="w-40 border-status-ink/25 bg-paper/70 text-status-ink">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(STATUS_DOCUMENTO) as StatusDocumento[]).map(status => (
-                        <SelectItem key={status} value={status}>{STATUS_DOCUMENTO[status].label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select> : <span className="text-sm font-semibold">{STATUS_DOCUMENTO[r.status].label}</span>}
+                  <span className="text-sm font-semibold">{STATUS_DOCUMENTO[r.status].label}</span>
+                  {isAdmin && <Button size="sm" onClick={()=>alterarStatus(r.id,"enviado")}>Encaminhar assinaturas</Button>}
                   {!isAdmin && podeEditarDocumento(false,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,'enviado')}>Enviar para análise</Button>}
                   <Button size="sm" variant="outline" onClick={()=>verDetalhes(r)}>Visualizar</Button>
                   {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" variant="outline" asChild>
@@ -178,14 +170,14 @@ function Historico() {
                       <Link2 className="h-4 w-4" /> Links
                     </Button>
                   )}
-                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button
+                  {(isAdmin || (podeEditarDocumento(false,session?.user.id??'',r) && r.status==='desenvolvendo' && !r.emitido_em)) && <Button
                     size="sm"
                     variant="outline"
                     aria-label="Excluir"
                     onClick={async () => {
                       if (!confirm("Excluir este documento?")) return;
-                      const { error } = await supabase.from("documentos").delete().eq("id", r.id);
-                      if (error) { toast.error("Não foi possível excluir o documento."); return; }
+                      const { error } = await supabase.rpc("excluir_documento", { _id: r.id });
+                      if (error) { toast.error(error.message || "Não foi possível excluir o documento."); return; }
                       toast.success("Excluído");
                       load();
                     }}

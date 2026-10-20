@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      assinante_identidades: {
+        Row: {
+          cpf: string
+          funcao: string
+          nome: string
+          solicitacao_id: string
+        }
+        Insert: {
+          cpf: string
+          funcao: string
+          nome: string
+          solicitacao_id: string
+        }
+        Update: {
+          cpf?: string
+          funcao?: string
+          nome?: string
+          solicitacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinante_identidades_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: true
+            referencedRelation: "solicitacoes_assinatura"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assinaturas_gestoras: {
         Row: {
           gestora: string
@@ -31,6 +60,32 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      documento_avisos: {
+        Row: {
+          created_at: string
+          documento_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          documento_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          documento_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documento_avisos_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       documento_comentarios: {
         Row: {
@@ -60,6 +115,32 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "documento_comentarios_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documento_destinatarios: {
+        Row: {
+          created_at: string
+          documento_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          documento_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          documento_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documento_destinatarios_documento_id_fkey"
             columns: ["documento_id"]
             isOneToOne: false
             referencedRelation: "documentos"
@@ -123,6 +204,7 @@ export type Database = {
           prazo: string | null
           prioridade: string
           processo_id: string | null
+          setor_id: string | null
           status: string
           tipo: string
           updated_at: string
@@ -142,6 +224,7 @@ export type Database = {
           prazo?: string | null
           prioridade?: string
           processo_id?: string | null
+          setor_id?: string | null
           status?: string
           tipo?: string
           updated_at?: string
@@ -161,6 +244,7 @@ export type Database = {
           prazo?: string | null
           prioridade?: string
           processo_id?: string | null
+          setor_id?: string | null
           status?: string
           tipo?: string
           updated_at?: string
@@ -203,6 +287,9 @@ export type Database = {
           pode_assinar: boolean
           pode_comentar: boolean
           pode_emitir: boolean
+          responsavel: string
+          setor: string
+          tipo_painel: string
           user_id: string
         }
         Insert: {
@@ -213,6 +300,9 @@ export type Database = {
           pode_assinar?: boolean
           pode_comentar?: boolean
           pode_emitir?: boolean
+          responsavel?: string
+          setor?: string
+          tipo_painel?: string
           user_id: string
         }
         Update: {
@@ -223,6 +313,9 @@ export type Database = {
           pode_assinar?: boolean
           pode_comentar?: boolean
           pode_emitir?: boolean
+          responsavel?: string
+          setor?: string
+          tipo_painel?: string
           user_id?: string
         }
         Relationships: []
@@ -374,6 +467,39 @@ export type Database = {
           },
         ]
       }
+      solicitacoes_internas: {
+        Row: {
+          assinado_em: string
+          assinante_funcao: string
+          assinante_nome: string
+          criado_por: string
+          destinatario: string
+          destinatario_id: string
+          id: string
+          texto: string
+        }
+        Insert: {
+          assinado_em?: string
+          assinante_funcao: string
+          assinante_nome: string
+          criado_por?: string
+          destinatario: string
+          destinatario_id: string
+          id?: string
+          texto: string
+        }
+        Update: {
+          assinado_em?: string
+          assinante_funcao?: string
+          assinante_nome?: string
+          criado_por?: string
+          destinatario?: string
+          destinatario_id?: string
+          id?: string
+          texto?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -405,10 +531,26 @@ export type Database = {
         Args: { _id: string; _numero: number }
         Returns: undefined
       }
+      acesso_documento: {
+        Args: { _id: string; _uid: string }
+        Returns: boolean
+      }
       acesso_processo: { Args: { _id: string; _uid: string }; Returns: boolean }
+      assinar_identificado: {
+        Args: {
+          _cpf?: string
+          _decisao: string
+          _funcao?: string
+          _nome?: string
+          _observacoes: string
+          _token: string
+        }
+        Returns: undefined
+      }
       conta_ativa: { Args: { _uid: string }; Returns: boolean }
       devolver_analise: { Args: { _id: string }; Returns: undefined }
       documento_existe: { Args: { _id: string }; Returns: boolean }
+      e_setor: { Args: { _uid: string }; Returns: boolean }
       encaminhar_documento: {
         Args: {
           _id: string
@@ -430,7 +572,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      enviar_documento_setor: {
+        Args: {
+          _assinar: boolean
+          _destino: string
+          _finalidade?: string
+          _id: string
+        }
+        Returns: undefined
+      }
       excluir_anexo_processo: { Args: { _id: string }; Returns: undefined }
+      excluir_documento: { Args: { _id: string }; Returns: undefined }
       excluir_solicitacao: { Args: { _id: string }; Returns: undefined }
       has_role: {
         Args: {
@@ -445,6 +597,10 @@ export type Database = {
         Returns: boolean
       }
       pode_emitir: { Args: { _uid: string }; Returns: boolean }
+      proximo_numero_documento: {
+        Args: { _ano: number; _tipo: string }
+        Returns: number
+      }
       registrar_assinatura: {
         Args: { _decisao: string; _observacoes: string; _token: string }
         Returns: undefined

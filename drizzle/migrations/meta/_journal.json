@@ -127,6 +127,20 @@
       "when": 1792360015327,
       "tag": "0017_editable_document_numbers_and_attachment_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792533599430,
+      "tag": "0018_setores_e_acesso",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792533623583,
+      "tag": "0019_setor_envio_assinatura",
+      "breakpoints": true
     }
   ]
 }

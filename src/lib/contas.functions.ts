@@ -14,7 +14,7 @@ export const listarContas = createServerFn({ method: 'GET' }).middleware([requir
   if (error) throw new Error('Não foi possível listar as contas.');
   const [{ data: roles }, { data: paineis }] = await Promise.all([
     supabaseAdmin.from('user_roles').select('user_id,role'),
-    supabaseAdmin.from('paineis').select('user_id,nome,funcao,pode_emitir,pode_assinar,pode_comentar,ativo'),
+    supabaseAdmin.from('paineis').select('user_id,nome,funcao,pode_emitir,pode_assinar,pode_comentar,ativo,tipo_painel,setor,responsavel'),
   ]);
   const rolePor = new Map((roles ?? []).map(r => [r.user_id, r.role as string]));
   const painelPor = new Map((paineis ?? []).map(p => [p.user_id, p]));
@@ -27,7 +27,7 @@ export const listarContas = createServerFn({ method: 'GET' }).middleware([requir
 });
 
 export const alterarEmail = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), email: z.string().email() }).parse(d))
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), email: z.string().email() }).refine(v => v.tipo_painel !== 'setor' || v.setor.length > 2, 'Informe o setor.').parse(d))
   .handler(async ({ data, context }) => {
     await exigirAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
@@ -37,7 +37,7 @@ export const alterarEmail = createServerFn({ method: 'POST' }).middleware([requi
   });
 
 export const alterarSenha = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), password: z.string().min(8).max(128) }).parse(d))
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), password: z.string().min(8).max(128) }).refine(v => v.tipo_painel !== 'setor' || v.setor.length > 2, 'Informe o setor.').parse(d))
   .handler(async ({ data, context }) => {
     await exigirAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
@@ -62,19 +62,22 @@ export const excluirConta = createServerFn({ method: 'POST' }).middleware([requi
 export const atualizarPermissoes = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({
     id: z.string().uuid(),
+    tipo_painel: z.enum(['individual','setor']),
+    setor: z.string().trim().max(200),
+    responsavel: z.string().trim().max(200),
     nome: z.string().trim().max(200),
     funcao: z.string().trim().max(200),
     pode_emitir: z.boolean(),
     pode_assinar: z.boolean(),
     pode_comentar: z.boolean(),
     ativo: z.boolean(),
-  }).parse(d))
+  }).refine(v => v.tipo_painel !== 'setor' || v.setor.length > 2, 'Informe o setor.').parse(d))
   .handler(async ({ data, context }) => {
     await exigirAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     if (data.id === context.userId && (!data.ativo || !data.pode_emitir)) throw new Error('Sua própria conta não pode perder emissão nem ser desativada.');
     const { error } = await supabaseAdmin.from('paineis').upsert({
-      user_id: data.id, nome: data.nome || 'Painel', funcao: data.funcao || 'Painel',
+      user_id: data.id, tipo_painel: data.tipo_painel, setor: data.setor, responsavel: data.responsavel, nome: data.nome || 'Painel', funcao: data.funcao || 'Painel',
       pode_emitir: data.pode_emitir, pode_assinar: data.pode_assinar, pode_comentar: data.pode_comentar, ativo: data.ativo,
     });
     if (error) throw new Error('Não foi possível salvar as permissões.');
