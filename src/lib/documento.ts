@@ -17,6 +17,7 @@ export function assinantesDespacho(opcao?: Despacho) {
 }
 
 export type Documento = {
+  setor?: string;
   tipo: string;
   numero: number;
   ano: number;

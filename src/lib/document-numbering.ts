@@ -5,8 +5,7 @@ export function numeroSeguinte(rows: { tipo: string; ano: number; numero: number
 }
 
 export async function proximoNumeroDocumento(tipo: string, ano: number) {
-  const { data, error } = await supabase.from('documentos').select('tipo,ano,numero')
-    .ilike('tipo', tipo).eq('ano', ano).order('numero', { ascending: false }).limit(1);
+  const { data, error } = await supabase.rpc('proximo_numero_documento', { _tipo: tipo, _ano: ano });
   if (error) throw new Error('Não foi possível consultar a numeração deste tipo de documento.');
-  return numeroSeguinte(data ?? [], tipo, ano);
+  return data ?? 1;
 }
