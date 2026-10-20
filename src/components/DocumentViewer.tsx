@@ -9,6 +9,7 @@ import { gerarPDF } from '@/lib/pdf';
 import { carregarExtras } from '@/lib/assinaturas-eletronicas';
 import { numeroFormatado, GESTORAS, type Documento } from '@/lib/documento';
 import { decisaoLabel } from '@/lib/workflow';
+import { podeExportar } from '@/lib/sector';
 import { toast } from 'sonner';
 
 export function DocumentViewer({id,onClose}:{id:string|null;onClose:()=>void}) {
@@ -18,6 +19,7 @@ export function DocumentViewer({id,onClose}:{id:string|null;onClose:()=>void}) {
  const [selected,setSelected]=useState<number|null>(null);
  const [requests,setRequests]=useState<{gestora:string;signatario_nome:string|null;decisao:string|null;assinado_em:string|null;versao:number}[]>([]);
  const [text,setText]=useState('');const [allowed,setAllowed]=useState(false);
+ const [exportAllowed,setExportAllowed]=useState(false);
  async function load(){if(!id)return;const [d,c,r,v,u]=await Promise.all([supabase.from('documentos').select('dados,status,versao,emitido_em').eq('id',id).single(),supabase.from('documento_comentarios').select('id,texto,created_at,versao').eq('documento_id',id).order('created_at'),supabase.from('solicitacoes_assinatura').select('gestora,signatario_nome,decisao,assinado_em,versao').eq('documento_id',id),supabase.from('documento_versoes').select('versao,dados,emitido_em,assinaturas').eq('documento_id',id).order('versao'),supabase.auth.getUser()]);if(d.error){toast.error('Documento não disponível.');return;}setDoc(d.data as unknown as typeof doc);setComments(c.data??[]);setRequests(r.data??[]);setVersions((v.data??[]) as unknown as typeof versions);if(u.data.user){const [p,roles]=await Promise.all([supabase.from('paineis').select('pode_comentar,pode_emitir,ativo').eq('user_id',u.data.user.id).maybeSingle(),supabase.from('user_roles').select('role')]);const admin=roles.data?.some(x=>x.role==='admin');setAllowed(!!admin || !!(p.data?.ativo&&p.data.pode_comentar&&(!p.data.pode_emitir||d.data.status==='desenvolvendo')));}}
  useEffect(()=>{setDoc(null);setSelected(null);setText('');if(id)void load();},[id]);
  const old=versions.find(v=>v.versao===selected);const displayed=old?.dados??doc?.dados;
