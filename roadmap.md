@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Corrigir validação indevida de setor na alteração de e-mail e senha
+
 - [ ] PDFs em todos os painéis e após assinatura; corrigir exclusão de termos
 - [ ] Cadastro e edição de contas individuais/setores, isolamento e numeração por setor
 - [ ] Assinatura de setor com identificação e senha; envio direto com pesquisa de destinatário

@@ -27,7 +27,7 @@ export const listarContas = createServerFn({ method: 'GET' }).middleware([requir
 });
 
 export const alterarEmail = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), email: z.string().email() }).refine(v => v.tipo_painel !== 'setor' || v.setor.length > 2, 'Informe o setor.').parse(d))
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), email: z.string().email() }).parse(d))
   .handler(async ({ data, context }) => {
     await exigirAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
@@ -37,7 +37,7 @@ export const alterarEmail = createServerFn({ method: 'POST' }).middleware([requi
   });
 
 export const alterarSenha = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), password: z.string().min(8).max(128) }).refine(v => v.tipo_painel !== 'setor' || v.setor.length > 2, 'Informe o setor.').parse(d))
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), password: z.string().min(8).max(128) }).parse(d))
   .handler(async ({ data, context }) => {
     await exigirAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
