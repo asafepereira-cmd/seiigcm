@@ -536,6 +536,17 @@ export type Database = {
         Returns: boolean
       }
       acesso_processo: { Args: { _id: string; _uid: string }; Returns: boolean }
+      assinar_identificado: {
+        Args: {
+          _cpf?: string
+          _decisao: string
+          _funcao?: string
+          _nome?: string
+          _observacoes: string
+          _token: string
+        }
+        Returns: undefined
+      }
       conta_ativa: { Args: { _uid: string }; Returns: boolean }
       devolver_analise: { Args: { _id: string }; Returns: undefined }
       documento_existe: { Args: { _id: string }; Returns: boolean }
@@ -558,6 +569,15 @@ export type Database = {
           _prazo: string
           _prioridade: string
           _termo: string
+        }
+        Returns: undefined
+      }
+      enviar_documento_setor: {
+        Args: {
+          _assinar: boolean
+          _destino: string
+          _finalidade?: string
+          _id: string
         }
         Returns: undefined
       }
