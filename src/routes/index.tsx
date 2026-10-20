@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useServerFn } from "@tanstack/react-start";
+import { destinatarios } from "@/lib/setor.functions";
+import { podeExportar } from "@/lib/sector";
 import { reviewWithAI } from "@/lib/server.functions";
 import { gerarPDF } from "@/lib/pdf";
 import { carregarExtras } from "@/lib/assinaturas-eletronicas";
@@ -60,6 +63,16 @@ function Editor() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const listRecipients = useServerFn(destinatarios);
+  const [panelType,setPanelType] = useState('individual');
+  const [documentStatus,setDocumentStatus] = useState('desenvolvendo');
+  const [recipients,setRecipients] = useState<{id:string;nome:string}[]>([]);
+  const [recipientSearch,setRecipientSearch] = useState('');
+  const [recipientId,setRecipientId] = useState('');
+  const [purpose,setPurpose] = useState<'deferimento'|'ciencia'>('deferimento');
+  const [sending,setSending] = useState(false);
+  useEffect(()=>{if(!ready)return;supabase.from('paineis').select('tipo_painel').eq('user_id',session?.user.id??'').maybeSingle().then(({data})=>setPanelType(data?.tipo_painel??'individual'));},[ready,session?.user.id]);
+  useEffect(()=>{if(panelType==='setor'||isAdmin)listRecipients().then(setRecipients).catch(()=>toast.error('Não foi possível listar destinatários.'));},[panelType,isAdmin]);
   const signatureInput = useRef<HTMLInputElement>(null);
 
   async function comProcesso(documento: Documento, processoId?: string | null) {
@@ -80,15 +93,19 @@ function Editor() {
           return;
         }
         if (data) {
+          setDocumentStatus(data.status);
           const d = data.dados as unknown as Documento;
           setDoc(await comProcesso(d, data.processo_id));
           setListaTexto(listaParaTexto(d.lista));
         }
       });
     } else {
-      Promise.all([proximoNumeroDocumento('Ofício', new Date().getFullYear()), supabase.from('paineis').select('nome,funcao').eq('user_id',session?.user.id ?? '').maybeSingle()]).then(async ([n, {data: titular}]) => {
+      Promise.all([proximoNumeroDocumento('Ofício', new Date().getFullYear()), supabase.from('paineis').select('nome,funcao,tipo_painel,setor,responsavel').eq('user_id',session?.user.id ?? '').maybeSingle()]).then(async ([n, {data: titular}]) => {
         if (!isAdmin && !titular) { toast.error('Seu painel precisa de nome e função.'); navigate({to:'/painel'}); return; }
-        setDoc(await comProcesso(modeloGravacao(n, !isAdmin && titular ? titular : undefined), processo));
+        const model = modeloGravacao(n, !isAdmin && titular ? titular : undefined);
+        setDocumentStatus('desenvolvendo');
+        if(titular?.tipo_painel==='setor') { model.setor=titular.setor;model.de=titular.setor;model.assinante='';model.cargo=''; }
+        setDoc(await comProcesso(model, processo));
         setListaTexto("");
       }).catch(error => toast.error(error instanceof Error ? error.message : 'Falha ao consultar numeração.'));
     }
@@ -120,15 +137,28 @@ function Editor() {
     if (!numeroValido(full.numero)) { toast.error('Informe um número inteiro maior que zero.'); return; }
     setSaving(true);
     const {data:saved,error} = await supabase.rpc('salvar_documento',{_id:(docId ?? null) as string,_dados:full as never,_processo:(processo ?? null) as string});
-    const res = error || !saved ? {error:error??new Error('Falha'),data:null} : await supabase.from('documentos').select('id,dados').eq('id',saved).single();
+    const res = error || !saved ? {error:error??new Error('Falha'),data:null} : await supabase.from('documentos').select('id,dados,status').eq('id',saved).single();
     setSaving(false);
     if (res.error || !res.data) return toast.error(res.error?.message ?? "Erro ao salvar"), undefined;
+    setDocumentStatus(res.data.status);
     setDocId(res.data.id);
     setDoc(res.data.dados as unknown as Documento);
     toast.success("Documento salvo");
     return res.data.id;
   }
 
+  async function encaminhar(assinar:boolean) {
+    if(!recipientId)return;
+    setSending(true);
+    try {
+      const savedId=await salvar();if(!savedId)return;
+      const {error}=await supabase.rpc('enviar_documento_setor',{_id:savedId,_destino:recipientId,_assinar:assinar,_finalidade:purpose});
+      if(error)throw error;
+      toast.success(assinar?'Documento enviado para assinatura':'Documento enviado');
+      navigate({to:'/historico'});
+    } catch(error) { toast.error(error instanceof Error?error.message:'Não foi possível enviar.'); }
+    finally {setSending(false);}
+  }
   return (
     <div className="min-h-screen">
       <AppHeader />
@@ -239,17 +269,23 @@ function Editor() {
             </div>}
           </Group>
 
+          {(panelType==='setor'||isAdmin) && <Group title="Encaminhamento">
+            <Input aria-label="Destinatário do documento" placeholder="Pesquisar setor ou pessoa" value={recipientSearch} onChange={e=>{setRecipientSearch(e.target.value);setRecipientId('');}}/>
+            {recipientSearch&&!recipientId&&<div className="flex flex-wrap gap-2">{recipients.filter(p=>p.nome.toLocaleLowerCase('pt-BR').includes(recipientSearch.toLocaleLowerCase('pt-BR'))).map(p=><Button key={p.id} variant="outline" onClick={()=>{setRecipientId(p.id);setRecipientSearch(p.nome);}}>{p.nome}</Button>)}</div>}
+            <F label="Finalidade da assinatura"><select aria-label="Finalidade da assinatura" className="h-9 w-full rounded-md border bg-card px-2" value={purpose} onChange={e=>setPurpose(e.target.value==='ciencia'?'ciencia':'deferimento')}><option value="deferimento">Deferimento</option><option value="ciencia">Somente ciência</option></select></F>
+            <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!recipientId||sending||saving} onClick={()=>encaminhar(false)}>Enviar para</Button><Button disabled={!recipientId||sending||saving} onClick={()=>encaminhar(true)}>Enviar e solicitar assinatura</Button></div>
+          </Group>}
           <div className="sticky bottom-0 -mx-4 flex gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
             <Button variant="outline" className="flex-1" onClick={salvar} disabled={saving}>
               <Save className="h-4 w-4" /> Salvar
             </Button>
             <Button
               className="flex-1"
-              disabled={generating || saving || uploading}
+              disabled={generating || saving || uploading || !podeExportar(panelType,documentStatus)}
               onClick={async () => {
                 setGenerating(true);
                 try {
-                  const savedId = await salvar();
+                  const savedId = panelType==='setor'?docId:await salvar();
                   if (!savedId) return;
                   const {data:saved,error} = await supabase.from("documentos").select("dados").eq("id",savedId).single();
                   if (error || !saved) throw new Error("Não foi possível carregar o documento para gerar o PDF. Tente novamente.");

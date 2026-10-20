@@ -42,13 +42,13 @@ export async function enviarParaAssinatura(documentoId: string, gestoras: Gestor
 
 export async function carregarSolicitacoes(documentoId: string) {
   const { data } = await supabase.from("solicitacoes_assinatura")
-    .select("id, gestora, signatario_nome, signatario_funcao, token, decisao, observacoes, assinado_em").eq("documento_id", documentoId);
+    .select("id, gestora, signatario_nome, signatario_funcao, versao, token, decisao, observacoes, assinado_em").eq("documento_id", documentoId);
   return data ?? [];
 }
 
 export async function carregarExtras(documentoId: string): Promise<ExtrasPDF> {
   const [{ data: doc }, sols, { data: imgs }] = await Promise.all([
-    supabase.from("documentos").select("emitido_em").eq("id", documentoId).maybeSingle(),
+    supabase.from("documentos").select("emitido_em,versao").eq("id", documentoId).maybeSingle(),
     carregarSolicitacoes(documentoId),
     supabase.from("assinaturas_gestoras").select("gestora, imagem"),
   ]);
@@ -58,7 +58,7 @@ export async function carregarExtras(documentoId: string): Promise<ExtrasPDF> {
     emitidoEm: doc.emitido_em,
     emissorImagem: imagem.get("admin"),
     verificarUrl: `${window.location.origin}/verificar/${documentoId}`,
-    assinaturas: sols.map(s => ({
+    assinaturas: sols.filter(s=>s.versao===doc.versao).map(s => ({
       nome:s.signatario_nome, cargo:s.signatario_funcao, gestora: s.gestora, decisao: s.decisao, observacoes: s.observacoes, assinadoEm: s.assinado_em,
       imagem: s.assinado_em ? imagem.get(s.gestora) : undefined,
     })),
