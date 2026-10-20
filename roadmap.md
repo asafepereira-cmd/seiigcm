@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Retomar pendências: envio direto de setor, PDFs unificados, exclusão de termos e avisos no SEII; verificar por fluxos reais
+
 - [x] Corrigir validação indevida de setor na alteração de e-mail e senha
 
 - [ ] PDFs em todos os painéis e após assinatura; corrigir exclusão de termos
