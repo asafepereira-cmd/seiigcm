@@ -40,12 +40,12 @@ function Contas() {
   const [senhaId, setSenhaId] = useState<string | null>(null);
   const [emailId, setEmailId] = useState<string | null>(null);
   const [valor, setValor] = useState('');
-  const [perms, setPerms] = useState({ nome: '', funcao: '', pode_emitir: false, pode_assinar: false, pode_comentar: false, ativo: true });
+  const [perms, setPerms] = useState({ tipo_painel: 'individual' as 'individual'|'setor', setor: '', responsavel: '', nome: '', funcao: '', pode_emitir: false, pode_assinar: false, pode_comentar: false, ativo: true });
   const [busy, setBusy] = useState(false);
 
   function abrirPerms(c: Conta) {
     setEditando(c);
-    setPerms({ nome: c.painel?.nome ?? '', funcao: c.painel?.funcao ?? '', pode_emitir: c.painel?.pode_emitir ?? false, pode_assinar: c.painel?.pode_assinar ?? false, pode_comentar: c.painel?.pode_comentar ?? false, ativo: c.painel?.ativo ?? true });
+    setPerms({ tipo_painel: c.painel?.tipo_painel === 'setor' ? 'setor' : 'individual', setor: c.painel?.setor ?? '', responsavel: c.painel?.responsavel ?? '', nome: c.painel?.nome ?? '', funcao: c.painel?.funcao ?? '', pode_emitir: c.painel?.pode_emitir ?? false, pode_assinar: c.painel?.pode_assinar ?? false, pode_comentar: c.painel?.pode_comentar ?? false, ativo: c.painel?.ativo ?? true });
   }
 
   return (
@@ -98,7 +98,7 @@ function Contas() {
         <DialogContent>
           <DialogHeader><DialogTitle>Editar permissão — {editando?.painel?.nome ?? editando?.email}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label htmlFor="perm-nome">Nome completo</Label><Input id="perm-nome" value={perms.nome} onChange={e => setPerms({ ...perms, nome: e.target.value })} /></div>
+            <div><Label>Tipo de painel</Label><select aria-label="Tipo de painel" className="h-9 w-full rounded-md border bg-card px-2" value={perms.tipo_painel} onChange={e=>setPerms({...perms,tipo_painel:e.target.value === "setor" ? "setor" : "individual"})}><option value="individual">Emissão única — pessoa</option><option value="setor">Órgão / setor</option></select></div>{perms.tipo_painel === "setor" && <><Label>Nome do setor</Label><Input aria-label="Nome do setor" value={perms.setor} onChange={e=>setPerms({...perms,setor:e.target.value,nome:e.target.value})}/><Label>Responsável (opcional)</Label><Input value={perms.responsavel} onChange={e=>setPerms({...perms,responsavel:e.target.value})}/></>}<div><Label htmlFor="perm-nome">Nome completo</Label><Input id="perm-nome" value={perms.nome} onChange={e => setPerms({ ...perms, nome: e.target.value })} /></div>
             <div><Label htmlFor="perm-funcao">Função</Label><Input id="perm-funcao" value={perms.funcao} onChange={e => setPerms({ ...perms, funcao: e.target.value })} /></div>
             {([['pode_emitir', 'Pode emitir docs'], ['pode_assinar', 'Pode enviar solicitações de assinatura'], ['pode_comentar', 'Pode comentar nos docs'], ['ativo', 'Conta ativa (desmarque para bloquear o acesso)']] as const).map(([k, l]) => (
               <label key={k} className="flex items-center gap-2 text-sm">
