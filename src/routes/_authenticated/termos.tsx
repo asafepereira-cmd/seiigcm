@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { PERGUNTAS_TERMO, montarMinutaTermo, type RespostasTermo } from '@/lib/termo';
 import { modeloGravacao, numeroFormatado } from '@/lib/documento';
 import { proximoNumeroDocumento } from '@/lib/document-numbering';
+import { DocumentViewer } from '@/components/DocumentViewer';
+import { useRequireSession } from '@/hooks/use-session';
+import { podeEditarDocumento } from '@/lib/document-access';
 
 export const Route = createFileRoute('/_authenticated/termos')({
   head: () => ({ meta: [
@@ -24,20 +27,25 @@ export const Route = createFileRoute('/_authenticated/termos')({
   component: Termos,
 });
 
-type Row = { id: string; status: string; dados: { tipo: string; numero: number; ano: number; sigla: string; assunto: string; signatarioTermo?: string } };
+type Row = { id: string; status: string; criado_por: string|null; analise_admin: boolean; dados: { tipo: string; numero: number; ano: number; sigla: string; assunto: string; signatarioTermo?: string } };
 const VAZIO: RespostasTermo = { participantes: [], finalidades: [], canais: [], nomeParticipante: '', responsavel: '', nomeSignatario: '', funcaoSignatario: '' };
 
 function Termos() {
   const navigate = useNavigate();
+  const {session,isAdmin,ready}=useRequireSession(false);
+  const [view,setView]=useState<string|null>(null);
+  const [canEmit,setCanEmit]=useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [novo, setNovo] = useState<'termo' | 'contrato' | null>(null);
   const [r, setR] = useState<RespostasTermo>(VAZIO);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    supabase.from('documentos').select('id,status,dados').order('created_at', { ascending: false })
+    if(!ready)return;
+    supabase.from('paineis').select('pode_emitir').eq('user_id',session?.user.id??'').maybeSingle().then(({data})=>setCanEmit(isAdmin||!!data?.pode_emitir));
+    supabase.from('documentos').select('id,status,dados,criado_por,analise_admin').order('created_at', { ascending: false })
       .then(({ data }) => setRows(((data as Row[] | null) ?? []).filter(d => ['termo', 'contrato'].includes(d.dados.tipo.toLowerCase()))));
-  }, [novo]);
+  }, [novo,ready,isAdmin]);
 
   function marcar(campo: 'participantes' | 'finalidades' | 'canais', opcao: string, on: boolean) {
     setR(prev => ({ ...prev, [campo]: on ? [...prev[campo], opcao] : prev[campo].filter(o => o !== opcao) }));
@@ -49,8 +57,10 @@ function Termos() {
       const minuta = montarMinutaTermo(r);
       const ano = new Date().getFullYear();
       const numero = await proximoNumeroDocumento('Termo', ano);
+      const {data:panel}=await supabase.from('paineis').select('nome,funcao,tipo_painel,setor').eq('user_id',session?.user.id??'').maybeSingle();
       const dados = {
-        ...modeloGravacao(numero),
+        ...modeloGravacao(numero,!isAdmin&&panel?panel:undefined),
+        ...(panel?.tipo_painel==='setor'?{setor:panel.setor,de:panel.setor}:{}),
         tipo: 'Termo', ano, assunto: minuta.assunto, corpo: minuta.corpo,
         assinante: r.nomeSignatario.trim().toUpperCase() || 'ASAFE PEREIRA DA SILVA FELIX',
         cargo: r.funcaoSignatario.trim() || 'Coordenador de Comunicação e Mídia',
@@ -71,10 +81,10 @@ function Termos() {
       <AppHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-2xl font-bold text-primary-foreground">Painel de contratos e termos</h1>
-        <div className="flex flex-wrap gap-3">
+        {canEmit&&<div className="flex flex-wrap gap-3">
           <Button onClick={() => setNovo('termo')}>Novo termo</Button>
           <Button variant="secondary" onClick={() => setNovo('contrato')}>Novo contrato</Button>
-        </div>
+        </div>}
         <section className="space-y-2">
           <h2 className="font-bold text-primary-foreground">Termos e contratos</h2>
           {rows === null ? <p className="text-primary-foreground">Carregando...</p>
@@ -83,13 +93,15 @@ function Termos() {
               <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-card p-3 text-card-foreground">
                 <p className="mr-auto min-w-0 truncate text-sm font-semibold">{numeroFormatado(d.dados)} — {d.dados.assunto}{d.dados.signatarioTermo ? ` · ${d.dados.signatarioTermo}` : ''}</p>
                 <span className="text-xs text-muted-foreground">{d.status === 'desenvolvendo' ? 'Em desenvolvimento' : d.status === 'enviado' ? 'Enviado' : 'Assinado'}</span>
-                <Button size="sm" variant="outline" asChild><Link to="/" search={{ id: d.id }}>Abrir</Link></Button>
-                <Button size="sm" variant="outline" asChild><Link to="/historico">Enviar</Link></Button>
+                <Button size="sm" variant="outline" onClick={()=>setView(d.id)}>Visualizar / Exportar PDF</Button>
+                {podeEditarDocumento(isAdmin,session?.user.id??'',d)&&canEmit&&<Button size="sm" variant="outline" asChild><Link to="/" search={{ id: d.id }}>Editar</Link></Button>}
+                {canEmit&&<Button size="sm" variant="outline" asChild><Link to="/historico">Enviar</Link></Button>}
               </div>
             ))}
         </section>
       </main>
       <AppFooter />
+      <DocumentViewer id={view} onClose={()=>setView(null)}/>
 
       <Dialog open={novo === 'contrato'} onOpenChange={o => !o && setNovo(null)}>
         <DialogContent>

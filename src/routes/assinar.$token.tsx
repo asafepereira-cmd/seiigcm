@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { getSignRequest, signDocument } from "@/lib/assinatura.functions";
 import { GESTORAS, numeroFormatado } from "@/lib/documento";
 import { dataHora } from "@/lib/assinaturas-eletronicas";
+import { supabase } from '@/integrations/supabase/client';
+import { decisaoLabel } from '@/lib/workflow';
 
 export const Route = createFileRoute("/assinar/$token")({
   head: () => ({
@@ -39,9 +41,12 @@ function Assinar() {
   const [ciente, setCiente] = useState(false);
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState("");
+  const [canNotify,setCanNotify]=useState(false);
+  const [subscribed,setSubscribed]=useState(false);
 
   const load = () => fetchReq({ data: { token } }).then(setReq).catch(() => setReq({ found: false }));
-  useEffect(() => { load(); }, [token]);
+  useEffect(() => { load(); const timer=window.setInterval(load,15_000);return()=>window.clearInterval(timer); }, [token]);
+  useEffect(()=>{if(!req?.found)return;supabase.from('documentos').select('id').eq('id',req.documentoId).maybeSingle().then(({data})=>setCanNotify(!!data));supabase.from('documento_avisos').select('documento_id').eq('documento_id',req.documentoId).maybeSingle().then(({data})=>setSubscribed(!!data));},[req?.found ? req.documentoId : null]);
 
   async function assinar() {
     if (!decisao) return;
@@ -61,6 +66,7 @@ function Assinar() {
           return (
             <div className="space-y-4">
               {req.completo && <Button disabled={busy} onClick={async()=>{setBusy(true);try{await gerarPDF(req.doc,true,{...req.extras,verificarUrl:`${window.location.origin}/verificar/${req.documentoId}`});}catch{toast.error("Não foi possível baixar o PDF.");}finally{setBusy(false);}}}>Baixar PDF assinado</Button>}
+              {!req.completo&&canNotify&&<Button variant="outline" disabled={busy||subscribed} onClick={async()=>{setBusy(true);const {error}=await supabase.from('documento_avisos').insert({documento_id:req.documentoId});setBusy(false);if(error)toast.error('Não foi possível registrar o aviso.');else{setSubscribed(true);toast.success('Você receberá o aviso no SEII.');}}}>{subscribed?'Aviso no SEII ativado':'Notificar no meu SEII quando todos assinarem'}</Button>}
               <div>
                 <p className="text-sm text-muted-foreground">Assinatura eletrônica · S.E.I.GCM-CEMXXXIII</p>
                 <h1 className="text-xl font-bold">{numeroFormatado(req.doc)}</h1>
@@ -71,7 +77,7 @@ function Assinar() {
               {req.assinadoEm ? (
                 <div className="flex items-start gap-3 rounded-md border border-primary/40 bg-primary/10 p-4">
                   <BadgeCheck className="h-6 w-6 shrink-0 text-primary" />
-                  <p className="text-sm">Documento assinado eletronicamente por <b>{g.nome}</b>, {g.cargo}, em {dataHora(req.assinadoEm).data}, às {dataHora(req.assinadoEm).hora}. Decisão: <b>{req.decisao === "indeferido" ? "Indeferido" : "Deferido"}</b>.</p>
+                  <p className="text-sm">Documento assinado eletronicamente por <b>{g.nome}</b>, {g.cargo}, em {dataHora(req.assinadoEm).data}, às {dataHora(req.assinadoEm).hora}. Decisão: <b>{decisaoLabel(req.decisao)}</b>.</p>
                 </div>
               ) : (
                 <>

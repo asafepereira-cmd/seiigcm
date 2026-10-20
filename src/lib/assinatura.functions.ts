@@ -14,7 +14,9 @@ export const getSignRequest = createServerFn({ method: 'POST' }).inputValidator(
   const uid = req.gestora.startsWith('user:') ? req.gestora.slice(5) : null;
   const { data: panel } = uid ? await supabaseAdmin.from('paineis').select('tipo_painel').eq('user_id', uid).maybeSingle() : { data: null };
   const { data: requests } = await supabaseAdmin.from('solicitacoes_assinatura').select('gestora,signatario_nome,signatario_funcao,decisao,observacoes,assinado_em').eq('documento_id', req.documento_id).eq('versao', doc.versao);
-  const extras: ExtrasPDF = { emitidoEm: doc.emitido_em, assinaturas: (requests ?? []).map(s => ({ gestora: s.gestora, nome: s.signatario_nome, cargo: s.signatario_funcao, decisao: s.decisao, observacoes: s.observacoes, assinadoEm: s.assinado_em })) };
+  const { data: images } = await supabaseAdmin.from('assinaturas_gestoras').select('gestora,imagem');
+  const imageMap = new Map((images ?? []).map(i => [i.gestora, i.imagem]));
+  const extras: ExtrasPDF = { emitidoEm: doc.emitido_em, emissorImagem: imageMap.get('admin'), assinaturas: (requests ?? []).map(s => ({ gestora: s.gestora, nome: s.signatario_nome, cargo: s.signatario_funcao, decisao: s.decisao, observacoes: s.observacoes, assinadoEm: s.assinado_em, imagem: s.assinado_em ? imageMap.get(s.gestora) : undefined })) };
   return { found: true as const, documentoId: req.documento_id, setor: panel?.tipo_painel === 'setor', finalidade: req.finalidade, gestora: req.gestora, nome: req.signatario_nome, cargo: req.signatario_funcao, termo: req.termo, decisao: req.decisao, assinadoEm: req.assinado_em, completo: doc.status === 'assinado', doc: doc.dados as unknown as Documento, extras };
 });
 export const signDocument = createServerFn({ method: 'POST' }).inputValidator((d: unknown) => tokenInput.extend({ decisao: z.enum(['deferido','indeferido','ciente']), observacoes: z.string().max(600), concordo: z.literal(true), nome: z.string().max(200).optional(), funcao: z.string().max(200).optional(), cpf: z.string().max(20).optional(), password: z.string().max(128).optional() }).parse(d)).handler(async ({ data }) => {

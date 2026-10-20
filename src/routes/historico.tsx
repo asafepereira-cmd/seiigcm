@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isStatusDocumento, ordenarEmitidos, STATUS_DOCUMENTO, type StatusDocumento } from "@/lib/emitidos";
 import { numeroFormatado, type Documento } from "@/lib/documento";
+import { DocumentViewer } from "@/components/DocumentViewer";
+import { podeExportar } from "@/lib/sector";
 import { podeEditarDocumento, podeComentarDocumento } from "@/lib/document-access";
 
 export const Route = createFileRoute("/historico")({
@@ -35,16 +37,8 @@ type Row = { id: string; tipo: string; numero: number; ano: number; status: Stat
 
 function Historico() {
   const { ready, session, isAdmin } = useRequireSession(false);
-  const [detalhes,setDetalhes] = useState<Row|null>(null);
-  const [comentario,setComentario] = useState('');
-  const [comentarios,setComentarios] = useState<{id:string;texto:string;created_at:string}[]>([]);
-  const [registros,setRegistros] = useState<{gestora:string;signatario_nome:string|null;assinado_em:string|null;decisao:string|null}[]>([]);
-  async function verDetalhes(row:Row) {
-    setDetalhes(row); setComentario(''); setComentarios([]); setRegistros([]);
-    const [c,s] = await Promise.all([supabase.from('documento_comentarios').select('id,texto,created_at').eq('documento_id',row.id).order('created_at'),supabase.from('solicitacoes_assinatura').select('gestora,signatario_nome,assinado_em,decisao').eq('documento_id',row.id)]);
-    if(c.error || s.error) toast.error('Não foi possível carregar todos os registros.');
-    setComentarios(c.data??[]); setRegistros(s.data??[]);
-  }
+  const [view,setView]=useState<string|null>(null);
+  const [panelType,setPanelType]=useState('individual');
   const [rows, setRows] = useState<Row[] | null>(null);
   const [updating, setUpdating] = useState<string[]>([]);
   const [loadError, setLoadError] = useState(false);
@@ -122,7 +116,7 @@ function Historico() {
   }
 
   useEffect(() => {
-    if (ready) load();
+    if (ready) {load();supabase.from('paineis').select('tipo_painel').eq('user_id',session?.user.id??'').maybeSingle().then(({data})=>setPanelType(data?.tipo_painel??'individual'));}
   }, [ready]);
 
   useEffect(() => {
@@ -155,14 +149,14 @@ function Historico() {
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold">{STATUS_DOCUMENTO[r.status].label}</span>
                   {isAdmin && <Button size="sm" onClick={()=>alterarStatus(r.id,"enviado")}>Encaminhar assinaturas</Button>}
-                  {!isAdmin && podeEditarDocumento(false,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,'enviado')}>Enviar para análise</Button>}
-                  <Button size="sm" variant="outline" onClick={()=>verDetalhes(r)}>Visualizar</Button>
+                  {!isAdmin && panelType!=='setor' && podeEditarDocumento(false,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,'enviado')}>Enviar para análise</Button>}
+                  <Button size="sm" variant="outline" onClick={()=>setView(r.id)}>Visualizar</Button>
                   {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" variant="outline" asChild>
                     <Link to="/" search={{ id: r.id }}>
                       <Pencil className="h-4 w-4" /> Editar
                     </Link>
                   </Button>}
-                  <Button size="sm" variant="outline" onClick={() => baixar(r)}>
+                  <Button size="sm" variant="outline" disabled={!podeExportar(panelType,r.status)} onClick={() => baixar(r)}>
                     <Download className="h-4 w-4" /> PDF
                   </Button>
                   {isAdmin && r.status !== "desenvolvendo" && (
@@ -190,12 +184,7 @@ function Historico() {
           </ul>
         )}
       </main>
-      <Dialog open={!!detalhes} onOpenChange={o=>!o&&setDetalhes(null)}><DialogContent className="max-h-[85svh] overflow-y-auto"><DialogHeader><DialogTitle>{detalhes?numeroFormatado(detalhes.dados):'Documento'}</DialogTitle></DialogHeader>
-        {detalhes && <><p className="font-semibold">{detalhes.assunto}</p><p className="whitespace-pre-line">{detalhes.dados.corpo}</p><p className="text-sm">Emissor: {detalhes.dados.assinante} — {detalhes.dados.cargo}</p><p className="text-sm">Emissão: {detalhes.emitido_em?new Date(detalhes.emitido_em).toLocaleString('pt-BR',{timeZone:'America/Boa_Vista'}):'Ainda não encaminhado para assinaturas'}</p>
-        {registros.map((s,i)=><p key={i} className="text-sm">{s.signatario_nome??GESTORAS[s.gestora as GestoraKey]?.nome??s.gestora}: {s.assinado_em?`${s.decisao} · ${new Date(s.assinado_em).toLocaleString('pt-BR',{timeZone:'America/Boa_Vista'})}`:'Aguardando assinatura'}</p>)}
-        <h3 className="font-semibold">Comentários</h3>{comentarios.map(c=><p key={c.id} className="whitespace-pre-line border-b pb-2 text-sm">{c.texto}<span className="block text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString('pt-BR',{timeZone:'America/Boa_Vista'})}</span></p>)}
-        {podeComentarDocumento(detalhes.status)&&<form className="space-y-2" onSubmit={async e=>{e.preventDefault();const {error}=await supabase.from('documento_comentarios').insert({documento_id:detalhes.id,texto:comentario.trim()});if(error)toast.error('Não foi possível comentar.');else {toast.success('Comentário registrado');verDetalhes(detalhes);}}}><Textarea aria-label="Comentário" maxLength={2000} required value={comentario} onChange={e=>setComentario(e.target.value)}/><Button type="submit" disabled={!comentario.trim()}>Comentar</Button></form>}</>}
-      </DialogContent></Dialog>
+      <DocumentViewer id={view} onClose={()=>setView(null)}/>
       <Dialog open={!!envio} onOpenChange={o => !o && setEnvio(null)}>
         <DialogContent className="max-h-[85svh] overflow-y-auto">
           <DialogHeader><DialogTitle>Enviar para assinatura</DialogTitle></DialogHeader>

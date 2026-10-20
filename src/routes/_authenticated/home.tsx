@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { AppHeader, AppFooter } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
+import { DocumentNotifications } from '@/components/DocumentNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { FilePlus2, FolderOpen, FileSignature, ScrollText, Users, FileText, ClipboardList } from 'lucide-react';
 
@@ -66,6 +67,7 @@ function Home() {
             </Button>
           ))}
         </div>
+        <div className="mt-8 text-left"><DocumentNotifications/></div>
       </main>
       <AppFooter />
     </div>

@@ -77,7 +77,7 @@ export const atualizarPermissoes = createServerFn({ method: 'POST' }).middleware
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     if (data.id === context.userId && (!data.ativo || !data.pode_emitir)) throw new Error('Sua própria conta não pode perder emissão nem ser desativada.');
     const { error } = await supabaseAdmin.from('paineis').upsert({
-      user_id: data.id, tipo_painel: data.tipo_painel, setor: data.setor, responsavel: data.responsavel, nome: data.nome || 'Painel', funcao: data.funcao || 'Painel',
+      user_id: data.id, tipo_painel: data.tipo_painel, setor: data.setor, responsavel: data.responsavel, nome: data.tipo_painel==='setor'?data.setor:(data.nome || 'Painel'), funcao: data.tipo_painel==='setor'?'Setor':(data.funcao || 'Painel'),
       pode_emitir: data.pode_emitir, pode_assinar: data.pode_assinar, pode_comentar: data.pode_comentar, ativo: data.ativo,
     });
     if (error) throw new Error('Não foi possível salvar as permissões.');
