@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Corrigir validação indevida de setor na alteração de e-mail e senha
+- [x] Corrigir validação indevida de setor na alteração de e-mail e senha
 
 - [ ] PDFs em todos os painéis e após assinatura; corrigir exclusão de termos
 - [ ] Cadastro e edição de contas individuais/setores, isolamento e numeração por setor
