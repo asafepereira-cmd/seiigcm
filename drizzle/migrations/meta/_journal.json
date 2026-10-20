@@ -141,6 +141,13 @@
       "when": 1792533623583,
       "tag": "0019_setor_envio_assinatura",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792536561613,
+      "tag": "0020_autonomous_document_dispatch",
+      "breakpoints": true
     }
   ]
 }
