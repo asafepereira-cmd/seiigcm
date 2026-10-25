@@ -155,6 +155,13 @@
       "when": 1792953996215,
       "tag": "0021_owner_parity_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792954726668,
+      "tag": "0022_process_delete_and_sector_collaborators",
+      "breakpoints": true
     }
   ]
 }
