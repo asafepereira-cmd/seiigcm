@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, FilePlus2, Upload, Trash2 } from "lucide-react";
+import { Download, FilePlus2, Upload, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/processos")({
   component: Processos,
 });
 
-type Processo = { id: string; numero: number; tema: string; assunto: string; descricao: string; acessos: string[]; oficio_id: string | null; aberto_em: string | null; created_at: string };
+type Processo = { id: string; numero: number; tema: string; assunto: string; descricao: string; acessos: string[]; criado_por: string; oficio_id: string | null; aberto_em: string | null; created_at: string };
 type Doc = { id: string; dados: Documento; status: string };
 type Anexo = { criado_por: string; id: string; nome: string; caminho: string; created_at: string };
 
@@ -49,9 +49,28 @@ function Processos() {
   const [salvando, setSalvando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
+  const [edicao, setEdicao] = useState<{ tema: string; assunto: string; descricao: string; acessos: string[] } | null>(null);
+  const podeGerir = (p: Processo) => podeEmitir && (isAdmin || p.criado_por === session?.user.id);
+
+  async function salvarEdicao() {
+    if (!aberto || !edicao) return;
+    const dados = { tema: edicao.tema.trim(), assunto: edicao.assunto.trim(), descricao: edicao.descricao.trim(), acessos: Array.from(new Set([aberto.criado_por, ...edicao.acessos])) };
+    const { error } = await supabase.from("processos").update(dados).eq("id", aberto.id);
+    if (error) { toast.error("Não foi possível salvar o processo."); return; }
+    toast.success("Processo atualizado");
+    setAberto({ ...aberto, ...dados }); setEdicao(null); load();
+  }
+
+  async function excluirProcesso() {
+    if (!aberto || !confirm(`Excluir ${tituloProcesso(aberto)}? Os documentos continuam em Docs, sem vínculo com o processo.`)) return;
+    await supabase.from("documentos").update({ processo_id: null }).eq("processo_id", aberto.id);
+    const { error } = await supabase.from("processos").delete().eq("id", aberto.id);
+    if (error) { toast.error("Não foi possível excluir o processo."); return; }
+    toast.success("Processo excluído"); setAberto(null); load();
+  }
 
   const load = () =>
-    supabase.from("processos").select("id,numero,tema,assunto,descricao,acessos,oficio_id,aberto_em,created_at").order("numero", { ascending: false })
+    supabase.from("processos").select("id,numero,tema,assunto,descricao,acessos,criado_por,oficio_id,aberto_em,created_at").order("numero", { ascending: false })
       .then(({ data, error }) => {
         if (error) { toast.error("Não foi possível carregar os processos."); return; }
         setRows((data as Processo[]) ?? []);
@@ -236,6 +255,18 @@ function Processos() {
               </Button>}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!edicao} onOpenChange={(o) => !o && setEdicao(null)}>
+        <DialogContent className="max-h-[85svh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar processo</DialogTitle></DialogHeader>
+          {edicao && <div className="space-y-3">
+            <div><Label htmlFor="ed-tema">Nome / tema</Label><Input id="ed-tema" maxLength={200} value={edicao.tema} onChange={(e) => setEdicao({ ...edicao, tema: e.target.value })} /></div>
+            <div><Label htmlFor="ed-assunto">Assunto</Label><Textarea id="ed-assunto" rows={2} maxLength={500} value={edicao.assunto} onChange={(e) => setEdicao({ ...edicao, assunto: e.target.value })} /></div>
+            <div><Label htmlFor="ed-desc">Descrição</Label><Textarea id="ed-desc" rows={4} maxLength={4000} value={edicao.descricao} onChange={(e) => setEdicao({ ...edicao, descricao: e.target.value })} /></div>
+            <div><Label>Quem pode acessar</Label><div className="mt-1.5 flex flex-wrap gap-2">{paineis.map((p) => { const m = edicao.acessos.includes(p.user_id); return <Button key={p.user_id} size="sm" variant={m ? "default" : "outline"} aria-pressed={m} onClick={() => setEdicao({ ...edicao, acessos: m ? edicao.acessos.filter((a) => a !== p.user_id) : [...edicao.acessos, p.user_id] })}>{p.nome}</Button>; })}</div></div>
+            <Button className="w-full" disabled={!edicao.tema.trim() || !edicao.assunto.trim() || !edicao.descricao.trim()} onClick={salvarEdicao}>Salvar alterações</Button>
+          </div>}
         </DialogContent>
       </Dialog>
       <DocumentViewer id={visualizandoDoc} onClose={() => setVisualizandoDoc(null)} />
