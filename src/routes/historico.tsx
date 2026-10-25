@@ -150,7 +150,7 @@ function Historico() {
                   <Button size="sm" variant="outline" onClick={() => baixar(r)}>
                     <Download className="h-4 w-4" /> PDF
                   </Button>
-                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && r.status !== "desenvolvendo" && (
+                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && (
                     <Button size="sm" variant="outline" onClick={() => abrirLinks(r)}>
                       <Link2 className="h-4 w-4" /> Links
                     </Button>
