@@ -63,6 +63,7 @@ function Contas() {
                   <p className="truncate text-sm text-muted-foreground">{c.email} · {ROTULO[c.role] ?? c.role}{c.painel ? ` · ${c.painel.funcao}` : ''}</p>
                   {c.painel && <p className="text-xs text-muted-foreground">{c.painel.ativo ? 'Ativa' : 'Desativada'} · {c.painel.pode_emitir ? 'Emite' : 'Não emite'} · {c.painel.pode_assinar ? 'Assina' : 'Não assina'} · {c.painel.pode_comentar ? 'Comenta' : 'Não comenta'}</p>}
                 </div>
+                <Button size="sm" variant="outline" onClick={() => abrirPerms(c)}>Alterar nome</Button>
                 <Button size="sm" variant="outline" onClick={() => { setEmailId(c.id); setValor(c.email); }}>Alterar e-mail</Button>
                 <Button size="sm" variant="outline" onClick={() => { setSenhaId(c.id); setValor(''); }}>Alterar senha</Button>
                 <Button size="sm" variant="outline" onClick={() => abrirPerms(c)}>Editar permissão</Button>

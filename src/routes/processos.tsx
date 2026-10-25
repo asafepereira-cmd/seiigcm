@@ -189,6 +189,12 @@ function Processos() {
           <DialogHeader><DialogTitle className="pr-8">{aberto ? tituloProcesso(aberto) : "Processo"}</DialogTitle></DialogHeader>
           {aberto && (
             <div className="mx-auto w-full max-w-6xl space-y-4">
+              {podeGerir(aberto) && (
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setEdicao({ tema: aberto.tema, assunto: aberto.assunto, descricao: aberto.descricao, acessos: aberto.acessos })}><Pencil className="h-4 w-4" /> Editar processo</Button>
+                  <Button size="sm" variant="destructive" onClick={excluirProcesso}><Trash2 className="h-4 w-4" /> Excluir processo</Button>
+                </div>
+              )}
               <h2 className="text-center text-xl font-bold">{aberto.tema}</h2>
               <p className="font-semibold">{aberto.assunto}</p>
               <p className="whitespace-pre-line text-sm">{aberto.descricao}</p>
@@ -199,7 +205,22 @@ function Processos() {
               )}
               <h3 className="font-semibold">Documentos do processo</h3>
               {docs.length === 0 && <p className="text-sm text-muted-foreground">Nenhum documento vinculado.</p>}
-              {docs.map((d) => <div key={d.id} className="flex flex-wrap items-center gap-3 border-b pb-3"><p className="mr-auto text-sm">{numeroFormatado(d.dados)} — {d.status}</p><Button size="sm" variant="outline" onClick={() => setVisualizandoDoc(d.id)}>Visualizar documento</Button></div>)}
+              {docs.map((d) => (
+                <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3">
+                  <div className="mr-auto min-w-0">
+                    <p className="font-sans font-bold">{numeroFormatado(d.dados)}</p>
+                    <p className="truncate text-sm text-muted-foreground">{d.dados.assunto}</p>
+                    <span className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-semibold ${d.status === "assinado" ? "document-status-signed" : d.status === "enviado" ? "document-status-sent" : "document-status-developing"}`}>{d.status === "assinado" ? "Assinado" : d.status === "enviado" ? "Enviado" : "Desenvolvendo"}</span>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => setVisualizandoDoc(d.id)}>Visualizar</Button>
+                  {podeEmitir && <Button size="sm" variant="outline" asChild><Link to="/" search={{ id: d.id }}>Editar</Link></Button>}
+                  {podeGerir(aberto) && <Button size="icon" variant="outline" aria-label="Excluir documento" onClick={async () => {
+                    if (!confirm("Excluir este documento do processo?")) return;
+                    const { error } = await supabase.rpc("excluir_documento", { _id: d.id });
+                    if (error) toast.error("Não foi possível excluir."); else { toast.success("Documento excluído"); setDocs(c => c.filter(x => x.id !== d.id)); }
+                  }}><Trash2 className="h-4 w-4" /></Button>}
+                </div>
+              ))}
               <h3 className="font-semibold">Anexos externos</h3>
               {anexos.map((a) => (
                 <div key={a.id} className="flex items-center gap-2">
