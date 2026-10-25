@@ -5,3 +5,7 @@ export function podeEditarDocumento(admin: boolean, userId: string, doc: {criado
 export function podeComentarDocumento(status: string) {
   return status === 'desenvolvendo';
 }
+
+export function acoesDocumentoRecebido(finalidade: string, assinadoEm: string | null) {
+  return { editar: false, excluir: false, encaminhar: false, visualizar: true, comentar: true, exportar: true, assinar: finalidade === 'deferimento' && !assinadoEm };
+}
