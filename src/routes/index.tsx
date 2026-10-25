@@ -132,7 +132,11 @@ function Editor() {
     if (!session?.user.id) { toast.error('Entre novamente para salvar.'); return; }
     if (!numeroValido(full.numero)) { toast.error('Informe um número inteiro maior que zero.'); return; }
     setSaving(true);
-    const {data:saved,error} = await supabase.rpc('salvar_documento',{_id:(docId ?? null) as string,_dados:full as never,_processo:(processo ?? null) as string});
+    let dados = full;
+    let {data:saved,error} = await supabase.rpc('salvar_documento',{_id:(docId ?? null) as string,_dados:dados as never,_processo:(processo ?? null) as string});
+    if (error && !docId && /número já está utilizado/i.test(error.message)) {
+      try { const numero = await proximoNumeroDocumento(full.tipo, full.ano); dados = { ...full, numero }; ({data:saved,error} = await supabase.rpc('salvar_documento',{_id:null as unknown as string,_dados:dados as never,_processo:(processo ?? null) as string})); if (!error) toast.info(`Número ajustado automaticamente para ${String(numero).padStart(3,'0')}.`); } catch { /* mantém erro original */ }
+    }
     const res = error || !saved ? {error:error??new Error('Falha'),data:null} : await supabase.from('documentos').select('id,dados,status').eq('id',saved).single();
     setSaving(false);
     if (res.error || !res.data) return toast.error(res.error?.message ?? "Erro ao salvar"), undefined;
