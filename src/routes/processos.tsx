@@ -63,7 +63,6 @@ function Processos() {
 
   async function excluirProcesso() {
     if (!aberto || !confirm(`Excluir ${tituloProcesso(aberto)}? Os documentos continuam em Docs, sem vínculo com o processo.`)) return;
-    await supabase.from("documentos").update({ processo_id: null }).eq("processo_id", aberto.id);
     const { error } = await supabase.from("processos").delete().eq("id", aberto.id);
     if (error) { toast.error("Não foi possível excluir o processo."); return; }
     toast.success("Processo excluído"); setAberto(null); load();

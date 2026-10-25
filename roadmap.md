@@ -42,7 +42,7 @@
 - [x] Retirar banco de assinaturas e aviso de atualização; envio sem gestora obrigatória
 - [x] Um único QR por documento; PDF comprimido; PDF liberado em qualquer estado; "Enviado para ciência"
 - [x] Recebidos/Enviados no Docs e recebidos no painel admin
-- [ ] Contador de notificações e indicador de documento aberto
-- [ ] Colaboradores de setor; alterar nome no painel de contas
+- [x] Contador de notificações e indicador de documento aberto
+- [x] Colaboradores de setor; alterar nome no painel de contas
 - [ ] "Atualizar doc" sem nova assinatura; assinatura só com senha do destinatário
-- [ ] Excluir/editar processos e documentos dentro do processo; cards no formato do Docs
+- [x] Excluir/editar processos e documentos dentro do processo; cards no formato do Docs
