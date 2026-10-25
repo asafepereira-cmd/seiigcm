@@ -1,0 +1,2 @@
+ALTER TABLE public.documentos DROP CONSTRAINT documentos_processo_id_fkey;
+ALTER TABLE public.documentos ADD CONSTRAINT documentos_processo_id_fkey FOREIGN KEY (processo_id) REFERENCES public.processos(id) ON DELETE SET NULL;
