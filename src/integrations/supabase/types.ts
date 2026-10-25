@@ -405,6 +405,30 @@ export type Database = {
           },
         ]
       }
+      setor_colaboradores: {
+        Row: {
+          created_at: string
+          funcao: string
+          id: string
+          nome: string
+          setor_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          funcao: string
+          id?: string
+          nome: string
+          setor_user_id: string
+        }
+        Update: {
+          created_at?: string
+          funcao?: string
+          id?: string
+          nome?: string
+          setor_user_id?: string
+        }
+        Relationships: []
+      }
       solicitacoes_assinatura: {
         Row: {
           aberto_em: string | null

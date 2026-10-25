@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, FilePlus2, Upload, Trash2 } from "lucide-react";
+import { Download, FilePlus2, Upload, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/processos")({
   component: Processos,
 });
 
-type Processo = { id: string; numero: number; tema: string; assunto: string; descricao: string; acessos: string[]; oficio_id: string | null; aberto_em: string | null; created_at: string };
+type Processo = { id: string; numero: number; tema: string; assunto: string; descricao: string; acessos: string[]; criado_por: string; oficio_id: string | null; aberto_em: string | null; created_at: string };
 type Doc = { id: string; dados: Documento; status: string };
 type Anexo = { criado_por: string; id: string; nome: string; caminho: string; created_at: string };
 
@@ -49,9 +49,27 @@ function Processos() {
   const [salvando, setSalvando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
+  const [edicao, setEdicao] = useState<{ tema: string; assunto: string; descricao: string; acessos: string[] } | null>(null);
+  const podeGerir = (p: Processo) => podeEmitir && (isAdmin || p.criado_por === session?.user.id);
+
+  async function salvarEdicao() {
+    if (!aberto || !edicao) return;
+    const dados = { tema: edicao.tema.trim(), assunto: edicao.assunto.trim(), descricao: edicao.descricao.trim(), acessos: Array.from(new Set([aberto.criado_por, ...edicao.acessos])) };
+    const { error } = await supabase.from("processos").update(dados).eq("id", aberto.id);
+    if (error) { toast.error("Não foi possível salvar o processo."); return; }
+    toast.success("Processo atualizado");
+    setAberto({ ...aberto, ...dados }); setEdicao(null); load();
+  }
+
+  async function excluirProcesso() {
+    if (!aberto || !confirm(`Excluir ${tituloProcesso(aberto)}? Os documentos continuam em Docs, sem vínculo com o processo.`)) return;
+    const { error } = await supabase.from("processos").delete().eq("id", aberto.id);
+    if (error) { toast.error("Não foi possível excluir o processo."); return; }
+    toast.success("Processo excluído"); setAberto(null); load();
+  }
 
   const load = () =>
-    supabase.from("processos").select("id,numero,tema,assunto,descricao,acessos,oficio_id,aberto_em,created_at").order("numero", { ascending: false })
+    supabase.from("processos").select("id,numero,tema,assunto,descricao,acessos,criado_por,oficio_id,aberto_em,created_at").order("numero", { ascending: false })
       .then(({ data, error }) => {
         if (error) { toast.error("Não foi possível carregar os processos."); return; }
         setRows((data as Processo[]) ?? []);
@@ -189,6 +207,12 @@ function Processos() {
           <DialogHeader><DialogTitle className="pr-8">{aberto ? tituloProcesso(aberto) : "Processo"}</DialogTitle></DialogHeader>
           {aberto && (
             <div className="mx-auto w-full max-w-6xl space-y-4">
+              {podeGerir(aberto) && (
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setEdicao({ tema: aberto.tema, assunto: aberto.assunto, descricao: aberto.descricao, acessos: aberto.acessos })}><Pencil className="h-4 w-4" /> Editar processo</Button>
+                  <Button size="sm" variant="destructive" onClick={excluirProcesso}><Trash2 className="h-4 w-4" /> Excluir processo</Button>
+                </div>
+              )}
               <h2 className="text-center text-xl font-bold">{aberto.tema}</h2>
               <p className="font-semibold">{aberto.assunto}</p>
               <p className="whitespace-pre-line text-sm">{aberto.descricao}</p>
@@ -199,7 +223,22 @@ function Processos() {
               )}
               <h3 className="font-semibold">Documentos do processo</h3>
               {docs.length === 0 && <p className="text-sm text-muted-foreground">Nenhum documento vinculado.</p>}
-              {docs.map((d) => <div key={d.id} className="flex flex-wrap items-center gap-3 border-b pb-3"><p className="mr-auto text-sm">{numeroFormatado(d.dados)} — {d.status}</p><Button size="sm" variant="outline" onClick={() => setVisualizandoDoc(d.id)}>Visualizar documento</Button></div>)}
+              {docs.map((d) => (
+                <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3">
+                  <div className="mr-auto min-w-0">
+                    <p className="font-sans font-bold">{numeroFormatado(d.dados)}</p>
+                    <p className="truncate text-sm text-muted-foreground">{d.dados.assunto}</p>
+                    <span className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-semibold ${d.status === "assinado" ? "document-status-signed" : d.status === "enviado" ? "document-status-sent" : "document-status-developing"}`}>{d.status === "assinado" ? "Assinado" : d.status === "enviado" ? "Enviado" : "Desenvolvendo"}</span>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => setVisualizandoDoc(d.id)}>Visualizar</Button>
+                  {podeEmitir && <Button size="sm" variant="outline" asChild><Link to="/" search={{ id: d.id }}>Editar</Link></Button>}
+                  {podeGerir(aberto) && <Button size="icon" variant="outline" aria-label="Excluir documento" onClick={async () => {
+                    if (!confirm("Excluir este documento do processo?")) return;
+                    const { error } = await supabase.rpc("excluir_documento", { _id: d.id });
+                    if (error) toast.error("Não foi possível excluir."); else { toast.success("Documento excluído"); setDocs(c => c.filter(x => x.id !== d.id)); }
+                  }}><Trash2 className="h-4 w-4" /></Button>}
+                </div>
+              ))}
               <h3 className="font-semibold">Anexos externos</h3>
               {anexos.map((a) => (
                 <div key={a.id} className="flex items-center gap-2">
@@ -215,6 +254,18 @@ function Processos() {
               </Button>}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!edicao} onOpenChange={(o) => !o && setEdicao(null)}>
+        <DialogContent className="max-h-[85svh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar processo</DialogTitle></DialogHeader>
+          {edicao && <div className="space-y-3">
+            <div><Label htmlFor="ed-tema">Nome / tema</Label><Input id="ed-tema" maxLength={200} value={edicao.tema} onChange={(e) => setEdicao({ ...edicao, tema: e.target.value })} /></div>
+            <div><Label htmlFor="ed-assunto">Assunto</Label><Textarea id="ed-assunto" rows={2} maxLength={500} value={edicao.assunto} onChange={(e) => setEdicao({ ...edicao, assunto: e.target.value })} /></div>
+            <div><Label htmlFor="ed-desc">Descrição</Label><Textarea id="ed-desc" rows={4} maxLength={4000} value={edicao.descricao} onChange={(e) => setEdicao({ ...edicao, descricao: e.target.value })} /></div>
+            <div><Label>Quem pode acessar</Label><div className="mt-1.5 flex flex-wrap gap-2">{paineis.map((p) => { const m = edicao.acessos.includes(p.user_id); return <Button key={p.user_id} size="sm" variant={m ? "default" : "outline"} aria-pressed={m} onClick={() => setEdicao({ ...edicao, acessos: m ? edicao.acessos.filter((a) => a !== p.user_id) : [...edicao.acessos, p.user_id] })}>{p.nome}</Button>; })}</div></div>
+            <Button className="w-full" disabled={!edicao.tema.trim() || !edicao.assunto.trim() || !edicao.descricao.trim()} onClick={salvarEdicao}>Salvar alterações</Button>
+          </div>}
         </DialogContent>
       </Dialog>
       <DocumentViewer id={visualizandoDoc} onClose={() => setVisualizandoDoc(null)} />
