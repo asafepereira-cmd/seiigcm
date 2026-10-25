@@ -6,8 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
 import { AppHeader } from "@/components/AppHeader";
 import { DocumentPreview } from "@/components/DocumentPreview";
-import { Link } from "@tanstack/react-router";
-import { DispatchPreview } from "@/components/DispatchPreview";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { richParagraphs } from "@/lib/rich-text";
 import { Button } from "@/components/ui/button";
@@ -21,7 +19,6 @@ import { reviewWithAI } from "@/lib/server.functions";
 import { gerarPDF } from "@/lib/pdf";
 import { carregarExtras } from "@/lib/assinaturas-eletronicas";
 import { podeEditarDocumento } from "@/lib/document-access";
-import { lerAssinaturaPng } from "@/lib/assinatura";
 import { proximoNumeroDocumento } from "@/lib/document-numbering";
 import { siglaSetor, dataExtenso, modeloGravacao, numeroFormatado, numeroValido, type Documento, type Participante } from "@/lib/documento";
 
@@ -73,7 +70,6 @@ function Editor() {
   const [sending,setSending] = useState(false);
   useEffect(()=>{if(!ready)return;supabase.from('paineis').select('tipo_painel').eq('user_id',session?.user.id??'').maybeSingle().then(({data})=>setPanelType(data?.tipo_painel??'individual'));},[ready,session?.user.id]);
   useEffect(()=>{if(panelType==='setor'||isAdmin)listRecipients().then(setRecipients).catch(()=>toast.error('Não foi possível listar destinatários.'));},[panelType,isAdmin]);
-  const signatureInput = useRef<HTMLInputElement>(null);
 
   async function comProcesso(documento: Documento, processoId?: string | null) {
     if (!processoId) return documento;
