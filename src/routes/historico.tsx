@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { carregarExtras, carregarSolicitacoes, enviarParaAssinatura, gestorasDoDespacho, type GestoraKey } from "@/lib/assinaturas-eletronicas";
+import { carregarExtras, carregarSolicitacoes, enviarParaAssinatura, type GestoraKey } from "@/lib/assinaturas-eletronicas";
 import { GESTORAS, type Despacho } from "@/lib/documento";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { isStatusDocumento, ordenarEmitidos, STATUS_DOCUMENTO, type StatusDocumento } from "@/lib/emitidos";
 import { numeroFormatado, type Documento } from "@/lib/documento";
 import { DocumentViewer } from "@/components/DocumentViewer";
-import { podeExportar } from "@/lib/sector";
 import { podeEditarDocumento, podeComentarDocumento } from "@/lib/document-access";
 
 export const Route = createFileRoute("/historico")({
@@ -72,7 +71,7 @@ function Historico() {
     if (!envio) return;
     setSending(true);
     try {
-      await enviarParaAssinatura(envio.row.id, gestorasDoDespacho(envio.opcao), null,extras,prioridade,prazo || null,termo);
+      await enviarParaAssinatura(envio.row.id, [], null,extras,prioridade,prazo || null,termo);
       setRows(current => current?.map(row => row.id === envio.row.id ? { ...row, status: "enviado" } : row) ?? null);
       const row = envio.row;
       setEnvio(null);
@@ -149,7 +148,7 @@ function Historico() {
                       <Pencil className="h-4 w-4" /> Editar
                     </Link>
                   </Button>}
-                  <Button size="sm" variant="outline" disabled={!podeExportar(panelType,r.status)} onClick={() => baixar(r)}>
+                  <Button size="sm" variant="outline" onClick={() => baixar(r)}>
                     <Download className="h-4 w-4" /> PDF
                   </Button>
                   {isAdmin && r.status !== "desenvolvendo" && (
@@ -181,13 +180,7 @@ function Historico() {
       <Dialog open={!!envio} onOpenChange={o => !o && setEnvio(null)}>
         <DialogContent className="max-h-[85svh] overflow-y-auto">
           <DialogHeader><DialogTitle>Enviar para assinatura</DialogTitle></DialogHeader>
-          <p className="text-sm">Quem deve assinar o despacho?</p>
-          <div className="flex flex-wrap gap-2">
-            {([["pedagogica", "Gestora Ped."], ["administrativa", "Gestora Adm."], ["ambas", "As duas"]] as [Despacho, string][]).map(([v, l]) => (
-              <Button key={v} variant={envio?.opcao === v ? "default" : "outline"} onClick={() => envio && setEnvio({ ...envio, opcao: v })}>{l}</Button>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">Sua emissão eletrônica será registrada agora. Será gerado um link único para cada gestora.</p>
+          <p className="text-xs text-muted-foreground">Sua emissão eletrônica será registrada agora. Selecione um ou mais painéis ou pessoas para deferimento; cada um recebe um link único.</p>
           <div className="grid grid-cols-2 gap-3"><div><Label>Prioridade</Label><Select value={prioridade} onValueChange={setPrioridade}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="alta">Alta</SelectItem></SelectContent></Select></div><div><Label htmlFor="prazo">Data limite</Label><Input id="prazo" type="date" value={prazo} onChange={e=>setPrazo(e.target.value)}/></div></div>
           <div><Label htmlFor="termo">Termo de ciência</Label><Textarea id="termo" maxLength={2000} value={termo} onChange={e=>setTermo(e.target.value)}/></div>
           <h3 className="font-semibold">Outros signatários</h3>
@@ -195,7 +188,7 @@ function Historico() {
           <datalist id="funcoes-lista">{funcoes.map(f=><option value={f} key={f}/>)}</datalist>
           <Button variant="outline" disabled={extras.length>=10} onClick={()=>setExtras([...extras,{nome:"",funcao:""}])}>Adicionar signatário</Button>
           {paineis.length>0 && <div className="flex flex-wrap gap-2">{paineis.filter(p=>!extras.some(e=>e.user_id===p.user_id)).map(p=><Button key={p.user_id} size="sm" variant="outline" disabled={extras.length>=10} onClick={()=>setExtras([...extras,{nome:p.nome,funcao:p.funcao,user_id:p.user_id}])}>+ Painel: {p.nome}</Button>)}</div>}
-          <Button disabled={sending || extras.some(e=>!e.nome.trim() || !e.funcao.trim())} onClick={confirmarEnvio}>{sending?"Enviando...":"Assinar emissão e enviar"}</Button>
+          <Button disabled={sending || extras.length===0 || extras.some(e=>!e.nome.trim() || !e.funcao.trim())} onClick={confirmarEnvio}>{sending?"Enviando...":"Assinar emissão e enviar"}</Button>
         </DialogContent>
       </Dialog>
       <Dialog open={!!links} onOpenChange={o => !o && setLinks(null)}>

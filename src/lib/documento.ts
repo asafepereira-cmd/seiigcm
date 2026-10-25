@@ -92,3 +92,9 @@ export function modeloGravacao(numero: number, titular?: {nome: string; funcao: 
     cargo: titular?.funcao ?? "Coordenador de Comunicação e Mídia - CEM XXXIII",
   };
 }
+
+export function siglaSetor(setor: string) {
+  const ignorar = new Set(["de","da","do","das","dos","e","cem","xxxiii","cemxxxiii"]);
+  const iniciais = setor.split(/\s+/).filter(w => w && !ignorar.has(w.toLowerCase())).map(w => w.charAt(0).toUpperCase()).join(".");
+  return `CEMXXXIII/${iniciais || "SETOR"}`;
+}

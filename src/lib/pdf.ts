@@ -1,7 +1,6 @@
 import type { Documento } from "./documento";
-import { assinantesDespacho, dataExtenso, identificacaoDocumento } from "./documento";
-import { dataHora, gestorasDoDespacho, type ExtrasPDF } from "./assinaturas-eletronicas";
-import { GESTORAS } from "./documento";
+import { dataExtenso, identificacaoDocumento } from "./documento";
+import { dataHora, type ExtrasPDF } from "./assinaturas-eletronicas";
 import { fontStyle, richParagraphs, wrapRichParagraph, type TextRun } from "./rich-text";
 import signatureSeal from '@/assets/seii-signature-seal.png.asset.json';
 
@@ -24,20 +23,19 @@ const HEADER = [
 
 export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF = {}) {
   const { jsPDF } = await import("jspdf");
-  const pdf = new jsPDF({ unit: "mm", format: "a4" });
-  const [brasao, midia, seal] = await Promise.all([loadImage("/brand/brasao.png"), loadImage("/brand/midia.png"), loadImage(signatureSeal.url)]);
+  const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
+  const [brasao, midia, seal] = await Promise.all([loadImage("/brand/brasao.png"), loadImage(doc.setor ? "/brand/governo.png" : "/brand/midia.png"), loadImage(signatureSeal.url)]);
   const W = 210, ML = 20, MR = 20, TW = W - ML - MR, BOTTOM = 280;
   const PT_MM = 25.4 / 72;
   const LH = 12 * PT_MM * 1.26;
   const HEADER_LH = 8.5 * PT_MM * 1.13;
-  const SIGNATURE_LH = 12 * PT_MM * 0.89;
 
-  const header = (despacho = false) => {
-    pdf.addImage(brasao, "PNG", 12, 7, 20, 20);
-    pdf.addImage(midia, "PNG", 170, 11, 28, 10);
+  const header = () => {
+    pdf.addImage(brasao, "PNG", 12, 7, 20, 20, undefined, "FAST");
+    if (doc.setor) pdf.addImage(midia, "PNG", 180, 7, 18, 20, undefined, "FAST"); else pdf.addImage(midia, "PNG", 170, 11, 28, 10, undefined, "FAST");
     pdf.setFont("times", "bold");
     pdf.setFontSize(8.5);
-    HEADER.forEach((l, i) => pdf.text(i === 3 && doc.setor ? doc.setor.toUpperCase() : despacho && i === 3 ? 'GRUPAMENTO DE COMUNICAÇÃO E MÍDIA - "CEMXXXIII NA MÍDIA"' : l, 105, 12 + i * HEADER_LH, { align: "center" }));
+    HEADER.forEach((l, i) => pdf.text(i === 3 && doc.setor ? doc.setor.toUpperCase() : l, 105, 12 + i * HEADER_LH, { align: "center" }));
     pdf.setLineWidth(0.2);
     pdf.line(46, 28, 158, 28);
   };
@@ -178,25 +176,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
 
   if (doc.fecho.trim()) paragraph(doc.fecho.trim());
 
-  const assinaturaEmissor = doc.assinaturaPng || (extras.emitidoEm ? extras.emissorImagem : undefined);
-  ensure(assinaturaEmissor ? 45 : 30);
-  if (assinaturaEmissor) {
-    const image = pdf.getImageProperties(assinaturaEmissor);
-    const scale = Math.min(70 / image.width, 22 / image.height);
-    const width = image.width * scale, height = image.height * scale;
-    y += 6;
-    pdf.addImage(assinaturaEmissor, "PNG", (W - width) / 2, y, width, height);
-    y += height + 1;
-  } else {
-    y += 14;
-  }
-  pdf.setLineWidth(0.2);
-  pdf.line(65, y, 145, y);
-  y += 5;
-  pdf.setFont("times", "bold");
-  pdf.text(doc.assinante.toUpperCase(), 105, y, { align: "center" });
-  y += SIGNATURE_LH;
-  pdf.text(doc.cargo, 105, y, { align: "center" });
+  y += 6;
 
   // Use the original supplied seal and a ruled, black Times signature block.
   const stampLines = (text: string) => {
@@ -257,76 +237,16 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     y += carimbo(text, y);
   }
 
-  const gestoras = assinantesDespacho(doc.despacho);
-  if (!gestoras.length && qr) { y += 4; ensure(28); blocoQR(y); }
-  if (gestoras.length) {
-    pdf.addPage();
-    header(true);
-    pdf.setLineWidth(0.2);
-    pdf.rect(12, 43, 186, 123);
-    pdf.setFont("times", "bold");
-    pdf.setFontSize(12);
-    pdf.text("Despacho / Gestão", 20, 52);
-    pdf.setFont("times", "normal");
-    const chaves = doc.despacho ? gestorasDoDespacho(doc.despacho) : [];
-    const assinadas = chaves.map(k => extras.assinaturas?.find(a => a.gestora === k && a.assinadoEm));
-    const marca = (d: string) => assinadas.filter(a => a?.decisao === d).length ? "X" : " ";
-    pdf.text([`(${marca("deferido")}) Deferido`, `(${marca("indeferido")}) Indeferido`], 20, 60, { lineHeightFactor: 1 });
-    pdf.text("Observações:", 20, 73);
-    const obs = assinadas.flatMap(a => a?.observacoes.trim() ? [(chaves.length > 1 ? `${GESTORAS[a.gestora as keyof typeof GESTORAS]?.nome.split(" ")[0] ?? ""}: ` : "") + a.observacoes.trim()] : []).join(" ");
-    if (obs) {
-      pdf.setFontSize(10);
-      pdf.text((pdf.splitTextToSize(obs, 166) as string[]).slice(0, 6), 21, 77.2, { lineHeightFactor: 1.2 });
-      pdf.setFontSize(12);
-    }
-    for (let i = 0; i < 6; i++) pdf.line(20, 78 + i * 4.3, 188, 78 + i * 4.3);
-    gestoras.forEach((gestora, i) => {
-      const center = gestoras.length === 2 ? (i === 0 ? 63 : 147) : 105;
-      const lineWidth = gestoras.length === 2 ? 73 : 82;
-      const img = assinadas[i]?.imagem;
-      if (img) {
-        const p = pdf.getImageProperties(img);
-        const sc = Math.min((lineWidth - 6) / p.width, 18 / p.height);
-        pdf.addImage(img, "PNG", center - (p.width * sc) / 2, 145 - p.height * sc, p.width * sc, p.height * sc);
-      }
-      pdf.line(center - lineWidth / 2, 146, center + lineWidth / 2, 146);
-      pdf.setFont("times", "bold");
-      pdf.setFontSize(10);
-      const maxWidth = gestoras.length === 2 ? 82 : 130;
-      const nameSize = Math.min(10, 10 * maxWidth / pdf.getTextWidth(gestora.nome));
-      pdf.setFontSize(nameSize);
-      pdf.text(gestora.nome, center, 150.5, { align: "center" });
-      pdf.setFontSize(10);
-      pdf.text(gestora.cargo, center, 154, { align: "center" });
-    });
-    let yy = 172;
-    assinadas.forEach((a, i) => {
-      if (!a?.assinadoEm) return;
-      const g = gestoras[i];
-      if (!g) return;
-      const { data, hora } = dataHora(a.assinadoEm);
-      const text = `Documento assinado eletronicamente por ${g.nome}, ${g.cargo}, em ${data}, às ${hora}, conforme portaria interna de legalização do S.E.I.I GCM.`;
-      y = yy;
-      ensure(stampHeight(text) + 3);
-      yy = y + carimbo(text, y) + 3;
-    });
-    y = yy;
-    ensure(30); blocoQR(y + 2);
+  const outras = extras.assinaturas?.filter(a => a.nome && a.assinadoEm) ?? [];
+  for (const a of outras) {
+    if (!a.assinadoEm) continue;
+    const {data,hora} = dataHora(a.assinadoEm);
+    const text = `Documento assinado eletronicamente por ${a.nome}, ${a.cargo ?? ""}, em ${data}, às ${hora}, conforme portaria interna de legalização do S.E.I.I GCM.`;
+    pdf.setFontSize(9);
+    ensure(stampHeight(text)+3);
+    y += carimbo(text,y)+3;
   }
-
-  const outras = extras.assinaturas?.filter(a => a.nome && a.assinadoEm && !(doc.despacho && gestorasDoDespacho(doc.despacho).includes(a.gestora as 'administrativa' | 'pedagogica'))) ?? [];
-  if (outras.length) {
-    y += 32;
-    for (const a of outras) {
-      if (!a.assinadoEm) continue;
-      const {data,hora} = dataHora(a.assinadoEm);
-      const text = `Documento assinado eletronicamente por ${a.nome}, ${a.cargo ?? ""}, em ${data}, às ${hora}, conforme portaria interna de legalização do S.E.I.I GCM.`;
-      pdf.setFontSize(9);
-      ensure(stampHeight(text)+3);
-      y += carimbo(text,y)+3;
-    }
-    ensure(30); blocoQR(y+2);
-  }
+  if (qr) { y += 4; ensure(30); blocoQR(y); }
 
   const nome = `${doc.tipo.toUpperCase().replace(/[^A-Z]/gi, "_")}_${String(doc.numero).padStart(3, "0")}_${doc.ano}.pdf`;
   if (salvar) {

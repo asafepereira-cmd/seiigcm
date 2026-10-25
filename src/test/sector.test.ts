@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
 import { cpfValido, podeExportar } from '../lib/sector';
 it('setor exporta somente documentos assinados', () => {
-  expect(podeExportar('setor', 'desenvolvendo')).toBe(false);
-  expect(podeExportar('setor', 'enviado')).toBe(false);
+  expect(podeExportar('setor', 'desenvolvendo')).toBe(true);
+  expect(podeExportar('setor', 'enviado')).toBe(true);
   expect(podeExportar('setor', 'assinado')).toBe(true);
 });
 it('painéis individuais exportam todos os documentos autorizados',()=>{

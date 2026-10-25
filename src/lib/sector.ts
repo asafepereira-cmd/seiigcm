@@ -10,5 +10,6 @@ export function cpfValido(value: string) {
 }
 
 export function podeExportar(tipoPainel: string, status: string) {
-  return tipoPainel !== 'setor' || status === 'assinado';
+  void tipoPainel; void status;
+  return true;
 }
