@@ -16,7 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { isStatusDocumento, ordenarEmitidos, STATUS_DOCUMENTO, type StatusDocumento } from "@/lib/emitidos";
 import { numeroFormatado, type Documento } from "@/lib/documento";
 import { DocumentViewer } from "@/components/DocumentViewer";
-import { podeExportar } from "@/lib/sector";
 import { podeEditarDocumento, podeComentarDocumento } from "@/lib/document-access";
 
 export const Route = createFileRoute("/historico")({
