@@ -23,7 +23,7 @@ import { carregarExtras } from "@/lib/assinaturas-eletronicas";
 import { podeEditarDocumento } from "@/lib/document-access";
 import { lerAssinaturaPng } from "@/lib/assinatura";
 import { proximoNumeroDocumento } from "@/lib/document-numbering";
-import { dataExtenso, modeloGravacao, numeroFormatado, numeroValido, type Documento, type Participante } from "@/lib/documento";
+import { siglaSetor, dataExtenso, modeloGravacao, numeroFormatado, numeroValido, type Documento, type Participante } from "@/lib/documento";
 
 export const Route = createFileRoute("/")({
   validateSearch: (s: Record<string, unknown>): { id?: string; processo?: string } => ({ ...(typeof s["id"] === "string" ? {id:s["id"]} : {}), ...(typeof s["processo"] === "string" ? {processo:s["processo"]} : {}) }),
@@ -104,7 +104,7 @@ function Editor() {
         if (!isAdmin && !titular) { toast.error('Seu painel precisa de nome e função.'); navigate({to:'/painel'}); return; }
         const model = modeloGravacao(n, !isAdmin && titular ? titular : undefined);
         setDocumentStatus('desenvolvendo');
-        if(titular?.tipo_painel==='setor') { model.setor=titular.setor;model.de=titular.setor;model.assinante='';model.cargo=''; }
+        if(titular?.tipo_painel==='setor') { model.setor=titular.setor;model.de=titular.setor;model.sigla=siglaSetor(titular.setor);model.assinante='';model.cargo=''; }
         setDoc(await comProcesso(model, processo));
         setListaTexto("");
       }).catch(error => toast.error(error instanceof Error ? error.message : 'Falha ao consultar numeração.'));
@@ -173,7 +173,6 @@ function Editor() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link to="/processos">Novo processo</Link></Button><Button variant="outline" onClick={()=>navigate({to:"/",search:{}})}>Novo documento</Button></div>
           <Group title="Identificação">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <F label="Tipo">
@@ -219,54 +218,8 @@ function Editor() {
             </div>
           </Group>
 
-          <Group title="Lista (opcional)">
-            <F label="Título da lista"><Input value={doc.tituloLista} onChange={(e) => set("tituloLista", e.target.value)} /></F>
-            <F label="Um por linha — Nome – Função">
-              <Textarea rows={5} placeholder={"Ana Clara – Câmera\nBruno Alves – Áudio"} value={listaTexto} onChange={(e) => setListaTexto(e.target.value)} />
-            </F>
-          </Group>
-
           <Group title="Encerramento">
             <F label="Fecho"><Textarea rows={2} value={doc.fecho} onChange={(e) => set("fecho", e.target.value)} /></F>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <F label="Assinante"><Input value={doc.assinante} onChange={(e) => set("assinante", e.target.value)} /></F>
-              <F label="Cargo"><Input value={doc.cargo} onChange={(e) => set("cargo", e.target.value)} /></F>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Minha assinatura (PNG sem fundo)</Label>
-              <input ref={signatureInput} type="file" accept="image/png,.png" className="hidden" aria-label="Enviar assinatura PNG"
-                onChange={async (e) => {
-                  const file = e.currentTarget.files?.[0];
-                  e.currentTarget.value = "";
-                  if (!file) return;
-                  setUploading(true);
-                  try {
-                    const assinaturaPng = await lerAssinaturaPng(file);
-                    setDoc((current) => current ? { ...current, assinaturaPng } : current);
-                    toast.success("Assinatura inserida");
-                  } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Não foi possível inserir a assinatura.");
-                  } finally { setUploading(false); }
-                }} />
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled={uploading} onClick={() => signatureInput.current?.click()}>
-                  <Upload className="h-4 w-4" />{uploading ? "Enviando…" : doc.assinaturaPng ? "Trocar assinatura" : "Enviar assinatura PNG"}
-                </Button>
-                {doc.assinaturaPng && <Button variant="ghost" size="icon" aria-label="Remover assinatura" title="Remover assinatura" onClick={() => set("assinaturaPng", undefined)}><X className="h-4 w-4" /></Button>}
-              </div>
-              {doc.assinaturaPng && <div className="flex h-20 items-center justify-center rounded-md border bg-paper p-2"><img src={doc.assinaturaPng} alt="Minha assinatura" className="max-h-full max-w-full object-contain" /></div>}
-            </div>
-          </Group>
-
-          <Group title="Página complementar">
-            <Button variant={doc.despacho ? "secondary" : "outline"} className="w-full justify-between" aria-pressed={Boolean(doc.despacho)} onClick={() => set("despacho", doc.despacho ? undefined : "pedagogica")}>
-              Inserir página de despacho: {doc.despacho ? <Check className="h-4 w-4" /> : <Circle className="h-3 w-3 fill-current" />}
-            </Button>
-            {doc.despacho && <div className="grid grid-cols-3 gap-2" role="group" aria-label="Assinatura da gestão">
-              {([ ["pedagogica", "Gestora Ped."], ["administrativa", "Gestora Adm."], ["ambas", "Os dois"] ] as const).map(([value, label]) => (
-                <Button key={value} size="sm" className="h-auto min-h-9 whitespace-normal px-2" variant={doc.despacho === value ? "default" : "outline"} aria-pressed={doc.despacho === value} onClick={() => set("despacho", value)}>{label}</Button>
-              ))}
-            </div>}
           </Group>
 
           {(panelType==='setor'||isAdmin) && <Group title="Encaminhamento">
@@ -303,7 +256,6 @@ function Editor() {
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <p className="mb-2 text-xs font-medium uppercase tracking-wider text-primary-foreground">Pré-visualização</p>
           <DocumentPreview doc={full} />
-          {doc.despacho && <div className="mt-5"><p className="mb-2 text-xs font-medium uppercase tracking-wider text-primary-foreground">Página de despacho</p><DispatchPreview opcao={doc.despacho} /></div>}
         </aside>
       </main>
     </div>

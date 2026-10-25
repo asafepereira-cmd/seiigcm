@@ -9,7 +9,7 @@ export function DocumentPreview({ doc }: { doc: Documento }) {
         <div className="document-header-text flex-1 text-center text-[0.8em] font-bold">
           GOVERNO DO ESTADO DE RORAIMA<br />SECRETARIA DE EDUCAÇÃO E DESPORTO<br />COLÉGIO ESTADUAL MILITARIZADO FERNANDO GRANGEIRO DE MENEZES<br />{doc.setor?.toUpperCase() || 'COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII'}
         </div>
-        <img src="/brand/midia.png" alt="" className="w-[15%]" />
+        <img src={doc.setor ? "/brand/governo.png" : "/brand/midia.png"} alt="" className={doc.setor ? "w-[10%]" : "w-[15%]"} />
       </div>
       <p className="mt-4 text-[1.1em] font-bold">{identificacaoDocumento(doc)}</p>
       {doc.processo && <p className="mt-1 text-center font-bold break-words">{doc.processo.tema}</p>}
@@ -19,18 +19,7 @@ export function DocumentPreview({ doc }: { doc: Documento }) {
       <p className="mt-2 text-justify"><b>Assunto:</b> {doc.assunto}</p>
       {doc.vocativo && <p className="mt-2 text-justify">{doc.vocativo}</p>}
        {doc.corpoFormatado ? richParagraphs(doc.corpoFormatado).map((runs, i) => <p key={i} className="mt-2 whitespace-pre-line text-justify">{runs.map((run, j) => <span key={j} className={`${run.bold ? "font-bold" : ""} ${run.italic ? "italic" : ""} ${run.underline ? "underline" : ""}`}>{run.text}</span>)}</p>) : paras.map((p, i) => <p key={i} className="mt-2 text-justify">{p}</p>)}
-      {doc.lista.length > 0 && (
-        <div className="mt-2 text-justify">
-          <b>{doc.tituloLista || "Participantes"}:</b>
-          {doc.lista.map((p, i) => <div key={i}>{p.funcao ? `${p.nome} – ${p.funcao}` : p.nome}</div>)}
-        </div>
-      )}
       {doc.fecho && <p className="mt-2 text-justify">{doc.fecho}</p>}
-      <div className="document-signature-text mx-auto mt-8 text-center font-bold">
-        {doc.assinaturaPng && <img src={doc.assinaturaPng} alt="Assinatura do documento" className="mx-auto mb-1 h-14 max-w-[42%] object-contain" />}
-        <div className="mx-auto mb-1 w-1/2 border-t border-paper-ink" />
-        {doc.assinante.toUpperCase()}<br />{doc.cargo}
-      </div>
     </div>
   );
 }
