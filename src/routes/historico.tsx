@@ -140,8 +140,7 @@ function Historico() {
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold">{STATUS_DOCUMENTO[r.status].label}</span>
-                  {isAdmin && <Button size="sm" onClick={()=>alterarStatus(r.id,"enviado")}>Encaminhar assinaturas</Button>}
-                  {!isAdmin && panelType!=='setor' && podeEditarDocumento(false,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,'enviado')}>Enviar para assinatura</Button>}
+                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,"enviado")}>Encaminhar assinaturas</Button>}
                   <Button size="sm" variant="outline" onClick={()=>setView(r.id)}>Visualizar</Button>
                   {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" variant="outline" asChild>
                     <Link to="/" search={{ id: r.id }}>
@@ -151,12 +150,12 @@ function Historico() {
                   <Button size="sm" variant="outline" onClick={() => baixar(r)}>
                     <Download className="h-4 w-4" /> PDF
                   </Button>
-                  {isAdmin && r.status !== "desenvolvendo" && (
+                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && r.status !== "desenvolvendo" && (
                     <Button size="sm" variant="outline" onClick={() => abrirLinks(r)}>
                       <Link2 className="h-4 w-4" /> Links
                     </Button>
                   )}
-                  {(isAdmin || (podeEditarDocumento(false,session?.user.id??'',r) && r.status==='desenvolvendo' && !r.emitido_em)) && <Button
+                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button
                     size="sm"
                     variant="outline"
                     aria-label="Excluir"
@@ -203,12 +202,12 @@ function Historico() {
                 <div className="flex gap-2">
                   <input readOnly value={url} className="min-w-0 flex-1 rounded border bg-paper px-2 text-xs text-paper-ink" />
                   <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /></Button>
-                  {isAdmin && !i.assinado_em && <Button size="sm" variant="destructive" onClick={async () => { if (!links || !confirm("Excluir esta solicitação de assinatura?")) return; const { error } = await supabase.rpc("excluir_solicitacao", { _id: i.id }); if (error) toast.error("Não foi possível excluir."); else { toast.success("Solicitação excluída"); abrirLinks(links.row); } }}><Trash2 className="h-4 w-4" /></Button>}
+                  {podeEditarDocumento(isAdmin,session?.user.id??'',links.row) && !i.assinado_em && <Button size="sm" variant="destructive" onClick={async () => { if (!links || !confirm("Excluir esta solicitação de assinatura?")) return; const { error } = await supabase.rpc("excluir_solicitacao", { _id: i.id }); if (error) toast.error("Não foi possível excluir."); else { toast.success("Solicitação excluída"); abrirLinks(links.row); } }}><Trash2 className="h-4 w-4" /></Button>}
                 </div>
               </div>
             );
           })}
-          {isAdmin && links && <Button variant="outline" onClick={() => { const row = links.row; setLinks(null); setEnvio({ row, opcao: "ambas" }); }}>Adicionar signatário</Button>}
+          {links && podeEditarDocumento(isAdmin,session?.user.id??'',links.row) && <Button variant="outline" onClick={() => { const row = links.row; setLinks(null); setEnvio({ row, opcao: "ambas" }); }}>Adicionar signatário</Button>}
         </DialogContent>
       </Dialog>
     </div>
