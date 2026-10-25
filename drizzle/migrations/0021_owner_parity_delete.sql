@@ -1,0 +1,9 @@
+CREATE OR REPLACE FUNCTION public.excluir_documento(_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $f$ DECLARE d public.documentos; BEGIN SELECT * INTO d FROM public.documentos WHERE id=_id FOR UPDATE;
+IF d.id IS NULL OR NOT public.conta_ativa(auth.uid()) OR NOT(public.has_role(auth.uid(),'admin') OR (public.pode_emitir(auth.uid()) AND d.criado_por=auth.uid())) THEN RAISE EXCEPTION 'Exclusão não autorizada'; END IF;
+IF EXISTS(SELECT 1 FROM public.processos WHERE oficio_id=_id) THEN RAISE EXCEPTION 'Documento utilizado na abertura de um processo'; END IF;
+DELETE FROM public.documento_avisos WHERE documento_id=_id; DELETE FROM public.documento_comentarios WHERE documento_id=_id; DELETE FROM public.documento_destinatarios WHERE documento_id=_id; DELETE FROM public.assinante_identidades WHERE solicitacao_id IN (SELECT id FROM public.solicitacoes_assinatura WHERE documento_id=_id); DELETE FROM public.solicitacoes_assinatura WHERE documento_id=_id; DELETE FROM public.documento_versoes WHERE documento_id=_id; DELETE FROM public.documentos WHERE id=_id; END $f$;
+CREATE OR REPLACE FUNCTION public.excluir_solicitacao(_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $f$ DECLARE s public.solicitacoes_assinatura; BEGIN
+SELECT * INTO s FROM public.solicitacoes_assinatura WHERE id=_id;
+IF s.id IS NULL OR s.assinado_em IS NOT NULL THEN RAISE EXCEPTION 'Solicitação não disponível'; END IF;
+IF NOT (public.has_role(auth.uid(),'admin') OR (public.pode_emitir(auth.uid()) AND EXISTS(SELECT 1 FROM public.documentos WHERE id=s.documento_id AND criado_por=auth.uid()))) THEN RAISE EXCEPTION 'Acesso restrito'; END IF;
+DELETE FROM public.solicitacoes_assinatura WHERE id=s.id; END $f$;

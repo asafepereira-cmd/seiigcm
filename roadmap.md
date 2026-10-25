@@ -36,6 +36,7 @@
 - [x] Carimbo com selo original preto, nome/função em negrito e QR conforme modelo enviado
 
 ## Pedido 25/10
+- [x] Mesmas funções nos cards do Docs para todos os painéis (donos); saudação por setor/nome; senha obrigatória ao assinar por link; ajuste automático de número repetido
 - [x] Brasão do governo no cabeçalho de documentos de setores; sigla automática do setor
 - [x] Retirar linha de assinatura, lista, assinante/PNG, página de despacho, botões Novo processo/Novo documento
 - [x] Retirar banco de assinaturas e aviso de atualização; envio sem gestora obrigatória

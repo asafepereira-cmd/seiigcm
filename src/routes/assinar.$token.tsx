@@ -87,7 +87,8 @@ function Assinar() {
                     {req.finalidade === "ciencia" ? <Button onClick={()=>setDecisao("ciente")}>Declarar ciência</Button> : <><Button variant={decisao === "deferido" ? "default" : "outline"} onClick={() => setDecisao("deferido")}>Deferido</Button>
                     <Button variant={decisao === "indeferido" ? "default" : "outline"} onClick={() => setDecisao("indeferido")}>Indeferido</Button></>}
                   </div>
-                  {req.setor && <div className="space-y-2"><Input aria-label="Nome completo do assinante" placeholder="Nome completo" value={nome} onChange={e=>setNome(e.target.value)}/><Input aria-label="Função do assinante" placeholder="Função" value={funcao} onChange={e=>setFuncao(e.target.value)}/><Input aria-label="CPF do assinante" placeholder="CPF" value={cpf} onChange={e=>setCpf(e.target.value)}/><Input aria-label="Senha do painel" placeholder="Senha do painel" type="password" value={password} onChange={e=>setPassword(e.target.value)}/></div>}
+                  {req.setor && <div className="space-y-2"><Input aria-label="Nome completo do assinante" placeholder="Nome completo" value={nome} onChange={e=>setNome(e.target.value)}/><Input aria-label="Função do assinante" placeholder="Função" value={funcao} onChange={e=>setFuncao(e.target.value)}/><Input aria-label="CPF do assinante" placeholder="CPF" value={cpf} onChange={e=>setCpf(e.target.value)}/></div>}
+                  {req.exigeSenha && <Input aria-label="Senha do painel" placeholder="Senha do seu painel SEII" type="password" value={password} onChange={e=>setPassword(e.target.value)}/>}
                   <div>
                     <label htmlFor="obs" className="text-sm font-medium">Observações (opcional)</label>
                     <Textarea id="obs" maxLength={600} value={obs} onChange={e => setObs(e.target.value)} rows={4} />
@@ -96,7 +97,7 @@ function Assinar() {
                     <input type="checkbox" checked={ciente} onChange={e => setCiente(e.target.checked)} /> Estou ciente e concordo em assinar eletronicamente.
                   </label>
                   {erro && <p className="text-sm text-destructive">{erro}</p>}
-                  <Button className="w-full" disabled={!decisao || !ciente || busy} onClick={assinar}>{busy ? "Assinando..." : "Assinar"}</Button>
+                  <Button className="w-full" disabled={!decisao || !ciente || busy || (req.exigeSenha && !password)} onClick={assinar}>{busy ? "Assinando..." : "Assinar"}</Button>
                 </>
               )}
             </div>

@@ -20,7 +20,7 @@ export const Route = createFileRoute('/_authenticated/home')({
 
 function primeiroEUltimo(nome: string) {
   const p = nome.trim().split(/\s+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-  return p.length > 1 ? `${p[0]} ${p[p.length - 1]}` : p[0] ?? '';
+  return p.slice(0, 2).join(' ');
 }
 
 function Home() {
@@ -34,13 +34,13 @@ function Home() {
       const uid = u.user?.id ?? '';
       const [{ data: roles }, { data: p }] = await Promise.all([
         supabase.from('user_roles').select('role'),
-        supabase.from('paineis').select('nome,funcao,pode_emitir').eq('user_id', uid).maybeSingle(),
+        supabase.from('paineis').select('nome,funcao,pode_emitir,tipo_painel,setor').eq('user_id', uid).maybeSingle(),
       ]);
       const rs = (roles ?? []).map(r => r.role as string);
       const adm = rs.includes('admin');
       setAdmin(adm);
       setPodeEmitir(adm || (p?.pode_emitir ?? false));
-      setNome(adm ? 'Asafe Felix' : primeiroEUltimo(p?.nome ?? ''));
+      setNome(adm ? 'Asafe Pereira' : p?.tipo_painel === 'setor' ? (p.setor || p.nome) : primeiroEUltimo(p?.nome ?? ''));
       setFuncao(adm ? 'Coordenador de Comunicação e Mídia' : (p?.funcao ?? ''));
     })();
   }, []);
@@ -58,7 +58,7 @@ function Home() {
     <div className="flex min-h-screen flex-col bg-primary">
       <AppHeader />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 text-center">
-        <h1 className="text-2xl font-bold text-primary-foreground">Olá{nome ? `, ${nome}` : ''}!</h1>
+        <h1 className="text-2xl font-bold text-primary-foreground">Olá!{nome ? ` ${nome}` : ''}</h1>
         {funcao && <p className="mt-1 text-primary-foreground/80">{funcao}</p>}
         <div className="mx-auto mt-8 grid max-w-sm gap-3">
           {botoes.map(b => (
