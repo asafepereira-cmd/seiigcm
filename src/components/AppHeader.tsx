@@ -21,6 +21,20 @@ export function AppHeader() {
     const partes = completo.trim().split(/\s+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
     setNome(partes.length > 1 ? `${partes[0]} ${partes[partes.length - 1]}` : partes[0] ?? "");
   }); }, []);
+  const [pendentes, setPendentes] = useState(0);
+  useEffect(() => {
+    const contar = async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const id = u.user?.id; if (!id) return;
+      const { data: r } = await supabase.from("user_roles").select("role");
+      const alvos = [`user:${id}`, ...(r ?? []).map(x => x.role as string)];
+      const { count } = await supabase.from("solicitacoes_assinatura").select("id", { count: "exact", head: true }).in("gestora", alvos).is("assinado_em", null);
+      setPendentes(count ?? 0);
+    };
+    contar();
+    const t = setInterval(contar, 30_000);
+    return () => clearInterval(t);
+  }, []);
   return (
     <>
     <header className="sticky top-0 z-20 border-b bg-primary text-primary-foreground">
@@ -32,7 +46,10 @@ export function AppHeader() {
           <Link to="/home" className="rounded-md px-2 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }}>Home</Link>
           <Link to="/historico" className="rounded-md px-2 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }}>Docs</Link>
           <Link to="/processos" className="rounded-md px-2 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }}>Processos</Link>
-          <Link to="/painel" className="rounded-md px-2 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }}>{admin ? "Admin" : "Painel"}</Link>
+          <Link to="/painel" className="relative rounded-md px-2 py-1.5 hover:bg-primary-foreground/10" activeProps={{ className: "bg-primary-foreground/15" }} aria-label={pendentes ? `${admin ? "Admin" : "Painel"} — ${pendentes} para assinar` : undefined}>
+            {admin ? "Admin" : "Painel"}
+            {pendentes > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{pendentes > 9 ? "9+" : pendentes}</span>}
+          </Link>
           <Button
             size="icon"
             variant="ghost"
