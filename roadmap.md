@@ -1,5 +1,10 @@
 # Roadmap
 
+## Recebidos e assinaturas no PDF
+- [ ] Restringir ações dos recebidos e mostrar finalidade/remetente
+- [ ] Mostrar autor e data de abertura dos processos
+- [ ] Corrigir e verificar todas as assinaturas no PDF
+
 - [x] Aviso de atualização nos painéis, exceto administrador e Corpo de Alunos; cadastro sem validação local de formato do e-mail (serviço de acesso mantém suas exigências).
 
 - [x] Retirar análise administrativa obrigatória e liberar encaminhamento direto dos documentos próprios; seis testes passaram, regras e desbloqueio conferidos (verificação visual autenticada indisponível)
