@@ -41,18 +41,19 @@ export async function enviarParaAssinatura(documentoId: string, gestoras: Gestor
 }
 
 export async function carregarSolicitacoes(documentoId: string) {
-  const { data } = await supabase.from("solicitacoes_assinatura")
+  const { data, error } = await supabase.from("solicitacoes_assinatura")
     .select("id, gestora, signatario_nome, signatario_funcao, versao, token, decisao, observacoes, assinado_em").eq("documento_id", documentoId);
+  if (error) throw error;
   return data ?? [];
 }
 
 export async function carregarExtras(documentoId: string): Promise<ExtrasPDF> {
-  const [{ data: doc }, sols, { data: imgs }] = await Promise.all([
+  const [{ data: doc, error }, sols, { data: imgs }] = await Promise.all([
     supabase.from("documentos").select("emitido_em,versao").eq("id", documentoId).maybeSingle(),
     carregarSolicitacoes(documentoId),
     supabase.from("assinaturas_gestoras").select("gestora, imagem"),
   ]);
-  if (!doc?.emitido_em) return {};
+  if (error || !doc) throw error ?? new Error('Documento indisponível');
   const imagem = new Map((imgs ?? []).map(i => [i.gestora, i.imagem]));
   return {
     emitidoEm: doc.emitido_em,

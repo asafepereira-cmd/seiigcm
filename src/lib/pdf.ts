@@ -3,6 +3,7 @@ import { dataExtenso, identificacaoDocumento } from "./documento";
 import { dataHora, type ExtrasPDF } from "./assinaturas-eletronicas";
 import { fontStyle, richParagraphs, wrapRichParagraph, type TextRun } from "./rich-text";
 import signatureSeal from '@/assets/seii-signature-seal.png.asset.json';
+import { identidadeAssinatura } from './signature-identity';
 
 async function loadImage(src: string): Promise<string> {
   const res = await fetch(src);
@@ -237,7 +238,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     y += carimbo(text, y);
   }
 
-  const outras = extras.assinaturas?.filter(a => a.nome && a.assinadoEm) ?? [];
+  const outras = extras.assinaturas?.filter(a => a.assinadoEm).map(identidadeAssinatura) ?? [];
   for (const a of outras) {
     if (!a.assinadoEm) continue;
     const {data,hora} = dataHora(a.assinadoEm);
