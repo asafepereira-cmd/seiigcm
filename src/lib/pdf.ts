@@ -29,7 +29,6 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   const PT_MM = 25.4 / 72;
   const LH = 12 * PT_MM * 1.26;
   const HEADER_LH = 8.5 * PT_MM * 1.13;
-  const SIGNATURE_LH = 12 * PT_MM * 0.89;
 
   const header = () => {
     pdf.addImage(brasao, "PNG", 12, 7, 20, 20, undefined, "FAST");
