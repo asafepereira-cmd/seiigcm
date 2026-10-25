@@ -41,7 +41,7 @@
 - [x] Retirar linha de assinatura, lista, assinante/PNG, página de despacho, botões Novo processo/Novo documento
 - [x] Retirar banco de assinaturas e aviso de atualização; envio sem gestora obrigatória
 - [x] Um único QR por documento; PDF comprimido; PDF liberado em qualquer estado; "Enviado para ciência"
-- [ ] Recebidos/Enviados no Docs e recebidos no painel admin
+- [x] Recebidos/Enviados no Docs e recebidos no painel admin
 - [ ] Contador de notificações e indicador de documento aberto
 - [ ] Colaboradores de setor; alterar nome no painel de contas
 - [ ] "Atualizar doc" sem nova assinatura; assinatura só com senha do destinatário
