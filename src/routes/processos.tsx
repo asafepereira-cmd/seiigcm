@@ -36,7 +36,7 @@ function Processos() {
   const [podeEmitir, setPodeEmitir] = useState(false);
   const [visualizandoDoc, setVisualizandoDoc] = useState<string | null>(null);
   const [rows, setRows] = useState<Processo[] | null>(null);
-  const [paineis, setPaineis] = useState<{ user_id: string; nome: string }[]>([]);
+  const [paineis, setPaineis] = useState<{ user_id: string; nome: string; setor: string; tipo_painel: string }[]>([]);
   const [aberto, setAberto] = useState<Processo | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [anexos, setAnexos] = useState<Anexo[]>([]);
@@ -79,7 +79,7 @@ function Processos() {
     if (!ready) return;
     load();
     supabase.from('paineis').select('pode_emitir').eq('user_id', session?.user.id ?? '').maybeSingle().then(({ data }) => setPodeEmitir(isAdmin || !!data?.pode_emitir));
-    supabase.from("paineis").select("user_id,nome").eq("ativo", true).order("nome").then(({ data }) => setPaineis(data ?? []));
+    supabase.from("paineis").select("user_id,nome,setor,tipo_painel").eq("ativo", true).order("nome").then(({ data }) => setPaineis(data ?? []));
   }, [ready, isAdmin, session?.user.id]);
 
   async function abrirDetalhes(p: Processo) {
@@ -147,6 +147,11 @@ function Processos() {
     setAnexos(current => current.filter(item => item.id !== a.id));
   }
 
+  const autoriaProcesso = (p: Processo) => {
+    const autor=paineis.find(x=>x.user_id===p.criado_por);
+    return autor ? (autor.tipo_painel==='setor'?autor.setor||autor.nome:autor.nome) : 'Conta responsável';
+  };
+  const aberturaProcesso = (p: Processo) => p.aberto_em ? `Aberto por ${autoriaProcesso(p)} em ${new Date(p.aberto_em).toLocaleString('pt-BR',{timeZone:'America/Boa_Vista'})}` : 'Aguardando abertura';
   const tituloProcesso = (p: Processo) => processoFormatado({ numero: p.numero, ano: new Date(p.created_at).getFullYear() });
   if (!ready) return null;
   return (
@@ -168,7 +173,7 @@ function Processos() {
                 <div className="mr-auto min-w-0">
                   <p className="font-sans font-bold">{tituloProcesso(p)} — {p.tema}</p>
                   <p className="break-words text-sm text-muted-foreground">{p.assunto}</p>
-                  <p className="text-xs text-muted-foreground">{p.aberto_em ? `Aberto em ${new Date(p.aberto_em).toLocaleDateString("pt-BR", { timeZone: "America/Boa_Vista" })}` : "Aguardando abertura"}</p>
+                  <p className="text-xs text-muted-foreground">{aberturaProcesso(p)}</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => abrirDetalhes(p)}>Visualizar</Button>
               </li>
@@ -213,7 +218,7 @@ function Processos() {
                   <Button size="sm" variant="destructive" onClick={excluirProcesso}><Trash2 className="h-4 w-4" /> Excluir processo</Button>
                 </div>
               )}
-              <h2 className="text-center text-xl font-bold">{aberto.tema}</h2>
+              <h2 className="text-center text-xl font-bold">{aberto.tema}</h2><p className="text-sm text-muted-foreground">{aberturaProcesso(aberto)}</p>
               <p className="font-semibold">{aberto.assunto}</p>
               <p className="whitespace-pre-line text-sm">{aberto.descricao}</p>
               {aberto.aberto_em && podeEmitir && (

@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { isStatusDocumento, ordenarEmitidos, STATUS_DOCUMENTO, type StatusDocumento } from "@/lib/emitidos";
 import { numeroFormatado, type Documento } from "@/lib/documento";
 import { DocumentViewer } from "@/components/DocumentViewer";
-import { podeEditarDocumento, podeComentarDocumento } from "@/lib/document-access";
+import { podeEditarDocumento, acoesDocumentoRecebido } from "@/lib/document-access";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
@@ -32,28 +32,47 @@ export const Route = createFileRoute("/historico")({
   component: Historico,
 });
 
-type Row = { id: string; tipo: string; numero: number; ano: number; status: StatusDocumento; assunto: string; created_at: string; dados: Documento; criado_por:string|null; analise_admin:boolean; enviado_analise_em:string|null; emitido_em:string|null };
+type Row = { id: string; tipo: string; numero: number; ano: number; status: StatusDocumento; assunto: string; created_at: string; dados: Documento; criado_por:string|null; analise_admin:boolean; enviado_analise_em:string|null; emitido_em:string|null; versao:number };
 
 function Historico() {
   const { ready, session, isAdmin } = useRequireSession(false);
   const [view,setView]=useState<string|null>(null);
+  const [received,setReceived]=useState<Record<string,{finalidade:string;token?:string;assinado_em:string|null}[]>>({});
+  const [senders,setSenders]=useState<Record<string,string>>({});
   const [panelType,setPanelType]=useState('individual');
   const [rows, setRows] = useState<Row[] | null>(null);
   const [aba,setAba]=useState<'todos'|'enviados'|'recebidos'>('todos');
   const [updating, setUpdating] = useState<string[]>([]);
   const [loadError, setLoadError] = useState(false);
 
-  const load = () =>
-    supabase
+  const load = async () => {
+    const [panels, roles, requests, recipients] = await Promise.all([
+      supabase.from("paineis").select("user_id,nome,setor,tipo_painel"),
+      supabase.from("user_roles").select("role").eq("user_id",session?.user.id??""),
+      supabase.from("solicitacoes_assinatura").select("documento_id,versao,gestora,finalidade,token,assinado_em"),
+      supabase.from("documento_destinatarios").select("documento_id").eq("user_id",session?.user.id??""),
+    ]);
+    setSenders(Object.fromEntries((panels.data??[]).map(p=>[p.user_id,p.tipo_painel==="setor"?p.setor||p.nome:p.nome])));
+    const destinos=new Set(["user:"+session?.user.id,...(roles.data??[]).map(r=>r.role)]);
+    return supabase
       .from("documentos")
-       .select("id, tipo, numero, ano, status, assunto, created_at, dados, criado_por, analise_admin, enviado_analise_em, emitido_em")
+       .select("id, tipo, numero, ano, status, assunto, created_at, dados, criado_por, analise_admin, enviado_analise_em, emitido_em, versao")
       .order("ano", { ascending: false })
       .order("numero", { ascending: false })
       .then(({ data, error }) => {
         setLoadError(Boolean(error));
         if (error) { toast.error("Não foi possível carregar os documentos."); return; }
-        setRows(ordenarEmitidos((data as unknown as Row[]) ?? []));
+        const documents=(data as unknown as Row[])??[];
+        const receivedMap: typeof received = {};
+        for(const r of requests.data??[]) {
+          if(!destinos.has(r.gestora)||!documents.some(d=>d.id===r.documento_id&&d.versao===r.versao&&d.criado_por!==session?.user.id))continue;
+          (receivedMap[r.documento_id]??=[]).push({finalidade:r.finalidade,token:r.token,assinado_em:r.assinado_em});
+        }
+        for(const r of recipients.data??[]) if(!receivedMap[r.documento_id]) receivedMap[r.documento_id]=[{finalidade:'ciencia',assinado_em:null}];
+        setReceived(receivedMap);
+        setRows(ordenarEmitidos(documents));
       });
+  };
 
   const [envio, setEnvio] = useState<{ row: Row; opcao: Despacho } | null>(null);
   const [links, setLinks] = useState<{ row: Row; itens: { id: string; gestora: string; signatario_nome: string | null; token: string; assinado_em: string | null }[] } | null>(null);
@@ -134,17 +153,19 @@ function Historico() {
           <p className="text-primary-foreground">Nenhum documento salvo ainda.</p>
         ) : (
           <ul className="space-y-3">
-            {rows.filter(r=>aba==='todos'||(aba==='enviados'?r.criado_por===session?.user.id:r.criado_por!==session?.user.id)).map((r) => (
+            {rows.filter(r=>aba==='todos'||(aba==='enviados'?r.criado_por===session?.user.id:r.criado_por!==session?.user.id&&!!received[r.id])).map((r) => (
               <li key={r.id} className={`flex flex-col gap-3 rounded-lg border border-status-ink/15 p-4 text-status-ink sm:flex-row sm:items-center ${STATUS_DOCUMENTO[r.status]?.className ?? STATUS_DOCUMENTO.desenvolvendo.className}`}>
                 <div className="mr-auto min-w-0">
                   <p className="font-sans font-bold">{numeroFormatado(r.dados)}</p>
                   <p className="break-words text-sm opacity-80">{r.assunto}</p>
+                  {aba==='recebidos'&&<p className="mt-1 text-sm">Enviado para {Array.from(new Set(received[r.id]?.map(x=>x.finalidade==='ciencia'?'ciência':'deferimento'))).join(' e ')} por: {senders[r.criado_por??'']||r.dados.setor||r.dados.assinante||r.dados.de}</p>}
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold">{STATUS_DOCUMENTO[r.status].label}</span>
-                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,"enviado")}>Encaminhar assinaturas</Button>}
+                  {aba!=='recebidos' && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,"enviado")}>Encaminhar assinaturas</Button>}
                   <Button size="sm" variant="outline" onClick={()=>setView(r.id)}>Visualizar</Button>
-                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" variant="outline" asChild>
+                  {aba==='recebidos'&&received[r.id]?.filter(x=>acoesDocumentoRecebido(x.finalidade,x.assinado_em).assinar&&x.token).map(x=><Button size="sm" asChild key={x.token}><Link to="/assinar/$token" params={{token:x.token??''}}>Assinar</Link></Button>)}
+                  {aba!=='recebidos' && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" variant="outline" asChild>
                     <Link to="/" search={{ id: r.id }}>
                       <Pencil className="h-4 w-4" /> Editar
                     </Link>
@@ -152,12 +173,12 @@ function Historico() {
                   <Button size="sm" variant="outline" onClick={() => baixar(r)}>
                     <Download className="h-4 w-4" /> PDF
                   </Button>
-                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && (
+                  {aba!=='recebidos' && podeEditarDocumento(isAdmin,session?.user.id??'',r) && (
                     <Button size="sm" variant="outline" onClick={() => abrirLinks(r)}>
                       <Link2 className="h-4 w-4" /> Links
                     </Button>
                   )}
-                  {podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button
+                  {aba!=='recebidos' && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button
                     size="sm"
                     variant="outline"
                     aria-label="Excluir"
@@ -177,7 +198,7 @@ function Historico() {
           </ul>
         )}
       </main>
-      <DocumentViewer id={view} onClose={()=>setView(null)}/>
+      <DocumentViewer id={view} recebido={aba==='recebidos'} onClose={()=>setView(null)}/>
       <Dialog open={!!envio} onOpenChange={o => !o && setEnvio(null)}>
         <DialogContent className="max-h-[85svh] overflow-y-auto">
           <DialogHeader><DialogTitle>Enviar para assinatura</DialogTitle></DialogHeader>
@@ -204,7 +225,7 @@ function Historico() {
                 <div className="flex gap-2">
                   <input readOnly value={url} className="min-w-0 flex-1 rounded border bg-paper px-2 text-xs text-paper-ink" />
                   <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(url); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /></Button>
-                  {podeEditarDocumento(isAdmin,session?.user.id??'',links!.row) && !i.assinado_em && <Button size="sm" variant="destructive" onClick={async () => { if (!links || !confirm("Excluir esta solicitação de assinatura?")) return; const { error } = await supabase.rpc("excluir_solicitacao", { _id: i.id }); if (error) toast.error("Não foi possível excluir."); else { toast.success("Solicitação excluída"); abrirLinks(links.row); } }}><Trash2 className="h-4 w-4" /></Button>}
+                  {podeEditarDocumento(isAdmin,session?.user.id??'',links?.row ?? {criado_por:null,status:'desenvolvendo',analise_admin:false}) && !i.assinado_em && <Button size="sm" variant="destructive" onClick={async () => { if (!links || !confirm("Excluir esta solicitação de assinatura?")) return; const { error } = await supabase.rpc("excluir_solicitacao", { _id: i.id }); if (error) toast.error("Não foi possível excluir."); else { toast.success("Solicitação excluída"); abrirLinks(links.row); } }}><Trash2 className="h-4 w-4" /></Button>}
                 </div>
               </div>
             );
