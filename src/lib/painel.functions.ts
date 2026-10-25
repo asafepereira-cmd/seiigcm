@@ -14,7 +14,7 @@ export const getPainel = createServerFn({ method: 'GET' }).middleware([requireSu
   ]);
   if(error || requestError) throw new Error('Não foi possível carregar o painel.');
   const proprias = solicitacoesDoUsuario(requests ?? [], (roles ?? []).map(r => r.role), context.userId);
-  return {admin,roles: roles ?? [],docs: ordenarPainel(docs ?? []),requests: admin ? requests ?? [] : proprias,funcoes: funcoes ?? []};
+  return {admin,roles: roles ?? [],docs: ordenarPainel(docs ?? []),requests: admin ? requests ?? [] : proprias,minhas: proprias,funcoes: funcoes ?? []};
 });
 
 export const criarGestora = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
