@@ -1,5 +1,8 @@
 # Roadmap
 
+## Correção de assinaturas 27/10
+- [ ] Corrigir assinatura por senha; gestoras não preenchem nome e função manualmente.
+
 ## Recebidos e assinaturas no PDF
 - [ ] Restringir ações dos recebidos e mostrar finalidade/remetente
 - [ ] Mostrar autor e data de abertura dos processos
