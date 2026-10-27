@@ -1,6 +1,8 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { cpfValido } from './sector';
+import { GESTORAS } from './documento';
+import { exigeIdentificacaoAssinatura, gestoraDaConta } from './signature-identity';
 import type { Documento } from './documento';
 import type { ExtrasPDF } from './assinaturas-eletronicas';
 const tokenInput = z.object({ token: z.string().min(20).max(100) });
@@ -13,11 +15,15 @@ export const getSignRequest = createServerFn({ method: 'POST' }).inputValidator(
   await supabaseAdmin.from('solicitacoes_assinatura').update({ aberto_em: new Date().toISOString() }).eq('id', req.id).is('aberto_em', null);
   const uid = req.gestora.startsWith('user:') ? req.gestora.slice(5) : null;
   const { data: panel } = uid ? await supabaseAdmin.from('paineis').select('tipo_painel').eq('user_id', uid).maybeSingle() : { data: null };
+   const { data: roles } = uid ? await supabaseAdmin.from('user_roles').select('role').eq('user_id', uid) : { data: null };
+   const accountRoles = (roles ?? []).map(r => r.role);
+   const manager = gestoraDaConta(req.gestora, accountRoles);
+   const identity = manager ? GESTORAS[manager] : null;
   const { data: requests } = await supabaseAdmin.from('solicitacoes_assinatura').select('gestora,signatario_nome,signatario_funcao,decisao,observacoes,assinado_em').eq('documento_id', req.documento_id).eq('versao', doc.versao);
   const { data: images } = await supabaseAdmin.from('assinaturas_gestoras').select('gestora,imagem');
   const imageMap = new Map((images ?? []).map(i => [i.gestora, i.imagem]));
   const extras: ExtrasPDF = { emitidoEm: doc.emitido_em, emissorImagem: imageMap.get('admin'), assinaturas: (requests ?? []).map(s => ({ gestora: s.gestora, nome: s.signatario_nome, cargo: s.signatario_funcao, decisao: s.decisao, observacoes: s.observacoes, assinadoEm: s.assinado_em, imagem: s.assinado_em ? imageMap.get(s.gestora) : undefined })) };
-  return { found: true as const, documentoId: req.documento_id, setor: panel?.tipo_painel === 'setor', exigeSenha: !req.gestora.startsWith('extra:'), finalidade: req.finalidade, gestora: req.gestora, nome: req.signatario_nome, cargo: req.signatario_funcao, termo: req.termo, decisao: req.decisao, assinadoEm: req.assinado_em, completo: doc.status === 'assinado', doc: doc.dados as unknown as Documento, extras };
+   return { found: true as const, documentoId: req.documento_id, setor: exigeIdentificacaoAssinatura(req.gestora, panel?.tipo_painel, accountRoles), exigeSenha: !req.gestora.startsWith('extra:'), finalidade: req.finalidade, gestora: req.gestora, nome: identity?.nome ?? req.signatario_nome, cargo: identity?.cargo ?? req.signatario_funcao, termo: req.termo, decisao: req.decisao, assinadoEm: req.assinado_em, completo: doc.status === 'assinado', doc: doc.dados as unknown as Documento, extras };
 });
 export const signDocument = createServerFn({ method: 'POST' }).inputValidator((d: unknown) => tokenInput.extend({ decisao: z.enum(['deferido','indeferido','ciente']), observacoes: z.string().max(600), concordo: z.literal(true), nome: z.string().max(200).optional(), funcao: z.string().max(200).optional(), cpf: z.string().max(20).optional(), password: z.string().max(128).optional() }).parse(d)).handler(async ({ data }) => {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
@@ -25,16 +31,24 @@ export const signDocument = createServerFn({ method: 'POST' }).inputValidator((d
   if (!req || req.assinado_em) throw new Error('Solicitação indisponível.');
   const uid = req.gestora.startsWith('user:') ? req.gestora.slice(5) : null;
   const { data: panel } = uid ? await supabaseAdmin.from('paineis').select('tipo_painel,ativo').eq('user_id', uid).maybeSingle() : { data: null };
+   const { data: roles } = uid ? await supabaseAdmin.from('user_roles').select('role').eq('user_id', uid) : { data: null };
   let signer = uid;
   if (!signer && (req.gestora === 'pedagogica' || req.gestora === 'administrativa')) { const { data: r } = await supabaseAdmin.from('user_roles').select('user_id').eq('role', req.gestora).limit(1).maybeSingle(); signer = r?.user_id ?? null; }
-  if (panel?.tipo_painel === 'setor' && (!panel.ativo || !data.nome?.trim() || !data.funcao?.trim() || !cpfValido(data.cpf ?? ''))) throw new Error('Informe nome completo, função e CPF válido.');
+   if (panel && !panel.ativo) throw new Error('Este painel está desativado.');
+   if (exigeIdentificacaoAssinatura(req.gestora, panel?.tipo_painel, (roles ?? []).map(r => r.role)) && (!data.nome?.trim() || !data.funcao?.trim() || !cpfValido(data.cpf ?? ''))) throw new Error('Informe nome completo, função e CPF válido.');
+   if (!signer && !req.gestora.startsWith('extra:')) throw new Error('Não foi possível conferir a conta destinatária.');
   if (signer) {
     if (!data.password) throw new Error('Informe a senha do seu painel para assinar.');
     const { data: user } = await supabaseAdmin.auth.admin.getUserById(signer);
     const { createClient } = await import('@supabase/supabase-js');
     const url = process.env['SUPABASE_URL']; const key = process.env['SUPABASE_PUBLISHABLE_KEY'];
     if (!url || !key || !user.user?.email) throw new Error('Não foi possível conferir a conta.');
-    const verifier = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+     const verifier = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: (input, init) => {
+       const headers = new Headers(init?.headers);
+       if (key.startsWith('sb_') && headers.get('Authorization') === `Bearer ${key}`) headers.delete('Authorization');
+       headers.set('apikey', key);
+       return fetch(input, { ...init, headers });
+     } } });
     const { data: signed, error } = await verifier.auth.signInWithPassword({ email: user.user.email, password: data.password });
     if (error || signed.user?.id !== signer) throw new Error('Senha do painel incorreta.');
     await verifier.auth.signOut();
