@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Correção de assinaturas 27/10
-- [ ] Corrigir assinatura por senha; gestoras não preenchem nome e função manualmente.
+- [x] Corrigir exigência indevida de identificação das gestoras por papel da conta, no link e na assinatura; senha obrigatória preservada. 13 testes e tela administrativa conferidos; assinatura efetiva com senha válida não exercitada (sessão de teste indisponível).
 
 ## Recebidos e assinaturas no PDF
 - [ ] Restringir ações dos recebidos e mostrar finalidade/remetente
