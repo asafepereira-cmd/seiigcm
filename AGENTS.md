@@ -29,6 +29,6 @@
 
 - Shared DocumentViewer controls authorized content, versioned records, comments and PDF exports across panels; sector exports require signed status. Why: keep all viewing paths aligned with shared-panel restrictions.
 - Received document cards derive membership from explicit recipients/current-version signature assignments, and never expose mutation controls, even to administrators. Why: received navigation is read/comment/sign/export only.
-- PDF stamps resolve legacy manager identities through the shared signature identity helper and retain version-scoped signatures. Why: old requests with null names must not disappear or attach signatures to another version.
+- Shared signature identity resolves manager roles for legacy/user links and PDF stamps; managers skip manual identification, other sectors retain it, and account passwords stay required. Why: sector-style manager panels must sign with the correct identity.
 - In-app completion notices are user subscriptions in documento_avisos read against the current document lifecycle. Why: every current-version signature must finish before presenting download readiness.
 - Panel maintenance notices are rendered by the shared AppHeader after authenticated identity is resolved, never on public signature pages. Why: keep panel messaging consistent without interrupting signature links.

@@ -169,6 +169,13 @@
       "when": 1792954816228,
       "tag": "0023_documentos_processo_set_null",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793123562703,
+      "tag": "0024_gestoras_identificacao_automatica_assinatura",
+      "breakpoints": true
     }
   ]
 }
