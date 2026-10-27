@@ -247,6 +247,23 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     ensure(stampHeight(text)+3);
     y += carimbo(text,y)+3;
   }
+  const comentarios = (extras.assinaturas ?? [])
+    .filter(a => a.assinadoEm && a.observacoes?.trim())
+    .map(a => ({ nome: identidadeAssinatura(a).nome, texto: a.observacoes.trim() }));
+  if (comentarios.length) {
+    y += 4;
+    pdf.setFontSize(10);
+    ensure(LH * 2);
+    pdf.setFont("times", "bold");
+    pdf.text("Comentários dos assinantes:", ML, y);
+    y += 5;
+    comentarios.forEach(c => {
+      pdf.setFont("times", "normal");
+      const lines = pdf.splitTextToSize(`${c.nome}: ${c.texto}`, TW) as string[];
+      lines.forEach(ln => { ensure(5); pdf.text(ln, ML, y); y += 4.5; });
+      y += 1.5;
+    });
+  }
   if (qr) { y += 4; ensure(30); blocoQR(y); }
 
   const nome = `${doc.tipo.toUpperCase().replace(/[^A-Z]/gi, "_")}_${String(doc.numero).padStart(3, "0")}_${doc.ano}.pdf`;
