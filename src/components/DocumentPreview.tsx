@@ -14,8 +14,8 @@ export function DocumentPreview({ doc }: { doc: Documento }) {
       <p className="mt-4 text-[1.1em] font-bold">{identificacaoDocumento(doc)}</p>
       {doc.processo && <p className="mt-1 text-center font-bold break-words">{doc.processo.tema}</p>}
       <p className="text-right font-bold">{doc.cidade} - {dataExtenso(doc.data)}</p>
-      <p className="mt-3 text-justify"><b>Para:</b> {doc.para}</p>
-      <p className="text-justify"><b>De:</b> {doc.de}</p>
+      {doc.tipo !== "Edital" && <><p className="mt-3 text-justify"><b>Para:</b> {doc.para}</p>
+      <p className="text-justify"><b>De:</b> {doc.de}</p></>}
       <p className="mt-2 text-justify"><b>Assunto:</b> {doc.assunto}</p>
       {doc.vocativo && <p className="mt-2 text-justify">{doc.vocativo}</p>}
        {doc.corpoFormatado ? richParagraphs(doc.corpoFormatado).map((runs, i) => <p key={i} className="mt-2 whitespace-pre-line text-justify">{runs.map((run, j) => <span key={j} className={`${run.bold ? "font-bold" : ""} ${run.italic ? "italic" : ""} ${run.underline ? "underline" : ""}`}>{run.text}</span>)}</p>) : paras.map((p, i) => <p key={i} className="mt-2 text-justify">{p}</p>)}

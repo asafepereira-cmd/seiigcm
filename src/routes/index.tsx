@@ -187,7 +187,8 @@ function Editor() {
                 }}>
                   <option>Ofício</option>
                   <option>Memorando</option>
-                  {doc.tipo !== 'Ofício' && doc.tipo !== 'Memorando' && <option>{doc.tipo}</option>}
+                  <option>Edital</option>
+                  {doc.tipo !== 'Ofício' && doc.tipo !== 'Memorando' && doc.tipo !== 'Edital' && <option>{doc.tipo}</option>}
                 </select>
               </F>
               <F label="Número"><Input aria-label="Número do documento" type="number" min={1} step={1} value={doc.numero} onChange={(e) => set("numero", Number(e.target.value))} /></F>
@@ -198,10 +199,10 @@ function Editor() {
             </div>
           </Group>
 
-          <Group title="Destinatário">
+          {doc.tipo !== "Edital" && <Group title="Destinatário">
             <F label="Para"><Input value={doc.para} onChange={(e) => set("para", e.target.value)} /></F>
             <F label="De"><Input value={doc.de} onChange={(e) => set("de", e.target.value)} /></F>
-          </Group>
+          </Group>}
 
           <Group title="Conteúdo">
             <F label="Assunto"><Textarea rows={2} value={doc.assunto} onChange={(e) => set("assunto", e.target.value)} /></F>

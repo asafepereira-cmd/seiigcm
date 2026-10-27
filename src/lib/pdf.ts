@@ -110,9 +110,11 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   };
 
   pdf.setFontSize(12);
-  labelLine("Para:", doc.para, true);
-  labelLine("De:", doc.de, true);
-  y += LH * 0.7;
+  if (doc.tipo !== "Edital") {
+    labelLine("Para:", doc.para, true);
+    labelLine("De:", doc.de, true);
+    y += LH * 0.7;
+  }
   labelLine("Assunto:", doc.assunto, true);
   y += LH * 0.7;
 
