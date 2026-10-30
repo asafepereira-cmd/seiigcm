@@ -176,6 +176,13 @@
       "when": 1793123562703,
       "tag": "0024_gestoras_identificacao_automatica_assinatura",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793325083560,
+      "tag": "0025_profile_received_comments_and_document_filing",
+      "breakpoints": true
     }
   ]
 }
