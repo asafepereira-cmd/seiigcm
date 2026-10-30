@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import seiiLogo from "@/assets/seii-transparent.png";
+import { ProfileMenu } from './ProfileMenu';
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -50,18 +51,7 @@ export function AppHeader() {
             {admin ? "Admin" : "Painel"}
             {pendentes > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{pendentes > 9 ? "9+" : pendentes}</span>}
           </Link>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Sair"
-            className="hover:bg-primary-foreground/10 hover:text-primary-foreground"
-            onClick={async () => {
-              await supabase.auth.signOut();
-              navigate({ to: "/login" });
-            }}
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <ProfileMenu />
         </nav>
       </div>
       <p className="sr-only">{nome ? `Olá! ${nome}` : ""}</p>
