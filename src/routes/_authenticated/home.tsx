@@ -40,7 +40,7 @@ function Home() {
       const adm = rs.includes('admin');
       setAdmin(adm);
       setPodeEmitir(adm || (p?.pode_emitir ?? false));
-      setNome(adm ? 'Asafe Pereira' : p?.tipo_painel === 'setor' ? (p.setor || p.nome) : primeiroEUltimo(p?.nome ?? ''));
+      setNome(p?.tipo_painel === 'setor' ? (p.setor || p.nome) : primeiroEUltimo(p?.nome || String(u.user?.user_metadata['display_name'] || (adm ? 'Asafe Pereira' : ''))));
       setFuncao(adm ? 'Coordenador de Comunicação e Mídia' : (p?.funcao ?? ''));
     })();
   }, []);

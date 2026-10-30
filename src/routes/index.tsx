@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, Save, Sparkles, FilePlus2, Upload, X, Check, Circle } from "lucide-react";
+import { Download, Save, Sparkles, FilePlus2, Upload, X, Check, Circle, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
@@ -66,10 +66,11 @@ function Editor() {
   const [recipients,setRecipients] = useState<{id:string;nome:string}[]>([]);
   const [recipientSearch,setRecipientSearch] = useState('');
   const [recipientId,setRecipientId] = useState('');
+  const [selectedRecipients,setSelectedRecipients] = useState<{id:string;nome:string}[]>([]);
   const [purpose,setPurpose] = useState<'deferimento'|'ciencia'>('deferimento');
   const [sending,setSending] = useState(false);
   useEffect(()=>{if(!ready)return;supabase.from('paineis').select('tipo_painel').eq('user_id',session?.user.id??'').maybeSingle().then(({data})=>setPanelType(data?.tipo_painel??'individual'));},[ready,session?.user.id]);
-  useEffect(()=>{if(panelType==='setor'||isAdmin)listRecipients().then(setRecipients).catch(()=>toast.error('Não foi possível listar destinatários.'));},[panelType,isAdmin]);
+  useEffect(()=>{if(ready)listRecipients().then(setRecipients).catch(()=>toast.error('Não foi possível listar destinatários.'));},[ready]);
 
   async function comProcesso(documento: Documento, processoId?: string | null) {
     if (!processoId) return documento;
@@ -148,11 +149,12 @@ function Editor() {
   }
 
   async function encaminhar(assinar:boolean) {
-    if(!recipientId)return;
+    const destinos = Array.from(new Set([...selectedRecipients.map(r=>r.id), ...(recipientId ? [recipientId] : [])]));
+    if(!destinos.length)return;
     setSending(true);
     try {
       const savedId=await salvar();if(!savedId)return;
-      const {error}=await supabase.rpc('enviar_documento_setor',{_id:savedId,_destino:recipientId,_assinar:assinar,_finalidade:purpose});
+      const {error}=await supabase.rpc('enviar_documento_multiplos',{_id:savedId,_destinos:destinos,_assinar:assinar,_finalidade:purpose});
       if(error)throw error;
       toast.success(assinar?'Documento enviado para assinatura':'Documento enviado');
       navigate({to:'/historico'});
@@ -194,6 +196,7 @@ function Editor() {
               <F label="Número"><Input aria-label="Número do documento" type="number" min={1} step={1} value={doc.numero} onChange={(e) => set("numero", Number(e.target.value))} /></F>
               <F label="Ano"><Input type="number" disabled={!!docId} value={doc.ano} onChange={(e) => set("ano", Number(e.target.value))} /></F>
               <F label="Sigla"><Input value={doc.sigla} onChange={(e) => set("sigla", e.target.value)} /></F>
+              {doc.tipo === 'Edital' && <F label="Classificação do edital" className="col-span-2 sm:col-span-4"><Input aria-label="Classificação do edital" placeholder="Interno, público…" maxLength={200} value={doc.editalQualificador ?? ''} onChange={e=>set('editalQualificador',e.target.value)}/></F>}
               <F label="Cidade"><Input value={doc.cidade} onChange={(e) => set("cidade", e.target.value)} /></F>
               <F label="Data" className="col-span-1 sm:col-span-3"><Input type="date" value={doc.data} onChange={(e) => set("data", e.target.value)} /></F>
             </div>
@@ -205,7 +208,7 @@ function Editor() {
           </Group>}
 
           <Group title="Conteúdo">
-            <F label="Assunto"><Textarea rows={2} value={doc.assunto} onChange={(e) => set("assunto", e.target.value)} /></F>
+            <F label={doc.tipo === 'Edital' ? 'Tema do edital' : 'Assunto'}><Textarea aria-label={doc.tipo === 'Edital' ? 'Tema do edital' : 'Assunto'} rows={2} value={doc.assunto} onChange={(e) => set("assunto", e.target.value)} /></F>
             <F label="Vocativo"><Input value={doc.vocativo} onChange={(e) => set("vocativo", e.target.value)} /></F>
             <F label="Texto (separe parágrafos com uma linha em branco)">
                 <RichTextEditor text={doc.corpo} content={doc.corpoFormatado} onChange={(corpo, corpoFormatado) => setDoc((current) => current ? { ...current, corpo, corpoFormatado } : current)} />
@@ -223,11 +226,13 @@ function Editor() {
             <F label="Fecho"><Textarea rows={2} value={doc.fecho} onChange={(e) => set("fecho", e.target.value)} /></F>
           </Group>
 
-          {(panelType==='setor'||isAdmin) && <Group title="Encaminhamento">
+          {<Group title="Encaminhamento">
+            {selectedRecipients.map(p=><div className="flex items-center gap-2" key={p.id}><span className="mr-auto font-semibold">{p.nome}</span><Button size="icon" variant="ghost" aria-label={`Remover ${p.nome}`} onClick={()=>setSelectedRecipients(current=>current.filter(r=>r.id!==p.id))}><X className="h-4 w-4"/></Button></div>)}
             <Input aria-label="Destinatário do documento" placeholder="Pesquisar setor ou pessoa" value={recipientSearch} onChange={e=>{setRecipientSearch(e.target.value);setRecipientId('');}}/>
-            {recipientSearch&&!recipientId&&<div className="flex flex-wrap gap-2">{recipients.filter(p=>p.nome.toLocaleLowerCase('pt-BR').includes(recipientSearch.toLocaleLowerCase('pt-BR'))).map(p=><Button key={p.id} variant="outline" onClick={()=>{setRecipientId(p.id);setRecipientSearch(p.nome);}}>{p.nome}</Button>)}</div>}
+            {recipientSearch&&!recipientId&&<div className="flex flex-wrap gap-2">{recipients.filter(p=>!selectedRecipients.some(s=>s.id===p.id)&&p.nome.toLocaleLowerCase('pt-BR').includes(recipientSearch.toLocaleLowerCase('pt-BR'))).map(p=><Button key={p.id} variant="outline" onClick={()=>{setRecipientId(p.id);setRecipientSearch(p.nome);}}>{p.nome}</Button>)}</div>}
+            <Button size="icon" variant="outline" aria-label="Adicionar destinatário" title="Adicionar destinatário" disabled={!recipientId} onClick={()=>{const p=recipients.find(r=>r.id===recipientId);if(p)setSelectedRecipients(current=>current.some(r=>r.id===p.id)?current:[...current,p]);setRecipientId('');setRecipientSearch('');}}><Plus className="h-4 w-4"/></Button>
             <F label="Finalidade da assinatura"><select aria-label="Finalidade da assinatura" className="h-9 w-full rounded-md border bg-card px-2" value={purpose} onChange={e=>setPurpose(e.target.value==='ciencia'?'ciencia':'deferimento')}><option value="deferimento">Deferimento</option><option value="ciencia">Somente ciência</option></select></F>
-            <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!recipientId||sending||saving} onClick={()=>encaminhar(false)}>Enviar para</Button><Button disabled={!recipientId||sending||saving} onClick={()=>encaminhar(true)}>Enviar e solicitar assinatura</Button></div>
+            <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={(!recipientId&&!selectedRecipients.length)||sending||saving} onClick={()=>encaminhar(false)}>Enviar para</Button><Button disabled={(!recipientId&&!selectedRecipients.length)||sending||saving} onClick={()=>encaminhar(true)}>Enviar e solicitar assinatura</Button></div>
           </Group>}
           <div className="sticky bottom-0 -mx-4 flex gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
             <Button variant="outline" className="flex-1" onClick={salvar} disabled={saving}>

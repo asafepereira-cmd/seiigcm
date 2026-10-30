@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Copy, Download, Link2, Pencil, Trash2 } from "lucide-react";
+import { Copy, Download, Link2, Pencil, Trash2, FolderInput } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +14,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isStatusDocumento, ordenarEmitidos, STATUS_DOCUMENTO, type StatusDocumento } from "@/lib/emitidos";
-import { numeroFormatado, type Documento } from "@/lib/documento";
+import { identificacaoDocumento, processoFormatado, type Documento } from "@/lib/documento";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { podeEditarDocumento, acoesDocumentoRecebido } from "@/lib/document-access";
 
@@ -44,6 +44,11 @@ function Historico() {
   const [aba,setAba]=useState<'todos'|'enviados'|'recebidos'>('todos');
   const [updating, setUpdating] = useState<string[]>([]);
   const [loadError, setLoadError] = useState(false);
+  const [moveDoc,setMoveDoc] = useState<Row|null>(null);
+  const [processes,setProcesses] = useState<{id:string;numero:number;tema:string;created_at:string}[]>([]);
+  const [processId,setProcessId] = useState('');
+  const [moving,setMoving] = useState(false);
+  const isReceived = (r:Row) => r.criado_por!==session?.user.id && !!received[r.id];
 
   const load = async () => {
     const [panels, roles, requests, recipients] = await Promise.all([
@@ -68,7 +73,7 @@ function Historico() {
           if(!destinos.has(r.gestora)||!documents.some(d=>d.id===r.documento_id&&d.versao===r.versao&&d.criado_por!==session?.user.id))continue;
           (receivedMap[r.documento_id]??=[]).push({finalidade:r.finalidade,token:r.token,assinado_em:r.assinado_em});
         }
-        for(const r of recipients.data??[]) if(!receivedMap[r.documento_id]) receivedMap[r.documento_id]=[{finalidade:'ciencia',assinado_em:null}];
+        for(const r of recipients.data??[]) if(!receivedMap[r.documento_id]&&documents.some(d=>d.id===r.documento_id&&d.criado_por!==session?.user.id)) receivedMap[r.documento_id]=[{finalidade:'ciencia',assinado_em:null}];
         setReceived(receivedMap);
         setRows(ordenarEmitidos(documents));
       });
@@ -156,16 +161,16 @@ function Historico() {
             {rows.filter(r=>aba==='todos'||(aba==='enviados'?r.criado_por===session?.user.id:r.criado_por!==session?.user.id&&!!received[r.id])).map((r) => (
               <li key={r.id} className={`flex flex-col gap-3 rounded-lg border border-status-ink/15 p-4 text-status-ink sm:flex-row sm:items-center ${STATUS_DOCUMENTO[r.status]?.className ?? STATUS_DOCUMENTO.desenvolvendo.className}`}>
                 <div className="mr-auto min-w-0">
-                  <p className="font-sans font-bold">{numeroFormatado(r.dados)}</p>
+                  <p className="font-sans font-bold break-words">{identificacaoDocumento(r.dados)}</p>
                   <p className="break-words text-sm opacity-80">{r.assunto}</p>
-                  {aba==='recebidos'&&<p className="mt-1 text-sm">Enviado para {Array.from(new Set(received[r.id]?.map(x=>x.finalidade==='ciencia'?'ciência':'deferimento'))).join(' e ')} por: {senders[r.criado_por??'']||r.dados.setor||r.dados.assinante||r.dados.de}</p>}
+                  {isReceived(r)&&<p className="mt-1 text-sm">Enviado para {Array.from(new Set(received[r.id]?.map(x=>x.finalidade==='ciencia'?'ciência':'deferimento'))).join(' e ')} por: {senders[r.criado_por??'']||r.dados.setor||r.dados.assinante||r.dados.de}</p>}
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold">{STATUS_DOCUMENTO[r.status].label}</span>
-                  {aba!=='recebidos' && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,"enviado")}>Encaminhar assinaturas</Button>}
+                  {!isReceived(r) && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,"enviado")}>Encaminhar assinaturas</Button>}
                   <Button size="sm" variant="outline" onClick={()=>setView(r.id)}>Visualizar</Button>
-                  {aba==='recebidos'&&received[r.id]?.filter(x=>acoesDocumentoRecebido(x.finalidade,x.assinado_em).assinar&&x.token).map(x=><Button size="sm" asChild key={x.token}><Link to="/assinar/$token" params={{token:x.token??''}}>Assinar</Link></Button>)}
-                  {aba!=='recebidos' && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" variant="outline" asChild>
+                  {isReceived(r)&&received[r.id]?.filter(x=>acoesDocumentoRecebido(x.finalidade,x.assinado_em).assinar&&x.token).map(x=><Button size="sm" asChild key={x.token}><Link to="/assinar/$token" params={{token:x.token??''}}>Assinar</Link></Button>)}
+                  {!isReceived(r) && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" variant="outline" asChild>
                     <Link to="/" search={{ id: r.id }}>
                       <Pencil className="h-4 w-4" /> Editar
                     </Link>
@@ -173,12 +178,13 @@ function Historico() {
                   <Button size="sm" variant="outline" onClick={() => baixar(r)}>
                     <Download className="h-4 w-4" /> PDF
                   </Button>
-                  {aba!=='recebidos' && podeEditarDocumento(isAdmin,session?.user.id??'',r) && (
+                  {!isReceived(r) && podeEditarDocumento(isAdmin,session?.user.id??'',r) && (
                     <Button size="sm" variant="outline" onClick={() => abrirLinks(r)}>
                       <Link2 className="h-4 w-4" /> Links
                     </Button>
                   )}
-                  {aba!=='recebidos' && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button
+                  {r.criado_por===session?.user.id&&<Button size="sm" variant="outline" onClick={async()=>{setMoveDoc(r);setProcessId('');const {data,error}=await supabase.from('processos').select('id,numero,tema,created_at').not('aberto_em','is',null).order('numero',{ascending:false});if(error)toast.error('Não foi possível carregar processos.');setProcesses(data??[]);}}><FolderInput className="h-4 w-4"/>Mover para processo</Button>}
+                  {!isReceived(r) && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button
                     size="sm"
                     variant="outline"
                     aria-label="Excluir"
@@ -198,7 +204,8 @@ function Historico() {
           </ul>
         )}
       </main>
-      <DocumentViewer id={view} recebido={aba==='recebidos'} onClose={()=>setView(null)}/>
+      <DocumentViewer id={view} recebido={!!view&&!!rows?.some(r=>r.id===view&&isReceived(r))} onClose={()=>setView(null)}/>
+      <Dialog open={!!moveDoc} onOpenChange={o=>!o&&setMoveDoc(null)}><DialogContent><DialogHeader><DialogTitle>Mover para processo</DialogTitle></DialogHeader><Select value={processId} onValueChange={setProcessId}><SelectTrigger aria-label="Processo de destino"><SelectValue placeholder="Selecionar processo"/></SelectTrigger><SelectContent>{processes.map(p=><SelectItem value={p.id} key={p.id}>{processoFormatado({numero:p.numero,ano:new Date(p.created_at).getFullYear()})} — {p.tema}</SelectItem>)}</SelectContent></Select>{!processes.length&&<p>Nenhum processo disponível.</p>}<Button disabled={!processId||moving} onClick={async()=>{if(!moveDoc)return;setMoving(true);const {error}=await supabase.rpc('mover_documento_processo',{_id:moveDoc.id,_processo:processId});setMoving(false);if(error)toast.error(error.message);else{toast.success('Documento movido para o processo');setMoveDoc(null);await load();}}}>{moving?'Movendo…':'Mover documento'}</Button></DialogContent></Dialog>
       <Dialog open={!!envio} onOpenChange={o => !o && setEnvio(null)}>
         <DialogContent className="max-h-[85svh] overflow-y-auto">
           <DialogHeader><DialogTitle>Enviar para assinatura</DialogTitle></DialogHeader>
