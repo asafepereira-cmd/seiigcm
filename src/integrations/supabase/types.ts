@@ -574,6 +574,10 @@ export type Database = {
       conta_ativa: { Args: { _uid: string }; Returns: boolean }
       devolver_analise: { Args: { _id: string }; Returns: undefined }
       documento_existe: { Args: { _id: string }; Returns: boolean }
+      documento_recebido: {
+        Args: { _id: string; _uid: string }
+        Returns: boolean
+      }
       e_setor: { Args: { _uid: string }; Returns: boolean }
       encaminhar_documento: {
         Args: {
@@ -593,6 +597,15 @@ export type Database = {
           _prazo: string
           _prioridade: string
           _termo: string
+        }
+        Returns: undefined
+      }
+      enviar_documento_multiplos: {
+        Args: {
+          _assinar: boolean
+          _destinos: string[]
+          _finalidade?: string
+          _id: string
         }
         Returns: undefined
       }
@@ -616,6 +629,10 @@ export type Database = {
         Returns: boolean
       }
       marcar_analise: { Args: { _id: string }; Returns: undefined }
+      mover_documento_processo: {
+        Args: { _id: string; _processo: string }
+        Returns: undefined
+      }
       permissao_painel: {
         Args: { _acao: string; _uid: string }
         Returns: boolean
