@@ -66,7 +66,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     y += tema.length * 6;
   }
   pdf.setFontSize(12);
-  pdf.text(`${doc.cidade} - ${dataExtenso(doc.data)}`, W - MR, y, { align: "right" });
+  if (doc.tipo !== 'Edital') pdf.text(`${doc.cidade} - ${dataExtenso(doc.data)}`, W - MR, y, { align: "right" });
   y += 13;
 
   const justifiedLine = (line: string, x: number, width: number) => {
@@ -115,7 +115,12 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     labelLine("De:", doc.de, true);
     y += LH * 0.7;
   }
-  labelLine("Assunto:", doc.assunto, true);
+  if (doc.tipo === 'Edital') {
+    pdf.setFont('times', 'bold');
+    const tema = pdf.splitTextToSize(doc.assunto, TW) as string[];
+    for (const line of tema) { ensure(LH); pdf.text(line, W / 2, y, { align: 'center' }); y += LH; }
+    pdf.setFont('times', 'normal');
+  } else labelLine("Assunto:", doc.assunto, true);
   y += LH * 0.7;
 
   const paragraph = (text: string) => {
@@ -178,6 +183,13 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   }
 
   if (doc.fecho.trim()) paragraph(doc.fecho.trim());
+
+  if (doc.tipo === 'Edital') {
+    ensure(LH * 2);
+    pdf.setFont('times', 'bold');
+    pdf.text(`${doc.cidade} - ${dataExtenso(doc.data)}`, W - MR, y, { align: 'right' });
+    y += LH * 2;
+  }
 
   y += 6;
 

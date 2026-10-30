@@ -19,6 +19,7 @@ export function assinantesDespacho(opcao?: Despacho) {
 export type Documento = {
   setor?: string;
   tipo: string;
+  editalQualificador?: string;
   numero: number;
   ano: number;
   sigla: string;
@@ -60,6 +61,7 @@ export function processoFormatado(processo: { numero: number; ano: number }) {
 }
 
 export function identificacaoDocumento(doc: Documento) {
+  if (doc.tipo === 'Edital') return `EDITAL${doc.editalQualificador?.trim() ? ` ${doc.editalQualificador.trim().toUpperCase()}` : ''} ${String(doc.numero).padStart(3, '0')}/${doc.ano} - ${doc.sigla}`;
   return doc.processo ? `${doc.tipo.toUpperCase()} ${String(doc.numero).padStart(3, "0")} - ${processoFormatado(doc.processo)}` : numeroFormatado(doc);
 }
 
