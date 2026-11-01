@@ -31,6 +31,7 @@ export type Documento = {
   vocativo: string;
   corpo: string;
   corpoFormatado?: RichNode | undefined;
+  fotos?: { src: string; legenda: string; largura: number; altura: number }[];
   tituloLista: string;
   lista: Participante[];
   fecho: string;
@@ -68,6 +69,8 @@ export function identificacaoDocumento(doc: Documento) {
 export function numeroValido(numero: number) {
   return Number.isSafeInteger(numero) && numero > 0;
 }
+
+export function documentoSemDestinatario(tipo: string) { return ['edital','termo'].includes(tipo.toLocaleLowerCase('pt-BR')); }
 
 export function hojeISO() {
   const d = new Date();
