@@ -183,6 +183,13 @@
       "when": 1793325083560,
       "tag": "0025_profile_received_comments_and_document_filing",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793576815281,
+      "tag": "0026_archive_workspace_and_pending_document_updates",
+      "breakpoints": true
     }
   ]
 }
