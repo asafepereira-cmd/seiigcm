@@ -1,0 +1,41 @@
+CREATE TABLE public.arquivo_espacos (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), dono_id uuid NOT NULL UNIQUE, acessos uuid[] NOT NULL DEFAULT '{}', created_at timestamptz NOT NULL DEFAULT now());
+GRANT ALL ON public.arquivo_espacos TO service_role;
+ALTER TABLE public.arquivo_espacos ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.arquivo_pastas (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), espaco_id uuid NOT NULL REFERENCES public.arquivo_espacos(id) ON DELETE CASCADE, pai_id uuid REFERENCES public.arquivo_pastas(id), nome text NOT NULL CHECK(length(nome) BETWEEN 1 AND 200), created_at timestamptz NOT NULL DEFAULT now());
+GRANT ALL ON public.arquivo_pastas TO service_role;
+ALTER TABLE public.arquivo_pastas ENABLE ROW LEVEL SECURITY;
+CREATE TABLE public.arquivo_itens (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), espaco_id uuid NOT NULL REFERENCES public.arquivo_espacos(id) ON DELETE CASCADE, pasta_id uuid REFERENCES public.arquivo_pastas(id), nome text NOT NULL CHECK(length(nome) BETWEEN 1 AND 200), caminho text NOT NULL UNIQUE, documento_id uuid REFERENCES public.documentos(id) ON DELETE SET NULL, versao integer, tamanho bigint NOT NULL DEFAULT 0, created_at timestamptz NOT NULL DEFAULT now());
+GRANT ALL ON public.arquivo_itens TO service_role;
+ALTER TABLE public.arquivo_itens ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE public.arquivo_espacos IS 'Password-reconfirmed server functions only; no direct browser Data API access.';
+CREATE TABLE public.textos_favoritos (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL DEFAULT auth.uid(), nome text NOT NULL CHECK(length(nome) BETWEEN 1 AND 100), texto text NOT NULL CHECK(length(texto) BETWEEN 1 AND 10000), created_at timestamptz NOT NULL DEFAULT now());
+GRANT SELECT,INSERT,UPDATE,DELETE ON public.textos_favoritos TO authenticated;
+GRANT ALL ON public.textos_favoritos TO service_role;
+ALTER TABLE public.textos_favoritos ENABLE ROW LEVEL SECURITY;
+CREATE POLICY favoritos_proprios ON public.textos_favoritos TO authenticated USING(user_id=auth.uid() AND public.conta_ativa(auth.uid())) WITH CHECK(user_id=auth.uid() AND public.conta_ativa(auth.uid()));
+ALTER TABLE public.processos ADD COLUMN encerrado_em timestamptz;
+ALTER TABLE public.processos ADD COLUMN arquivado_em timestamptz;
+COMMENT ON COLUMN public.processos.descricao IS 'DEPRECATED: description removed from process forms; retained for existing records.';
+CREATE OR REPLACE FUNCTION public.encerrar_arquivar_processo(_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE p public.processos; BEGIN
+SELECT * INTO p FROM public.processos WHERE id=_id FOR UPDATE;
+IF p.id IS NULL OR NOT public.pode_emitir(auth.uid()) OR NOT public.acesso_processo(_id,auth.uid()) OR NOT(public.has_role(auth.uid(),'admin') OR p.criado_por=auth.uid()) THEN RAISE EXCEPTION 'Sem permissão'; END IF;
+UPDATE public.processos SET encerrado_em=coalesce(encerrado_em,now()),arquivado_em=coalesce(arquivado_em,now()) WHERE id=_id;
+END $$;
+REVOKE ALL ON FUNCTION public.encerrar_arquivar_processo(uuid) FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.encerrar_arquivar_processo(uuid) TO authenticated;
+CREATE OR REPLACE FUNCTION public.retirar_documento_processo(_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ DECLARE d public.documentos; BEGIN
+SELECT * INTO d FROM public.documentos WHERE id=_id FOR UPDATE;
+IF d.id IS NULL OR NOT public.pode_emitir(auth.uid()) OR d.criado_por IS DISTINCT FROM auth.uid() OR NOT public.acesso_documento(_id,auth.uid()) OR NOT public.acesso_processo(d.processo_id,auth.uid()) THEN RAISE EXCEPTION 'Somente o autor pode retirar o documento'; END IF;
+UPDATE public.documentos SET processo_id=NULL,dados=CASE WHEN d.emitido_em IS NULL THEN d.dados-'processo' ELSE d.dados END,updated_at=now() WHERE id=_id;
+END $$;
+REVOKE ALL ON FUNCTION public.retirar_documento_processo(uuid) FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.retirar_documento_processo(uuid) TO authenticated;
+DO $$ DECLARE f text; BEGIN
+SELECT pg_get_functiondef('public.mover_documento_processo(uuid,uuid)'::regprocedure) INTO f;
+f:=replace(f,'SELECT * INTO p FROM public.processos WHERE id=_processo FOR SHARE;','IF d.processo_id IS NOT NULL THEN RAISE EXCEPTION ''Retire o documento do processo atual antes de mover''; END IF; SELECT * INTO p FROM public.processos WHERE id=_processo FOR SHARE;');
+f:=replace(f,'p.aberto_em IS NULL OR NOT','p.aberto_em IS NULL OR p.encerrado_em IS NOT NULL OR NOT'); EXECUTE f;
+SELECT pg_get_functiondef('public.salvar_documento(uuid,jsonb,uuid)'::regprocedure) INTO f;
+f:=replace(f,'p.aberto_em IS NULL THEN','p.aberto_em IS NULL OR p.encerrado_em IS NOT NULL THEN');
+f:=replace(f,'IF d.emitido_em IS NOT NULL THEN','IF d.dados IS NOT DISTINCT FROM _dados AND d.numero=n THEN RETURN d.id; END IF; IF d.emitido_em IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.solicitacoes_assinatura WHERE documento_id=d.id AND versao=d.versao AND assinado_em IS NOT NULL) AND d.status=''enviado'' THEN UPDATE public.documentos SET emitido_em=NULL WHERE id=d.id; UPDATE public.documentos SET numero=n,dados=_dados,assunto=coalesce(_dados->>''assunto'',''''),updated_at=now() WHERE id=d.id; UPDATE public.documentos SET emitido_em=now() WHERE id=d.id; UPDATE public.solicitacoes_assinatura SET aberto_em=NULL,em_analise_em=NULL WHERE documento_id=d.id AND versao=d.versao; RETURN d.id; END IF; IF d.emitido_em IS NOT NULL THEN'); EXECUTE f;
+END $$;
+CREATE OR REPLACE FUNCTION public.bloquear_anexo_processo_encerrado() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ BEGIN IF EXISTS(SELECT 1 FROM public.processos WHERE id=NEW.processo_id AND encerrado_em IS NOT NULL) THEN RAISE EXCEPTION 'Processo encerrado'; END IF; RETURN NEW; END $$;
+CREATE TRIGGER processo_encerrado_anexo BEFORE INSERT ON public.processo_anexos FOR EACH ROW EXECUTE FUNCTION public.bloquear_anexo_processo_encerrado();
+NOTIFY pgrst,'reload schema';

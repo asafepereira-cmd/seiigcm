@@ -1,6 +1,15 @@
-export type TextMark = { type: string };
-export type RichNode = { type: string; text?: string; marks?: TextMark[]; content?: RichNode[] };
-export type TextRun = { text: string; bold: boolean; italic: boolean; underline: boolean };
+export type TextMark = { type: string; attrs?: { fontSize?: string | null } };
+export type RichNode = { type: string; text?: string; marks?: TextMark[]; content?: RichNode[]; attrs?: { textAlign?: string | null; indent?: number } };
+export type TextRun = { text: string; bold: boolean; italic: boolean; underline: boolean; fontSize?: number };
+
+export function paragraphLayout(node: RichNode) {
+  const align = node.attrs?.textAlign;
+  return { align: align === 'left' || align === 'center' || align === 'right' ? align : 'justify', indent: Math.min(6, Math.max(0, node.attrs?.indent ?? 0)) };
+}
+export function tamanhoTexto(value: unknown) {
+  const size = Number.parseFloat(String(value ?? '12'));
+  return Number.isFinite(size) ? Math.min(36, Math.max(8, size)) : 12;
+}
 
 export function plainToRich(text: string): RichNode {
   return { type: "doc", content: text.split(/\n\s*\n/).map((paragraph) => ({
@@ -18,7 +27,8 @@ export function richParagraphs(node: RichNode): TextRun[][] {
     if (item.type !== "text" || !item.text) return [];
     return [{ text: item.text, bold: Boolean(item.marks?.some((mark) => mark.type === "bold")),
       italic: Boolean(item.marks?.some((mark) => mark.type === "italic")),
-      underline: Boolean(item.marks?.some((mark) => mark.type === "underline")) }];
+       underline: Boolean(item.marks?.some((mark) => mark.type === "underline")),
+       ...(item.marks?.some(m=>m.type==='textStyle' && m.attrs?.fontSize) ? {fontSize:tamanhoTexto(item.marks.find(m=>m.type==='textStyle')?.attrs?.fontSize)} : {}) }];
   }));
 }
 
@@ -53,7 +63,7 @@ export function wrapRichParagraph(runs: TextRun[], width: number, measure: (run:
         const size = measure(piece);
         if (current.length && used + size > width + 0.001) flushLine(false);
         const last = current.at(-1);
-        if (last && last.bold === piece.bold && last.italic === piece.italic && last.underline === piece.underline && last.text !== " ") last.text += char;
+         if (last && last.bold === piece.bold && last.italic === piece.italic && last.underline === piece.underline && last.fontSize === piece.fontSize && last.text !== " ") last.text += char;
         else current.push(piece);
         used += size;
       }

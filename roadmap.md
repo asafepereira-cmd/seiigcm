@@ -1,5 +1,13 @@
 # Roadmap
 
+## Pedido 01/11 — arquivo enviado
+- [ ] Voltar na assinatura; PDF em Assinados por mim; remover Documentos disponíveis
+- [ ] Editor: alinhamento, recuo, tamanho, fotos e favoritos
+- [ ] Arquivos: confirmação de senha, pastas, PDFs externos/SEII e compartilhamento entre setores
+- [ ] Encerrar/arquivar processos, retirar descrição e retirar documento para permitir novo movimento
+- [ ] Busca Docs, links dentro de Encaminhar assinaturas, formato de termos e edital sem encerramento
+- [ ] Salvar documentos enviados sem assinaturas mantendo os links; preservar autenticidade dos já assinados
+
 ## Pedido 30/10
 - [ ] Perfil: nome, e-mail, senha, trocar conta e contato WhatsApp
 - [ ] Recebidos sem mutações, finalidade e remetente

@@ -1,0 +1,48 @@
+import { createFileRoute } from '@tanstack/react-router';
+import { useServerFn } from '@tanstack/react-start';
+import { useRef, useState } from 'react';
+import { Folder, FolderPlus, Upload, Download, LockKeyhole, Share2, ArrowLeft, Trash2, FileText, Archive } from 'lucide-react';
+import { toast } from 'sonner';
+import { arquivos } from '@/lib/arquivos.functions';
+import { supabase } from '@/integrations/supabase/client';
+import { AppHeader } from '@/components/AppHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { gerarPDF } from '@/lib/pdf';
+import { carregarExtras } from '@/lib/assinaturas-eletronicas';
+import { numeroFormatado, type Documento } from '@/lib/documento';
+
+export const Route=createFileRoute('/_authenticated/arquivos')({head:()=>({meta:[{title:'Arquivos — SEII GCM'},{name:'description',content:'Arquivo privado de documentos e pastas dos setores do SEII GCM.'},{property:'og:title',content:'Arquivos — SEII GCM'},{property:'og:description',content:'Organização e acesso autorizado a documentos digitalizados.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),component:Arquivos});
+type Result=Awaited<ReturnType<typeof arquivos>>;
+function Arquivos(){
+  const call=useServerFn(arquivos);const [password,setPassword]=useState('');const [data,setData]=useState<Result|null>(null);const [busy,setBusy]=useState(false);
+  const [folder,setFolder]=useState<string|null>(null);const [search,setSearch]=useState('');const [dialog,setDialog]=useState<'pasta'|'compartilhar'|'setores'|'seii'|null>(null);const [name,setName]=useState('');const [access,setAccess]=useState<string[]>([]);const input=useRef<HTMLInputElement>(null);
+  async function run(action:Parameters<typeof arquivos>[0]['data']['action'],extra:Partial<Parameters<typeof arquivos>[0]['data']>={}){
+    setBusy(true);try{const result=await call({data:{password,action,espaco:data?.space.id,pasta:folder,...extra}});if(result.url)window.open(result.url,'_blank','noopener');else if(!result.upload)setData(result);return result;}catch(e){toast.error(e instanceof Error?e.message:'Não foi possível concluir.');return null;}finally{setBusy(false);}
+  }
+  async function upload(file:File,documento?:string){
+    if(file.type!=='application/pdf'||file.size>20*1024*1024){toast.error('Escolha um PDF de até 20 MB.');return;}
+    setBusy(true);try{const prepared=await call({data:{password,action:'upload',espaco:data?.space.id,pasta:folder}});if(!prepared.upload)return;
+      const {error}=await supabase.storage.from('arquivos-seii').uploadToSignedUrl(prepared.upload.path,prepared.upload.token,file,{contentType:'application/pdf'});if(error)throw error;
+      const result=await call({data:{password,action:'registrar',espaco:data?.space.id,pasta:folder,nome:file.name.slice(0,200),caminho:prepared.upload.path,tamanho:file.size,documento}});setData(result);setDialog(null);toast.success('PDF arquivado');
+    }catch{toast.error('Não foi possível arquivar o PDF.');}finally{setBusy(false);}
+  }
+  const current=data?.folders.find(f=>f.id===folder);
+  const label=(uid:string)=>{const p=data?.panels.find(p=>p.user_id===uid);return p?.setor||p?.nome||'Conta responsável';};
+  return <div className="min-h-screen"><AppHeader/><main className="mx-auto max-w-6xl space-y-5 px-4 py-8"><h1 className="text-2xl font-bold text-primary-foreground">Arquivos</h1>{!data?<form className="mx-auto max-w-sm space-y-4 rounded-lg bg-card p-6" onSubmit={e=>{e.preventDefault();void run('listar');}}><LockKeyhole className="mx-auto h-8 w-8"/><label className="block font-semibold" htmlFor="archive-password">Senha da sua conta</label><Input id="archive-password" type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/><Button className="w-full" disabled={busy}>{busy?'Conferindo…':'Abrir arquivos'}</Button></form>:<>
+    <div className="flex flex-wrap gap-2"><Button variant="secondary" disabled={busy} onClick={()=>{setFolder(current?.pai_id??null);}}><ArrowLeft className="h-4 w-4"/> {current?.nome??label(data.space.dono_id)}</Button><Button variant="outline" onClick={()=>setDialog('setores')}>Acessar arquivos de outros setores</Button><Button variant="outline" onClick={()=>{setData(null);setPassword('');setFolder(null);}}><LockKeyhole className="h-4 w-4"/>Bloquear</Button></div>
+    <section className="min-h-96 bg-card p-4 text-card-foreground"><div className="mb-5 flex flex-wrap gap-2"><Input aria-label="Buscar arquivos" placeholder="Buscar arquivos e pastas" className="min-w-40 flex-1" value={search} onChange={e=>setSearch(e.target.value)}/>{data.owner&&<><Button variant="outline" disabled={busy} onClick={()=>{setName('');setDialog('pasta');}}><FolderPlus className="h-4 w-4"/>Pasta</Button><Button disabled={busy} onClick={()=>input.current?.click()}><Upload className="h-4 w-4"/>PDF</Button><Button variant="outline" onClick={()=>setDialog('seii')}><Archive className="h-4 w-4"/>Documento SEII</Button><Button size="icon" variant="outline" aria-label="Compartilhar arquivos" title="Compartilhar arquivos" onClick={()=>{setAccess(data.space.acessos);setDialog('compartilhar');}}><Share2 className="h-4 w-4"/></Button></>}</div>
+    <div className="grid gap-3 sm:grid-cols-3">{data.folders.filter(f=>f.pai_id===folder&&f.nome.toLowerCase().includes(search.toLowerCase())).map(f=><Button key={f.id} variant="outline" className="h-16 justify-start" onClick={()=>setFolder(f.id)}><Folder className="h-6 w-6 shrink-0"/><span className="truncate">{f.nome}</span></Button>)}</div>
+    <ul className="mt-4 divide-y">{data.items.filter(f=>f.pasta_id===folder&&f.nome.toLowerCase().includes(search.toLowerCase())).map(f=><li key={f.id} className="flex items-center gap-3 py-3"><FileText className="h-5 w-5 shrink-0"/><div className="min-w-0 flex-1"><p className="break-words font-semibold">{f.nome}</p><p className="text-xs text-muted-foreground">{(f.tamanho/1024/1024).toFixed(2)} MB{f.versao?` · Versão ${f.versao}`:''}</p></div><Button size="icon" variant="outline" aria-label={`Baixar ${f.nome}`} disabled={busy} onClick={()=>void run('baixar',{id:f.id})}><Download className="h-4 w-4"/></Button>{data.owner&&<Button size="icon" variant="outline" aria-label={`Excluir ${f.nome}`} disabled={busy} onClick={()=>{if(confirm(`Excluir ${f.nome}?`))void run('excluir',{id:f.id});}}><Trash2 className="h-4 w-4"/></Button>}</li>)}</ul>
+    {!data.items.some(f=>f.pasta_id===folder)&&!data.folders.some(f=>f.pai_id===folder)&&<p className="py-12 text-center text-muted-foreground">Esta pasta está vazia.</p>}</section>
+    <input ref={input} className="hidden" type="file" accept="application/pdf" aria-label="Enviar PDF para Arquivos" onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)void upload(f);}}/>
+    <Dialog open={!!dialog} onOpenChange={o=>!o&&setDialog(null)}><DialogContent className="max-h-[85svh] overflow-y-auto"><DialogHeader><DialogTitle>{dialog==='pasta'?'Nova pasta':dialog==='compartilhar'?'Quem pode acessar':dialog==='seii'?'Arquivar documento SEII':'Arquivos compartilhados'}</DialogTitle></DialogHeader>
+    {dialog==='pasta'&&<form className="space-y-3" onSubmit={async e=>{e.preventDefault();if(await run('pasta',{nome:name}))setDialog(null);}}><Input aria-label="Nome da pasta" required maxLength={200} value={name} onChange={e=>setName(e.target.value)}/><Button disabled={busy||!name.trim()}>Criar pasta</Button></form>}
+    {dialog==='compartilhar'&&<>{data.panels.filter(p=>p.user_id!==data.space.dono_id).map(p=><label key={p.user_id} className="flex items-center gap-2"><Checkbox checked={access.includes(p.user_id)} onCheckedChange={v=>setAccess(a=>v===true?[...a,p.user_id]:a.filter(id=>id!==p.user_id))}/>{p.setor||p.nome}</label>)}<Button disabled={busy} onClick={async()=>{if(await run('compartilhar',{acessos:access}))setDialog(null);}}>Salvar acesso</Button></>}
+    {dialog==='setores'&&<>{data.spaces.map(s=><Button key={s.id} variant="outline" disabled={busy} onClick={async()=>{if(await run('listar',{espaco:s.id,pasta:null})){setFolder(null);setDialog(null);}}}>{label(s.dono_id)}</Button>)}{data.spaces.length<2&&<p>Nenhum outro setor compartilhou arquivos com sua conta.</p>}</>}
+    {dialog==='seii'&&data.documents.map(d=><Button key={d.id} variant="outline" className="h-auto justify-start whitespace-normal" disabled={busy} onClick={async()=>{setBusy(true);try{const doc=d.dados as unknown as Documento;const pdf=await gerarPDF(doc,false,await carregarExtras(d.id));await upload(new File([pdf.output('blob')],`${doc.tipo}_${doc.numero}_${doc.ano}.pdf`,{type:'application/pdf'}),d.id);}catch{toast.error('Não foi possível arquivar.');}finally{setBusy(false);}}}>{numeroFormatado(d.dados as unknown as Documento)}</Button>)}
+    </DialogContent></Dialog>
+    </>}</main></div>;
+}

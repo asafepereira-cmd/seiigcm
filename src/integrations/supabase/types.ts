@@ -14,6 +14,124 @@ export type Database = {
   }
   public: {
     Tables: {
+      arquivo_espacos: {
+        Row: {
+          acessos: string[]
+          created_at: string
+          dono_id: string
+          id: string
+        }
+        Insert: {
+          acessos?: string[]
+          created_at?: string
+          dono_id: string
+          id?: string
+        }
+        Update: {
+          acessos?: string[]
+          created_at?: string
+          dono_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      arquivo_itens: {
+        Row: {
+          caminho: string
+          created_at: string
+          documento_id: string | null
+          espaco_id: string
+          id: string
+          nome: string
+          pasta_id: string | null
+          tamanho: number
+          versao: number | null
+        }
+        Insert: {
+          caminho: string
+          created_at?: string
+          documento_id?: string | null
+          espaco_id: string
+          id?: string
+          nome: string
+          pasta_id?: string | null
+          tamanho?: number
+          versao?: number | null
+        }
+        Update: {
+          caminho?: string
+          created_at?: string
+          documento_id?: string | null
+          espaco_id?: string
+          id?: string
+          nome?: string
+          pasta_id?: string | null
+          tamanho?: number
+          versao?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arquivo_itens_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arquivo_itens_espaco_id_fkey"
+            columns: ["espaco_id"]
+            isOneToOne: false
+            referencedRelation: "arquivo_espacos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arquivo_itens_pasta_id_fkey"
+            columns: ["pasta_id"]
+            isOneToOne: false
+            referencedRelation: "arquivo_pastas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      arquivo_pastas: {
+        Row: {
+          created_at: string
+          espaco_id: string
+          id: string
+          nome: string
+          pai_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          espaco_id: string
+          id?: string
+          nome: string
+          pai_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          espaco_id?: string
+          id?: string
+          nome?: string
+          pai_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arquivo_pastas_espaco_id_fkey"
+            columns: ["espaco_id"]
+            isOneToOne: false
+            referencedRelation: "arquivo_espacos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arquivo_pastas_pai_id_fkey"
+            columns: ["pai_id"]
+            isOneToOne: false
+            referencedRelation: "arquivo_pastas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assinante_identidades: {
         Row: {
           cpf: string
@@ -359,10 +477,12 @@ export type Database = {
         Row: {
           aberto_em: string | null
           acessos: string[]
+          arquivado_em: string | null
           assunto: string
           created_at: string
           criado_por: string
           descricao: string
+          encerrado_em: string | null
           id: string
           numero: number
           oficio_id: string | null
@@ -372,10 +492,12 @@ export type Database = {
         Insert: {
           aberto_em?: string | null
           acessos?: string[]
+          arquivado_em?: string | null
           assunto: string
           created_at?: string
           criado_por?: string
           descricao?: string
+          encerrado_em?: string | null
           id?: string
           numero?: number
           oficio_id?: string | null
@@ -385,10 +507,12 @@ export type Database = {
         Update: {
           aberto_em?: string | null
           acessos?: string[]
+          arquivado_em?: string | null
           assunto?: string
           created_at?: string
           criado_por?: string
           descricao?: string
+          encerrado_em?: string | null
           id?: string
           numero?: number
           oficio_id?: string | null
@@ -524,6 +648,30 @@ export type Database = {
         }
         Relationships: []
       }
+      textos_favoritos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          texto: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          texto: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          texto?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -589,6 +737,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      encerrar_arquivar_processo: { Args: { _id: string }; Returns: undefined }
       enviar_documento: {
         Args: {
           _extras: Json
@@ -646,6 +795,7 @@ export type Database = {
         Args: { _decisao: string; _observacoes: string; _token: string }
         Returns: undefined
       }
+      retirar_documento_processo: { Args: { _id: string }; Returns: undefined }
       salvar_documento: {
         Args: { _dados: Json; _id: string; _processo?: string }
         Returns: string
