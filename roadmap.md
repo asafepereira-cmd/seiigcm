@@ -67,5 +67,5 @@
 - [x] Recebidos/Enviados no Docs e recebidos no painel admin
 - [x] Contador de notificações e indicador de documento aberto
 - [x] Colaboradores de setor; alterar nome no painel de contas
-- [ ] "Atualizar doc" sem nova assinatura; assinatura só com senha do destinatário
+- [x] "Atualizar doc" sem nova assinatura; assinatura só com senha do destinatário
 - [x] Excluir/editar processos e documentos dentro do processo; cards no formato do Docs

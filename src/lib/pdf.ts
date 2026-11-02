@@ -1,7 +1,7 @@
 import type { Documento } from "./documento";
 import { dataExtenso, identificacaoDocumento } from "./documento";
 import { dataHora, type ExtrasPDF } from "./assinaturas-eletronicas";
-import { fontStyle, richParagraphs, wrapRichParagraph, type TextRun } from "./rich-text";
+import { fontStyle, richBlocks, wrapRichParagraph, type TextRun } from "./rich-text";
 import signatureSeal from '@/assets/seii-signature-seal.png.asset.json';
 import { identidadeAssinatura } from './signature-identity';
 
@@ -137,23 +137,29 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
 
   if (doc.vocativo.trim()) paragraph(doc.vocativo.trim());
   if (doc.corpoFormatado) {
-    const measure = (run: TextRun) => { pdf.setFont("times", fontStyle(run)); return pdf.getTextWidth(run.text); };
-    richParagraphs(doc.corpoFormatado).forEach((runs) => {
-      wrapRichParagraph(runs, TW, measure).forEach((line) => {
-        ensure(LH);
+    const measure = (run: TextRun) => { pdf.setFont("times", fontStyle(run)); pdf.setFontSize(run.fontSize ?? 12); const w = pdf.getTextWidth(run.text); pdf.setFontSize(12); return w; };
+    richBlocks(doc.corpoFormatado).forEach((block) => {
+      const left = ML + block.indent * 12.5, width = TW - block.indent * 12.5;
+      wrapRichParagraph(block.runs, width, measure).forEach((line) => {
+        const lineSize = Math.max(12, ...line.runs.map((r) => r.fontSize ?? 12));
+        const lh = LH * lineSize / 12;
+        ensure(lh);
         const naturalWidth = line.runs.reduce((sum, run) => sum + measure(run), 0);
         const spaces = line.runs.reduce((sum, run) => sum + (run.text === " " ? 1 : 0), 0);
-        const extra = line.justify && spaces ? Math.max(0, (TW - naturalWidth) / spaces) : 0;
-        let x = ML;
+        const extra = block.align === 'justify' && line.justify && spaces ? Math.max(0, (width - naturalWidth) / spaces) : 0;
+        let x = block.align === 'center' ? left + (width - naturalWidth) / 2 : block.align === 'right' ? left + width - naturalWidth : left;
         line.runs.forEach((run) => {
           pdf.setFont("times", fontStyle(run));
-          const width = measure(run) + (run.text === " " ? extra : 0);
+          pdf.setFontSize(run.fontSize ?? 12);
+          const width = pdf.getTextWidth(run.text) + (run.text === " " ? extra : 0);
           pdf.text(run.text, x, y);
           if (run.underline) { pdf.setLineWidth(0.2); pdf.line(x, y + 0.7, x + width, y + 0.7); }
           x += width;
         });
-        y += LH;
+        pdf.setFontSize(12);
+        y += lh;
       });
+      if (!block.runs.length) y += LH;
       y += LH * 0.7;
     });
     pdf.setFont("times", "normal");
@@ -232,14 +238,14 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   const qr = extras.verificarUrl ? await (await import("qrcode")).toDataURL(extras.verificarUrl, { margin: 0, width: 240 }) : null;
   const blocoQR = (top: number) => {
     if (!qr || !extras.verificarUrl) return;
-    pdf.addImage(qr, "PNG", ML + 1, top + 2, 22, 22);
+    pdf.addImage(qr, "PNG", ML + 1, top + 2, 15, 15);
     pdf.setFont("times", "normal");
     pdf.setFontSize(9);
     const code = new URL(extras.verificarUrl).pathname.split('/').filter(Boolean).pop() ?? '';
-    const lines = pdf.splitTextToSize(`A autenticidade do documento pode ser conferida no endereço ${extras.verificarUrl}, informando o código verificador ${code}.`, TW - 28) as string[];
-    pdf.text(lines, ML + 28, top + 7, { lineHeightFactor: 1.2 });
+    const lines = pdf.splitTextToSize(`A autenticidade do documento pode ser conferida no endereço ${extras.verificarUrl}, informando o código verificador ${code}.`, TW - 21) as string[];
+    pdf.text(lines, ML + 21, top + 6, { lineHeightFactor: 1.2 });
     pdf.setDrawColor(160, 160, 160);
-    pdf.line(ML, top + 27, W - MR, top + 27);
+    pdf.line(ML, top + 20, W - MR, top + 20);
     pdf.setDrawColor(0, 0, 0);
   };
 
@@ -278,7 +284,17 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
       y += 1.5;
     });
   }
-  if (qr) { y += 4; ensure(30); blocoQR(y); }
+  if (qr) { y += 4; ensure(23); blocoQR(y); }
+
+  const pages = pdf.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    pdf.setPage(i);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(7);
+    pdf.setTextColor(0, 0, 0);
+    pdf.text("DOC.SEII.CEMXXXIII", ML, 292);
+    pdf.text(`Página ${i} de ${pages}`, W - MR, 292, { align: "right" });
+  }
 
   const nome = `${doc.tipo.toUpperCase().replace(/[^A-Z]/gi, "_")}_${String(doc.numero).padStart(3, "0")}_${doc.ano}.pdf`;
   if (salvar) {

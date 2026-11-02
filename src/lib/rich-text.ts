@@ -4,7 +4,7 @@ export type TextRun = { text: string; bold: boolean; italic: boolean; underline:
 
 export function paragraphLayout(node: RichNode) {
   const align = node.attrs?.textAlign;
-  return { align: align === 'left' || align === 'center' || align === 'right' ? align : 'justify', indent: Math.min(6, Math.max(0, node.attrs?.indent ?? 0)) };
+  return { align: (align === 'left' || align === 'center' || align === 'right' ? align : 'justify') as RichBlock['align'], indent: Math.min(6, Math.max(0, node.attrs?.indent ?? 0)) };
 }
 export function tamanhoTexto(value: unknown) {
   const size = Number.parseFloat(String(value ?? '12'));
@@ -80,4 +80,10 @@ export function wrapRichParagraph(runs: TextRun[], width: number, measure: (run:
   flushWord();
   if (current.length) flushLine(false);
   return lines;
+}
+export type RichBlock = { runs: TextRun[]; align: 'left' | 'center' | 'right' | 'justify'; indent: number };
+/** Paragraph runs plus alignment/indent so preview and PDF honour toolbar formatting. */
+export function richBlocks(node: RichNode): RichBlock[] {
+  const runs = richParagraphs(node);
+  return (node.content ?? []).map((p, i) => ({ runs: runs[i] ?? [], ...paragraphLayout(p) }));
 }
