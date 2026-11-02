@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { plainToRich, richToPlain, tamanhoTexto, type RichNode } from "@/lib/rich-text";
 
-const Indent=Extension.create({name:'paragraphIndent',addGlobalAttributes(){return [{types:['paragraph'],attributes:{indent:{default:0,parseHTML:element=>Number(element.dataset.indent??0),renderHTML:attributes=>({'data-indent':attributes['indent'],style:`margin-left:${Math.min(6,Math.max(0,Number(attributes['indent'])))*8}mm`})}}}];}});
+const Indent=Extension.create({name:'paragraphIndent',addGlobalAttributes(){return [{types:['paragraph'],attributes:{indent:{default:0,parseHTML:element=>Number(element.dataset['indent']??0),renderHTML:attributes=>({'data-indent':attributes['indent'],style:`margin-left:${Math.min(6,Math.max(0,Number(attributes['indent'])))*8}mm`})}}}];}});
 
 export function RichTextEditor({ text, content, onChange }: {
   text: string; content?: RichNode | undefined; onChange: (text: string, content: RichNode) => void;
