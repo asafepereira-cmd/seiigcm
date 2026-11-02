@@ -4,7 +4,7 @@ export type TextRun = { text: string; bold: boolean; italic: boolean; underline:
 
 export function paragraphLayout(node: RichNode) {
   const align = node.attrs?.textAlign;
-  return { align: align === 'left' || align === 'center' || align === 'right' ? align : 'justify', indent: Math.min(6, Math.max(0, node.attrs?.indent ?? 0)) };
+  return { align: (align === 'left' || align === 'center' || align === 'right' ? align : 'justify') as RichBlock['align'], indent: Math.min(6, Math.max(0, node.attrs?.indent ?? 0)) };
 }
 export function tamanhoTexto(value: unknown) {
   const size = Number.parseFloat(String(value ?? '12'));
