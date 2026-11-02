@@ -16,11 +16,13 @@ import { numeroFormatado, type Documento } from '@/lib/documento';
 
 export const Route=createFileRoute('/_authenticated/arquivos')({head:()=>({meta:[{title:'Arquivos — SEII GCM'},{name:'description',content:'Arquivo privado de documentos e pastas dos setores do SEII GCM.'},{property:'og:title',content:'Arquivos — SEII GCM'},{property:'og:description',content:'Organização e acesso autorizado a documentos digitalizados.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary'}]}),component:Arquivos});
 type Result=Awaited<ReturnType<typeof arquivos>>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Input=any;
 function Arquivos(){
   const call=useServerFn(arquivos);const [password,setPassword]=useState('');const [data,setData]=useState<Result|null>(null);const [busy,setBusy]=useState(false);
   const [folder,setFolder]=useState<string|null>(null);const [search,setSearch]=useState('');const [dialog,setDialog]=useState<'pasta'|'compartilhar'|'setores'|'seii'|null>(null);const [name,setName]=useState('');const [access,setAccess]=useState<string[]>([]);const input=useRef<HTMLInputElement>(null);
-  async function run(action:Parameters<typeof arquivos>[0]['data']['action'],extra:Partial<Parameters<typeof arquivos>[0]['data']>={}){
-    setBusy(true);try{const result=await call({data:{password,action,espaco:data?.space.id,pasta:folder,...extra}});if(result.url)window.open(result.url,'_blank','noopener');else if(!result.upload)setData(result);return result;}catch(e){toast.error(e instanceof Error?e.message:'Não foi possível concluir.');return null;}finally{setBusy(false);}
+  async function run(action:Input['action'],extra:Partial<Input>={}){
+    setBusy(true);try{const result=await call({data:{password,action,espaco:data?.space.id,pasta:folder,...extra}} as never);if(result.url)window.open(result.url,'_blank','noopener');else if(!result.upload)setData(result);return result;}catch(e){toast.error(e instanceof Error?e.message:'Não foi possível concluir.');return null;}finally{setBusy(false);}
   }
   async function upload(file:File,documento?:string){
     if(file.type!=='application/pdf'||file.size>20*1024*1024){toast.error('Escolha um PDF de até 20 MB.');return;}

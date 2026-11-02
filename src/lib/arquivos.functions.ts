@@ -50,7 +50,7 @@ export const arquivos = createServerFn({ method: 'POST' }).middleware([requireSu
     }
     if(data.action==='registrar'){
       if(!data.nome||!data.caminho||!new RegExp(`^${space.id}/[a-f0-9-]+\\.pdf$`).test(data.caminho))throw new Error('Arquivo inválido.');
-      const {data:objects,error:objectError}=await admin.storage.from('arquivos-seii').list(space.id,{search:data.caminho.split('/')[1]});
+      const {data:objects,error:objectError}=await admin.storage.from('arquivos-seii').list(space.id,{search:data.caminho.split('/')[1]??''});
       const object=objects?.find(o=>`${space.id}/${o.name}`===data.caminho);
       if(objectError||!object||object.metadata?.mimetype!=='application/pdf')throw new Error('PDF não encontrado.');
       let version:number|null=null;

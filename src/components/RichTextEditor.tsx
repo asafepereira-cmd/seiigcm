@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { plainToRich, richToPlain, tamanhoTexto, type RichNode } from "@/lib/rich-text";
 
-const Indent=Extension.create({name:'paragraphIndent',addGlobalAttributes(){return [{types:['paragraph'],attributes:{indent:{default:0,parseHTML:element=>Number(element.dataset.indent??0),renderHTML:attributes=>({'data-indent':attributes.indent,style:`margin-left:${Math.min(6,Math.max(0,Number(attributes.indent)))*8}mm`})}}}];}});
+const Indent=Extension.create({name:'paragraphIndent',addGlobalAttributes(){return [{types:['paragraph'],attributes:{indent:{default:0,parseHTML:element=>Number(element.dataset['indent']??0),renderHTML:attributes=>({'data-indent':attributes['indent'],style:`margin-left:${Math.min(6,Math.max(0,Number(attributes['indent'])))*8}mm`})}}}];}});
 
 export function RichTextEditor({ text, content, onChange }: {
   text: string; content?: RichNode | undefined; onChange: (text: string, content: RichNode) => void;
@@ -26,7 +26,7 @@ export function RichTextEditor({ text, content, onChange }: {
        horizontalRule: false, strike: false, link: false }),TextAlign.configure({types:['paragraph'],defaultAlignment:'justify'}),TextStyle,FontSize,Indent],
     content: content ?? plainToRich(text),
     editorProps: { attributes: { class: "document-body-text min-h-56 px-3 py-2 text-sm outline-none", role: "textbox", "aria-label": "Texto principal", "aria-multiline": "true" } },
-    onUpdate: ({ editor: current }) => { const json = current.getJSON(); onChange(richToPlain(json), json); },
+    onUpdate: ({ editor: current }) => { const json = current.getJSON(); onChange(richToPlain(json as RichNode), json as RichNode); },
   });
   const state = useEditorState({ editor, selector: ({ editor: current }) => ({
     bold: current?.isActive("bold") ?? false, italic: current?.isActive("italic") ?? false,
@@ -65,7 +65,7 @@ export function RichTextEditor({ text, content, onChange }: {
   ];
   return <div className="overflow-hidden rounded-md border border-input bg-card text-card-foreground focus-within:ring-1 focus-within:ring-ring">
      <div className="flex flex-wrap gap-1 border-b bg-muted p-1" role="toolbar" aria-label="Formatação do texto">
-      {controls.map(({ label, icon: Icon, active, action }) => <Button key={label} type="button" size="icon" variant={active ? "default" : "ghost"}
+      {(controls as {label:string;icon:typeof Bold;active?:boolean|undefined;action:()=>unknown}[]).map(({ label, icon: Icon, active, action }) => <Button key={label} type="button" size="icon" variant={active ? "default" : "ghost"}
         aria-label={label} title={label} aria-pressed={label === "Caixa alta" ? undefined : Boolean(active)} disabled={!editor}
         onMouseDown={(e) => e.preventDefault()} onClick={action}><Icon /></Button>)}
        <Input type="number" min={8} max={36} step={1} aria-label="Tamanho do texto" title="Tamanho do texto em pontos" className="w-16" value={state?.fontSize??12} onChange={e=>editor?.chain().focus().setFontSize(`${tamanhoTexto(e.target.value)}pt`).run()}/>
