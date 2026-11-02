@@ -81,3 +81,9 @@ export function wrapRichParagraph(runs: TextRun[], width: number, measure: (run:
   if (current.length) flushLine(false);
   return lines;
 }
+export type RichBlock = { runs: TextRun[]; align: 'left' | 'center' | 'right' | 'justify'; indent: number };
+/** Paragraph runs plus alignment/indent so preview and PDF honour toolbar formatting. */
+export function richBlocks(node: RichNode): RichBlock[] {
+  const runs = richParagraphs(node);
+  return (node.content ?? []).map((p, i) => ({ runs: runs[i] ?? [], ...paragraphLayout(p) }));
+}

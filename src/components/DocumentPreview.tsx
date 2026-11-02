@@ -1,5 +1,5 @@
 import { dataExtenso, identificacaoDocumento, type Documento } from "@/lib/documento";
-import { richParagraphs } from "@/lib/rich-text";
+import { richBlocks } from "@/lib/rich-text";
 export function DocumentPreview({ doc }: { doc: Documento }) {
   const paras = doc.corpo.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   return (
@@ -18,7 +18,7 @@ export function DocumentPreview({ doc }: { doc: Documento }) {
       <p className="text-justify"><b>De:</b> {doc.de}</p></>}
       {doc.tipo === 'Edital' ? <p className="mt-3 text-center font-bold break-words">{doc.assunto}</p> : <p className="mt-2 text-justify"><b>Assunto:</b> {doc.assunto}</p>}
       {doc.vocativo && <p className="mt-2 text-justify">{doc.vocativo}</p>}
-       {doc.corpoFormatado ? richParagraphs(doc.corpoFormatado).map((runs, i) => <p key={i} className="mt-2 whitespace-pre-line text-justify">{runs.map((run, j) => <span key={j} className={`${run.bold ? "font-bold" : ""} ${run.italic ? "italic" : ""} ${run.underline ? "underline" : ""}`}>{run.text}</span>)}</p>) : paras.map((p, i) => <p key={i} className="mt-2 text-justify">{p}</p>)}
+       {doc.corpoFormatado ? richBlocks(doc.corpoFormatado).map((b, i) => <p key={i} className="mt-2 min-h-[1em] whitespace-pre-line" style={{ textAlign: b.align, paddingLeft: `${b.indent * 1.25}cm` }}>{b.runs.map((run, j) => <span key={j} className={`${run.bold ? "font-bold" : ""} ${run.italic ? "italic" : ""} ${run.underline ? "underline" : ""}`} style={run.fontSize ? { fontSize: `${run.fontSize / 12}em` } : undefined}>{run.text}</span>)}</p>) : paras.map((p, i) => <p key={i} className="mt-2 text-justify">{p}</p>)}
       {doc.fecho && <p className="mt-2 text-justify">{doc.fecho}</p>}
       {doc.tipo === 'Edital' && <p className="mt-3 text-right font-bold">{doc.cidade} - {dataExtenso(doc.data)}</p>}
     </div>
