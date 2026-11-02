@@ -236,7 +236,7 @@ function Editor() {
           </Group>}
           <div className="sticky bottom-0 -mx-4 flex gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
             <Button variant="outline" className="flex-1" onClick={salvar} disabled={saving}>
-              <Save className="h-4 w-4" /> Salvar
+              <Save className="h-4 w-4" /> {documentStatus === "enviado" ? "Atualizar doc" : "Salvar"}
             </Button>
             <Button
               className="flex-1"
