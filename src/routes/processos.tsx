@@ -215,6 +215,12 @@ function Processos() {
               {podeGerir(aberto) && (
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" onClick={() => setEdicao({ tema: aberto.tema, assunto: aberto.assunto, descricao: aberto.descricao, acessos: aberto.acessos })}><Pencil className="h-4 w-4" /> Editar processo</Button>
+                  <Button size="sm" variant="secondary" onClick={async () => {
+                    if (!confirm(`Encerrar e arquivar ${tituloProcesso(aberto)}? Não será possível anexar novos itens.`)) return;
+                    const { error } = await supabase.rpc("encerrar_arquivar_processo", { _id: aberto.id });
+                    if (error) { toast.error("Não foi possível encerrar o processo."); return; }
+                    toast.success("Processo encerrado e arquivado"); setAberto(null); load();
+                  }}>Encerrar e arquivar processo</Button>
                   <Button size="sm" variant="destructive" onClick={excluirProcesso}><Trash2 className="h-4 w-4" /> Excluir processo</Button>
                 </div>
               )}
