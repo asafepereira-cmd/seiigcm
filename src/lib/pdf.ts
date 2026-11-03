@@ -188,6 +188,17 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     y += LH * 0.7;
   }
 
+  const imagem = (f: { src: string; legenda: string; largura: number; altura: number }, rotulo: string, maxH: number) => {
+    const ratio = Math.min(TW * 0.8 / f.largura, maxH / f.altura);
+    const w = f.largura * ratio, h = f.altura * ratio;
+    ensure(h + 6);
+    pdf.addImage(f.src, "JPEG", (W - w) / 2, y, w, h, undefined, "FAST");
+    y += h + 4;
+    const cap = [rotulo, f.legenda].filter(Boolean).join(" – ");
+    if (cap) { pdf.setFont("times", "italic"); pdf.setFontSize(10); pdf.text(cap, W / 2, y, { align: "center" }); pdf.setFontSize(12); y += 5; }
+  };
+  (doc.fotos ?? []).forEach((f) => imagem(f, "", 90));
+
   if (doc.fecho.trim()) paragraph(doc.fecho.trim());
 
   if (doc.tipo === 'Edital') {
@@ -195,6 +206,11 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     pdf.setFont('times', 'bold');
     pdf.text(`${doc.cidade} - ${dataExtenso(doc.data)}`, W - MR, y, { align: 'right' });
     y += LH * 2;
+  }
+
+  if (doc.anexos?.length) {
+    ensure(LH * 2); pdf.setFont('times', 'bold'); pdf.setFontSize(12); pdf.text('Anexos', ML, y); y += LH;
+    doc.anexos.forEach((f, i) => imagem(f, `Anexo ${i + 1}`, 160));
   }
 
   y += 6;

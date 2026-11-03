@@ -27,7 +27,7 @@ export const Route = createFileRoute("/processos")({
   component: Processos,
 });
 
-type Processo = { id: string; numero: number; tema: string; assunto: string; descricao: string; acessos: string[]; criado_por: string; oficio_id: string | null; aberto_em: string | null; created_at: string };
+type Processo = { id: string; numero: number; tema: string; assunto: string; descricao: string; acessos: string[]; criado_por: string; oficio_id: string | null; aberto_em: string | null; encerrado_em?: string | null; created_at: string };
 type Doc = { id: string; dados: Documento; status: string };
 type Anexo = { criado_por: string; id: string; nome: string; caminho: string; created_at: string };
 
@@ -69,7 +69,7 @@ function Processos() {
   }
 
   const load = () =>
-    supabase.from("processos").select("id,numero,tema,assunto,descricao,acessos,criado_por,oficio_id,aberto_em,created_at").order("numero", { ascending: false })
+    supabase.from("processos").select("id,numero,tema,assunto,descricao,acessos,criado_por,oficio_id,aberto_em,encerrado_em,created_at").order("numero", { ascending: false })
       .then(({ data, error }) => {
         if (error) { toast.error("Não foi possível carregar os processos."); return; }
         setRows((data as Processo[]) ?? []);
@@ -171,7 +171,7 @@ function Processos() {
             {rows.map((p) => (
               <li key={p.id} className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center">
                 <div className="mr-auto min-w-0">
-                  <p className="font-sans font-bold">{tituloProcesso(p)} — {p.tema}</p>
+                  <p className="font-sans font-bold">{tituloProcesso(p)} — {p.tema}</p>{p.encerrado_em && <span className="inline-block rounded bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">Encerrado e arquivado</span>}
                   <p className="break-words text-sm text-muted-foreground">{p.assunto}</p>
                   <p className="text-xs text-muted-foreground">{aberturaProcesso(p)}</p>
                 </div>
@@ -215,19 +215,20 @@ function Processos() {
               {podeGerir(aberto) && (
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" onClick={() => setEdicao({ tema: aberto.tema, assunto: aberto.assunto, descricao: aberto.descricao, acessos: aberto.acessos })}><Pencil className="h-4 w-4" /> Editar processo</Button>
-                  <Button size="sm" variant="secondary" onClick={async () => {
+                  {!aberto.encerrado_em && <Button size="sm" variant="secondary" onClick={async () => {
                     if (!confirm(`Encerrar e arquivar ${tituloProcesso(aberto)}? Não será possível anexar novos itens.`)) return;
                     const { error } = await supabase.rpc("encerrar_arquivar_processo", { _id: aberto.id });
                     if (error) { toast.error("Não foi possível encerrar o processo."); return; }
                     toast.success("Processo encerrado e arquivado"); setAberto(null); load();
-                  }}>Encerrar e arquivar processo</Button>
+                  }}>Encerrar e arquivar processo</Button>}
                   <Button size="sm" variant="destructive" onClick={excluirProcesso}><Trash2 className="h-4 w-4" /> Excluir processo</Button>
                 </div>
               )}
               <h2 className="text-center text-xl font-bold">{aberto.tema}</h2><p className="text-sm text-muted-foreground">{aberturaProcesso(aberto)}</p>
               <p className="font-semibold">{aberto.assunto}</p>
               <p className="whitespace-pre-line text-sm">{aberto.descricao}</p>
-              {aberto.aberto_em && podeEmitir && (
+              {aberto.encerrado_em && <p className="rounded-md bg-muted px-3 py-2 text-sm font-semibold">Processo encerrado e arquivado em {new Date(aberto.encerrado_em).toLocaleDateString("pt-BR")} — não aceita novos documentos ou anexos.</p>}
+              {aberto.aberto_em && !aberto.encerrado_em && podeEmitir && (
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/" search={{ processo: aberto.id }}><FilePlus2 className="h-4 w-4" /> Novo documento neste processo</Link>
                 </Button>
@@ -260,7 +261,7 @@ function Processos() {
               ))}
               <input ref={uploadRef} type="file" accept="application/pdf,.pdf" className="hidden" aria-label="Anexar PDF externo"
                 onChange={(e) => { const f = e.currentTarget.files?.[0]; e.currentTarget.value = ""; if (f) enviarAnexo(f); }} />
-              {podeEmitir && <Button variant="outline" disabled={enviando || !aberto.aberto_em} onClick={() => uploadRef.current?.click()}>
+              {podeEmitir && <Button variant="outline" disabled={enviando || !aberto.aberto_em || !!aberto.encerrado_em} onClick={() => uploadRef.current?.click()}>
                 <Upload className="h-4 w-4" /> {enviando ? "Enviando…" : "Anexar PDF externo"}
               </Button>}
             </div>

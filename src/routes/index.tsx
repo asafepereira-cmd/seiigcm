@@ -7,6 +7,7 @@ import { useRequireSession } from "@/hooks/use-session";
 import { AppHeader } from "@/components/AppHeader";
 import { DocumentPreview } from "@/components/DocumentPreview";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { prepararFoto } from "@/lib/document-photo";
 import { richParagraphs } from "@/lib/rich-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,8 +75,9 @@ function Editor() {
 
   async function comProcesso(documento: Documento, processoId?: string | null) {
     if (!processoId) return documento;
-    const { data, error } = await supabase.from('processos').select('numero,tema,created_at').eq('id', processoId).single();
+    const { data, error } = await supabase.from('processos').select('numero,tema,created_at,encerrado_em').eq('id', processoId).single();
     if (error || !data) { toast.error('Não foi possível carregar o processo.'); return documento; }
+    if (data.encerrado_em) { toast.error('Este processo está encerrado e arquivado. Não é possível criar novos documentos nele.'); return documento; }
     return { ...documento, processo: { numero: data.numero, ano: new Date(data.created_at).getFullYear(), tema: data.tema } };
   }
 
@@ -213,6 +215,23 @@ function Editor() {
             <F label="Texto (separe parágrafos com uma linha em branco)">
                 <RichTextEditor text={doc.corpo} content={doc.corpoFormatado} onChange={(corpo, corpoFormatado) => setDoc((current) => current ? { ...current, corpo, corpoFormatado } : current)} />
             </F>
+            {(["fotos", "anexos"] as const).map((campo) => (
+              <div key={campo} className="space-y-2">
+                <Label className="text-xs">{campo === "fotos" ? "Fotos no texto" : "Anexos (imagens ao final do documento)"}</Label>
+                <Input type="file" accept="image/jpeg,image/png,image/webp" multiple aria-label={campo === "fotos" ? "Adicionar fotos" : "Adicionar anexos"} onChange={async (e) => {
+                  const files = Array.from(e.target.files ?? []); e.target.value = "";
+                  try { const novas = await Promise.all(files.map(prepararFoto)); setDoc((c) => c ? { ...c, [campo]: [...(c[campo] ?? []), ...novas] } : c); }
+                  catch (err) { toast.error(err instanceof Error ? err.message : "Não foi possível adicionar."); }
+                }} />
+                {(doc[campo] ?? []).map((f, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <img src={f.src} alt="" className="h-12 w-12 rounded object-cover" />
+                    <Input placeholder="Legenda (opcional)" value={f.legenda} onChange={(e) => setDoc((c) => c ? { ...c, [campo]: (c[campo] ?? []).map((x, j) => j === i ? { ...x, legenda: e.target.value } : x) } : c)} />
+                    <Button type="button" size="icon" variant="outline" aria-label="Remover" onClick={() => setDoc((c) => c ? { ...c, [campo]: (c[campo] ?? []).filter((_, j) => j !== i) } : c)}><X className="h-4 w-4" /></Button>
+                  </div>
+                ))}
+              </div>
+            ))}
             <div className="rounded-lg border border-accent bg-accent/15 p-3">
               <Label className="text-xs">Orientação para a IA (opcional)</Label>
               <Input className="mt-1.5 bg-card" placeholder="Ex.: deixar mais curto, citar o horário 14h…" value={instrucoes} onChange={(e) => setInstrucoes(e.target.value)} />

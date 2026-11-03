@@ -51,7 +51,7 @@ export const signDocument = createServerFn({ method: 'POST' }).inputValidator((d
      } } });
     const { data: signed, error } = await verifier.auth.signInWithPassword({ email: user.user.email, password: data.password });
     if (error || signed.user?.id !== signer) throw new Error('Senha do painel incorreta.');
-    await verifier.auth.signOut();
+    await verifier.auth.signOut({scope:'local'});
   }
   const { error } = await supabaseAdmin.rpc('assinar_identificado', { _token: data.token, _decisao: data.decisao, _observacoes: data.observacoes, _nome: data.nome ?? '', _funcao: data.funcao ?? '', _cpf: (data.cpf ?? '').replace(/\D/g,'') });
   if (error) throw new Error('Não foi possível assinar esta versão.');
