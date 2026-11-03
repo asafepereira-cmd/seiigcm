@@ -21,7 +21,7 @@ export const arquivos = createServerFn({ method: 'POST' }).middleware([requireSu
     }}});
     const { data: verified,error: authError } = await verifier.auth.signInWithPassword({email:user.user.email,password:data.password});
     if(authError || verified.user?.id!==context.userId)throw new Error('Senha incorreta.');
-    await verifier.auth.signOut();
+    await verifier.auth.signOut({scope:'local'});
     const { supabaseAdmin: admin } = await import('@/integrations/supabase/client.server');
     const { data: own,error: ownError }=await admin.from('arquivo_espacos').upsert({dono_id:context.userId},{onConflict:'dono_id'}).select().single();
     if(ownError || !own)throw new Error('Não foi possível abrir Arquivos.');
