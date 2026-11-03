@@ -19,8 +19,10 @@ export function DocumentPreview({ doc }: { doc: Documento }) {
       {doc.tipo === 'Edital' ? <p className="mt-3 text-center font-bold break-words">{doc.assunto}</p> : <p className="mt-2 text-justify"><b>Assunto:</b> {doc.assunto}</p>}
       {doc.vocativo && <p className="mt-2 text-justify">{doc.vocativo}</p>}
        {doc.corpoFormatado ? richBlocks(doc.corpoFormatado).map((b, i) => <p key={i} className="mt-2 min-h-[1em] whitespace-pre-line" style={{ textAlign: b.align, paddingLeft: `${b.indent * 1.25}cm` }}>{b.runs.map((run, j) => <span key={j} className={`${run.bold ? "font-bold" : ""} ${run.italic ? "italic" : ""} ${run.underline ? "underline" : ""}`} style={run.fontSize ? { fontSize: `${run.fontSize / 12}em` } : undefined}>{run.text}</span>)}</p>) : paras.map((p, i) => <p key={i} className="mt-2 text-justify">{p}</p>)}
+      {doc.fotos?.map((f, i) => <figure key={i} className="mt-2 text-center"><img src={f.src} alt={f.legenda || "Foto"} className="mx-auto max-h-[40%] max-w-[80%]" />{f.legenda && <figcaption className="text-[0.85em] italic">{f.legenda}</figcaption>}</figure>)}
       {doc.fecho && <p className="mt-2 text-justify">{doc.fecho}</p>}
       {doc.tipo === 'Edital' && <p className="mt-3 text-right font-bold">{doc.cidade} - {dataExtenso(doc.data)}</p>}
+      {!!doc.anexos?.length && <><p className="mt-4 font-bold">Anexos</p>{doc.anexos.map((f, i) => <figure key={i} className="mt-2 text-center"><img src={f.src} alt={f.legenda || `Anexo ${i + 1}`} className="mx-auto max-w-[80%]" /><figcaption className="text-[0.85em]">Anexo {i + 1}{f.legenda ? ` – ${f.legenda}` : ""}</figcaption></figure>)}</>}
     </div>
   );
 }

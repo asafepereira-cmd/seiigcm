@@ -32,6 +32,7 @@ export type Documento = {
   corpo: string;
   corpoFormatado?: RichNode | undefined;
   fotos?: { src: string; legenda: string; largura: number; altura: number }[];
+  anexos?: { src: string; legenda: string; largura: number; altura: number }[];
   tituloLista: string;
   lista: Participante[];
   fecho: string;
