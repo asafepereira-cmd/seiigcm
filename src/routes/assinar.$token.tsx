@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { gerarPDF } from "@/lib/pdf";
@@ -57,7 +57,8 @@ function Assinar() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-2xl px-4 py-8">
+    <main className="relative mx-auto min-h-screen max-w-2xl px-4 py-8">
+      <Button variant="ghost" size="icon" aria-label="Voltar" title="Voltar" className="absolute left-2 top-2 text-primary-foreground" onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.assign("/"); }}><ArrowLeft className="h-5 w-5" /></Button>
       <div className="rounded-xl bg-card p-6 text-card-foreground shadow-lg">
         {req === null ? <p>Carregando...</p> : !req.found ? (
           <p>Link de assinatura inválido.</p>

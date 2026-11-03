@@ -42,6 +42,8 @@ function Historico() {
   const [panelType,setPanelType]=useState('individual');
   const [rows, setRows] = useState<Row[] | null>(null);
   const [aba,setAba]=useState<'todos'|'enviados'|'recebidos'>('todos');
+  const [busca,setBusca]=useState('');const [campoBusca,setCampoBusca]=useState<'tema'|'texto'|'numero'>('tema');
+  const casaBusca=(r:Row)=>{const q=busca.trim().toLocaleLowerCase('pt-BR');if(!q)return true;const d=r.dados;const alvo=campoBusca==='numero'?`${numeroFormatado(d)} ${d.numero} ${String(d.numero).padStart(3,'0')}/${d.ano}`:campoBusca==='texto'?`${d.corpo} ${d.vocativo??''} ${d.fecho??''}`:`${d.assunto} ${d.processo?.tema??''}`;return alvo.toLocaleLowerCase('pt-BR').includes(q);};
   const [updating, setUpdating] = useState<string[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [moveDoc,setMoveDoc] = useState<Row|null>(null);
@@ -149,7 +151,7 @@ function Historico() {
       <AppHeader />
       <main className="mx-auto max-w-4xl px-4 py-8">
         <h1 className="mb-4 text-2xl font-bold text-primary-foreground">Documentos</h1>
-        <div className="mb-4 flex gap-2">{(['todos','enviados','recebidos'] as const).map(a=><Button key={a} size="sm" variant={aba===a?'secondary':'outline'} onClick={()=>setAba(a)}>{a==='todos'?'Todos':a==='enviados'?'Enviados':'Recebidos'}</Button>)}</div>
+        <div className="mb-3 flex flex-wrap gap-2"><select aria-label="Buscar por" className="h-9 rounded-md border bg-card px-2 text-sm text-card-foreground" value={campoBusca} onChange={e=>setCampoBusca(e.target.value as typeof campoBusca)}><option value="tema">Tema / assunto</option><option value="texto">Texto</option><option value="numero">Número</option></select><Input aria-label="Buscar documentos" placeholder="Buscar documentos" className="min-w-40 flex-1 bg-card text-card-foreground" value={busca} onChange={e=>setBusca(e.target.value)}/></div><div className="mb-4 flex gap-2">{(['todos','enviados','recebidos'] as const).map(a=><Button key={a} size="sm" variant={aba===a?'secondary':'outline'} onClick={()=>setAba(a)}>{a==='todos'?'Todos':a==='enviados'?'Enviados':'Recebidos'}</Button>)}</div>
         {loadError ? (
           <Button variant="outline" onClick={load}>Tentar novamente</Button>
         ) : rows === null ? (
@@ -158,7 +160,7 @@ function Historico() {
           <p className="text-primary-foreground">Nenhum documento salvo ainda.</p>
         ) : (
           <ul className="space-y-3">
-            {rows.filter(r=>aba==='todos'||(aba==='enviados'?r.criado_por===session?.user.id:r.criado_por!==session?.user.id&&!!received[r.id])).map((r) => (
+            {rows.filter(casaBusca).filter(r=>aba==='todos'||(aba==='enviados'?r.criado_por===session?.user.id:r.criado_por!==session?.user.id&&!!received[r.id])).map((r) => (
               <li key={r.id} className={`flex flex-col gap-3 rounded-lg border border-status-ink/15 p-4 text-status-ink sm:flex-row sm:items-center ${STATUS_DOCUMENTO[r.status]?.className ?? STATUS_DOCUMENTO.desenvolvendo.className}`}>
                 <div className="mr-auto min-w-0">
                   <p className="font-sans font-bold break-words">{identificacaoDocumento(r.dados)}</p>
