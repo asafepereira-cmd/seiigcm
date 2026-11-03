@@ -49,11 +49,11 @@ function Home() {
     { label: 'Novo documento', to: '/', icon: FilePlus2, show: podeEmitir },
     { label: 'Novo termo/contrato', to: '/termos', icon: ScrollText, show: podeEmitir },
     { label: 'Acessar painel para assinaturas', to: '/painel', icon: FileSignature, show: true },
-    { label: 'Acessar arquivos', to: '/historico', icon: FileText, show: true },
+    { label: 'Arquivos', to: '/arquivos', icon: FileText, show: true },
     { label: 'Acessar processos', to: '/processos', icon: ClipboardList, show: true },
     { label: 'Acessar painel de contas', to: '/contas', icon: Users, show: admin },
     { label: 'Novo painel SEII', to: '/painel', icon: Users, show: admin },
-  ].filter(b => b.show && !(admin && ['Acessar painel para assinaturas', 'Novo processo', 'Acessar arquivos'].includes(b.label)));
+  ].filter(b => b.show && !(admin && ['Acessar painel para assinaturas', 'Novo processo'].includes(b.label)));
   return (
     <div className="flex min-h-screen flex-col bg-primary">
       <AppHeader />
