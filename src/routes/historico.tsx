@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Copy, Download, Link2, Pencil, Trash2, FolderInput } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { numeroFormatado } from "@/lib/documento";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
