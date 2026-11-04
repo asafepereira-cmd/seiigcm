@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { NovaContaForm } from '@/components/NovaContaForm';
 import { listarContas, alterarEmail, alterarSenha, excluirConta, atualizarPermissoes } from '@/lib/contas.functions';
 
 const options = queryOptions({ queryKey: ['contas'], queryFn: () => listarContas() });
@@ -54,6 +55,7 @@ function Contas() {
       <main className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-2xl font-bold text-primary-foreground">Painel de contas</h1>
         <p className="text-primary-foreground/80">{contas.length} conta(s) com acesso ao sistema.</p>
+        <NovaContaForm onCreated={() => void refetch()} />
         <ul className="space-y-3">
           {contas.map(c => (
             <li key={c.id} className="space-y-3 rounded-lg bg-card p-4 text-card-foreground">
