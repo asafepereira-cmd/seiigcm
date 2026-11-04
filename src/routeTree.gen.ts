@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as HistoricoRouteImport } from './routes/historico'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProcessosRouteImport } from './routes/processos'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedArquivosRouteImport } from './routes/_authenticated/arquivos'
 import { Route as AuthenticatedContasRouteImport } from './routes/_authenticated/contas'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
@@ -44,6 +45,11 @@ const LoginRoute = LoginRouteImport.update({
 const ProcessosRoute = ProcessosRouteImport.update({
   id: '/processos',
   path: '/processos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedArquivosRoute = AuthenticatedArquivosRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
   '/processos': typeof ProcessosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/arquivos': typeof AuthenticatedArquivosRoute
   '/contas': typeof AuthenticatedContasRoute
   '/home': typeof AuthenticatedHomeRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
   '/processos': typeof ProcessosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/arquivos': typeof AuthenticatedArquivosRoute
   '/contas': typeof AuthenticatedContasRoute
   '/home': typeof AuthenticatedHomeRoute
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/historico': typeof HistoricoRoute
   '/login': typeof LoginRoute
   '/processos': typeof ProcessosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/arquivos': typeof AuthenticatedArquivosRoute
   '/_authenticated/contas': typeof AuthenticatedContasRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/historico'
     | '/login'
     | '/processos'
+    | '/reset-password'
     | '/arquivos'
     | '/contas'
     | '/home'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/historico'
     | '/login'
     | '/processos'
+    | '/reset-password'
     | '/arquivos'
     | '/contas'
     | '/home'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/historico'
     | '/login'
     | '/processos'
+    | '/reset-password'
     | '/_authenticated/arquivos'
     | '/_authenticated/contas'
     | '/_authenticated/home'
@@ -172,6 +184,7 @@ export interface RootRouteChildren {
   HistoricoRoute: typeof HistoricoRoute
   LoginRoute: typeof LoginRoute
   ProcessosRoute: typeof ProcessosRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   AssinarTokenRoute: typeof AssinarTokenRoute
   VerificarIdRoute: typeof VerificarIdRoute
 }
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       path: '/processos'
       fullPath: '/processos'
       preLoaderRoute: typeof ProcessosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/arquivos': {
@@ -290,6 +310,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoricoRoute: HistoricoRoute,
   LoginRoute: LoginRoute,
   ProcessosRoute: ProcessosRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   AssinarTokenRoute: AssinarTokenRoute,
   VerificarIdRoute: VerificarIdRoute,
 }
