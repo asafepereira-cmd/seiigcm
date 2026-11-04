@@ -42,7 +42,7 @@ export const alterarSenha = createServerFn({ method: 'POST' }).middleware([requi
     await exigirAdmin(context);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, { password: data.password });
-    if (error) throw new Error('Não foi possível alterar a senha.');
+    if (error) { const { mensagemSenha } = await import('./profile.functions'); throw new Error(mensagemSenha(error.message)); }
     return { ok: true };
   });
 
