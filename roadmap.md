@@ -69,3 +69,10 @@
 - [x] Colaboradores de setor; alterar nome no painel de contas
 - [x] "Atualizar doc" sem nova assinatura; assinatura só com senha do destinatário
 - [x] Excluir/editar processos e documentos dentro do processo; cards no formato do Docs
+
+## Pedido 04/11
+- [x] Editar/excluir pastas e mover PDFs entre pastas em Arquivos
+- [x] Corrigir arquivamento de documento SEII e sair de Arquivos para Home
+- [x] Corrigir troca de senha (perfil e painel de contas)
+- [x] Remover Solicitações e "Novo painel SEII"; cadastro de nova conta no Painel de contas
+- [ ] Aviso por e-mail do PDF assinado (depende de domínio de e-mail)
