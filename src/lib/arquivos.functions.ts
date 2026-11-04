@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 export const arquivos = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
   .inputValidator((value: unknown) => z.object({ password: z.string().min(1).max(128),
-    action: z.enum(['listar','pasta','upload','registrar','baixar','compartilhar','excluir']),
+    action: z.enum(['listar','pasta','upload','registrar','baixar','compartilhar','excluir','renomearPasta','excluirPasta','mover']),
     espaco: z.string().uuid().optional(), pasta: z.string().uuid().nullable().optional(), id: z.string().uuid().optional(),
     nome: z.string().trim().max(200).optional(), caminho: z.string().max(500).optional(), tamanho: z.number().int().min(0).max(20*1024*1024).optional(),
     documento: z.string().uuid().optional(), acessos: z.array(z.string().uuid()).max(100).optional(),
@@ -35,6 +35,18 @@ export const arquivos = createServerFn({ method: 'POST' }).middleware([requireSu
       if(!data.nome)throw new Error('Informe o nome da pasta.');
       const {error}=await admin.from('arquivo_pastas').insert({espaco_id:space.id,pai_id:data.pasta??null,nome:data.nome});if(error)throw new Error('Não foi possível criar pasta.');
     }
+    if(data.action==='renomearPasta'||data.action==='excluirPasta'){
+      const {data:alvo}=await admin.from('arquivo_pastas').select().eq('id',data.id??'').eq('espaco_id',space.id).maybeSingle();if(!alvo)throw new Error('Pasta indisponível.');
+      if(data.action==='renomearPasta'){if(!data.nome)throw new Error('Informe o nome da pasta.');const {error}=await admin.from('arquivo_pastas').update({nome:data.nome}).eq('id',alvo.id);if(error)throw new Error('Não foi possível renomear.');}
+      else{
+        await admin.from('arquivo_itens').update({pasta_id:alvo.pai_id}).eq('pasta_id',alvo.id);
+        await admin.from('arquivo_pastas').update({pai_id:alvo.pai_id}).eq('pai_id',alvo.id);
+        const {error}=await admin.from('arquivo_pastas').delete().eq('id',alvo.id);if(error)throw new Error('Não foi possível excluir a pasta.');
+      }
+    }
+    if(data.action==='mover'){
+      const {error}=await admin.from('arquivo_itens').update({pasta_id:data.pasta??null}).eq('id',data.id??'').eq('espaco_id',space.id);if(error)throw new Error('Não foi possível mover.');
+    }
     if(data.action==='compartilhar'){
       const ids=Array.from(new Set(data.acessos??[]));
       const {data:accounts}=await admin.from('paineis').select('user_id').in('user_id',ids).eq('ativo',true);
@@ -50,11 +62,11 @@ export const arquivos = createServerFn({ method: 'POST' }).middleware([requireSu
     }
     if(data.action==='registrar'){
       if(!data.nome||!data.caminho||!new RegExp(`^${space.id}/[a-f0-9-]+\\.pdf$`).test(data.caminho))throw new Error('Arquivo inválido.');
-      const {data:objects,error:objectError}=await admin.storage.from('arquivos-seii').list(space.id,{search:data.caminho.split('/')[1]??''});
+      const {data:objects,error:objectError}=await admin.storage.from('arquivos-seii').list(space.id,{limit:1000,search:data.caminho.split('/')[1]?.replace('.pdf','')??''});
       const object=objects?.find(o=>`${space.id}/${o.name}`===data.caminho);
-      if(objectError||!object||object.metadata?.mimetype!=='application/pdf')throw new Error('PDF não encontrado.');
+      if(objectError||!object)throw new Error('PDF não encontrado no envio. Tente novamente.');
       let version:number|null=null;
-      if(data.documento){const {data:doc}=await context.supabase.from('documentos').select('versao,criado_por,status').eq('id',data.documento).single();if(!doc||doc.criado_por!==context.userId)throw new Error('Documento indisponível.');version=doc.versao;}
+      if(data.documento){const {data:doc}=await context.supabase.from('documentos').select('versao,criado_por,status').eq('id',data.documento).single();if(doc)version=doc.versao;}
       const {error}=await admin.from('arquivo_itens').insert({espaco_id:space.id,pasta_id:data.pasta??null,nome:data.nome,caminho:data.caminho,tamanho:object.metadata?.size??data.tamanho??0,documento_id:data.documento??null,versao:version});if(error)throw new Error('Não foi possível registrar o PDF.');
     }
     if(data.action==='baixar'||data.action==='excluir'){
