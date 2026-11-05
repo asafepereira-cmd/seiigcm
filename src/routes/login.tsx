@@ -111,6 +111,11 @@ function Login() {
             {loading ? "Aguarde..." : setup ? "Criar acesso e entrar" : "Entrar"}
           </Button>
         </form>
+        <button type="button" className="mt-4 w-full text-center text-sm underline underline-offset-4" onClick={() => setRecovering(true)}>
+          Recuperar acesso
+        </button>
+        </>
+        )}
       </div>
     </main>
   );
