@@ -181,11 +181,6 @@ function Historico() {
                   <Button size="sm" variant="outline" onClick={() => baixar(r)}>
                     <Download className="h-4 w-4" /> PDF
                   </Button>
-                  {!isReceived(r) && podeEditarDocumento(isAdmin,session?.user.id??'',r) && (
-                    <Button size="sm" variant="outline" onClick={() => abrirLinks(r)}>
-                      <Link2 className="h-4 w-4" /> Links
-                    </Button>
-                  )}
                   {r.criado_por===session?.user.id&&<Button size="sm" variant="outline" onClick={async()=>{setMoveDoc(r);setProcessId('');const {data,error}=await supabase.from('processos').select('id,numero,tema,created_at').not('aberto_em','is',null).order('numero',{ascending:false});if(error)toast.error('Não foi possível carregar processos.');setProcesses(data??[]);}}><FolderInput className="h-4 w-4"/>Mover para processo</Button>}
                   {!isReceived(r) && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button
                     size="sm"
@@ -220,6 +215,7 @@ function Historico() {
           <datalist id="funcoes-lista">{funcoes.map(f=><option value={f} key={f}/>)}</datalist>
           <Button variant="outline" disabled={extras.length>=10} onClick={()=>setExtras([...extras,{nome:"",funcao:""}])}>Adicionar signatário</Button>
           {paineis.length>0 && <div className="flex flex-wrap gap-2">{paineis.filter(p=>!extras.some(e=>e.user_id===p.user_id)).map(p=><Button key={p.user_id} size="sm" variant="outline" disabled={extras.length>=10} onClick={()=>setExtras([...extras,{nome:p.nome,funcao:p.funcao,user_id:p.user_id}])}>+ Painel: {p.nome}</Button>)}</div>}
+          <Button variant="outline" onClick={()=>{const row=envio!.row;setEnvio(null);abrirLinks(row);}}><Link2 className="h-4 w-4"/> Emitir link(s) de assinatura(s)</Button>
           <Button disabled={sending || extras.length===0 || extras.some(e=>!e.nome.trim() || !e.funcao.trim())} onClick={confirmarEnvio}>{sending?"Enviando...":"Assinar emissão e enviar"}</Button>
         </DialogContent>
       </Dialog>

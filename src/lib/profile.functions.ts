@@ -50,3 +50,24 @@ export const alterarMinhaSenha = createServerFn({ method: 'POST' })
     if (e2) throw new Error(mensagemSenha(e2.message));
     return { ok: true };
   });
+
+export const conferirMinhaSenha = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ password: z.string().min(1).max(128) }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { data: user } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+    const { createClient } = await import('@supabase/supabase-js');
+    const url = process.env['SUPABASE_URL']; const key = process.env['SUPABASE_PUBLISHABLE_KEY'];
+    if (!url || !key || !user.user?.email) throw new Error('Não foi possível conferir a conta.');
+    const verifier = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: (input, init) => {
+      const headers = new Headers(init?.headers);
+      if (key.startsWith('sb_') && headers.get('Authorization') === `Bearer ${key}`) headers.delete('Authorization');
+      headers.set('apikey', key);
+      return fetch(input, { ...init, headers });
+    } } });
+    const { data: signed, error } = await verifier.auth.signInWithPassword({ email: user.user.email, password: data.password });
+    if (error || signed.user?.id !== context.userId) throw new Error('Senha incorreta.');
+    await verifier.auth.signOut({ scope: 'local' });
+    return { ok: true };
+  });
