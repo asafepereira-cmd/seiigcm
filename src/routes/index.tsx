@@ -17,6 +17,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { destinatarios } from "@/lib/setor.functions";
 import { podeExportar } from "@/lib/sector";
 import { reviewWithAI } from "@/lib/server.functions";
+import { conferirMinhaSenha } from "@/lib/profile.functions";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { gerarPDF } from "@/lib/pdf";
 import { carregarExtras } from "@/lib/assinaturas-eletronicas";
 import { podeEditarDocumento } from "@/lib/document-access";
@@ -293,6 +295,7 @@ function Editor() {
           <DocumentPreview doc={full} />
         </aside>
       </main>
+      <Dialog open={pedirSenha} onOpenChange={setPedirSenha}><DialogContent><DialogHeader><DialogTitle>Assinar e enviar para assinatura</DialogTitle></DialogHeader><p className="text-sm">Confirme a sua senha para emitir e assinar o documento. Depois ele será enviado aos selecionados.</p><form className="space-y-3" onSubmit={e=>{e.preventDefault();confirmarSenhaEmissao();}}><Label htmlFor="senha-emissao">Sua senha</Label><Input id="senha-emissao" type="password" autoComplete="current-password" required value={senhaEmissao} onChange={e=>setSenhaEmissao(e.target.value)}/><Button className="w-full" type="submit" disabled={sending||!senhaEmissao}>{sending?'Conferindo…':'Assinar e enviar'}</Button></form></DialogContent></Dialog>
     </div>
   );
 }
