@@ -17,6 +17,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { destinatarios } from "@/lib/setor.functions";
 import { podeExportar } from "@/lib/sector";
 import { reviewWithAI } from "@/lib/server.functions";
+import { conferirMinhaSenha } from "@/lib/profile.functions";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { gerarPDF } from "@/lib/pdf";
 import { carregarExtras } from "@/lib/assinaturas-eletronicas";
 import { podeEditarDocumento } from "@/lib/document-access";
@@ -64,6 +66,9 @@ function Editor() {
   const listRecipients = useServerFn(destinatarios);
   const [panelType,setPanelType] = useState('individual');
   const [documentStatus,setDocumentStatus] = useState('desenvolvendo');
+  const [pedirSenha,setPedirSenha] = useState(false);
+  const [senhaEmissao,setSenhaEmissao] = useState('');
+  const conferirSenha = useServerFn(conferirMinhaSenha);
   const [recipients,setRecipients] = useState<{id:string;nome:string}[]>([]);
   const [recipientSearch,setRecipientSearch] = useState('');
   const [recipientId,setRecipientId] = useState('');
@@ -150,6 +155,13 @@ function Editor() {
     return res.data.id;
   }
 
+  async function confirmarSenhaEmissao() {
+    setSending(true);
+    try { await conferirSenha({data:{password:senhaEmissao}}); setPedirSenha(false); setSenhaEmissao(''); await encaminhar(true); }
+    catch(e) { toast.error(e instanceof Error?e.message:'Senha incorreta.'); }
+    finally { setSending(false); }
+  }
+
   async function encaminhar(assinar:boolean) {
     const destinos = Array.from(new Set([...selectedRecipients.map(r=>r.id), ...(recipientId ? [recipientId] : [])]));
     if(!destinos.length)return;
@@ -204,7 +216,7 @@ function Editor() {
             </div>
           </Group>
 
-          {doc.tipo !== "Edital" && <Group title="Destinatário">
+          {doc.tipo !== "Edital" && doc.tipo.toLocaleLowerCase("pt-BR") !== "termo" && <Group title="Destinatário">
             <F label="Para"><Input value={doc.para} onChange={(e) => set("para", e.target.value)} /></F>
             <F label="De"><Input value={doc.de} onChange={(e) => set("de", e.target.value)} /></F>
           </Group>}
@@ -242,7 +254,7 @@ function Editor() {
           </Group>
 
           <Group title="Encerramento">
-            <F label="Fecho"><Textarea rows={2} value={doc.fecho} onChange={(e) => set("fecho", e.target.value)} /></F>
+            {doc.tipo !== 'Edital' && <F label="Fecho"><Textarea rows={2} value={doc.fecho} onChange={(e) => set("fecho", e.target.value)} /></F>}
           </Group>
 
           {<Group title="Encaminhamento">
@@ -251,11 +263,11 @@ function Editor() {
             {recipientSearch&&!recipientId&&<div className="flex flex-wrap gap-2">{recipients.filter(p=>!selectedRecipients.some(s=>s.id===p.id)&&p.nome.toLocaleLowerCase('pt-BR').includes(recipientSearch.toLocaleLowerCase('pt-BR'))).map(p=><Button key={p.id} variant="outline" onClick={()=>{setRecipientId(p.id);setRecipientSearch(p.nome);}}>{p.nome}</Button>)}</div>}
             <Button size="icon" variant="outline" aria-label="Adicionar destinatário" title="Adicionar destinatário" disabled={!recipientId} onClick={()=>{const p=recipients.find(r=>r.id===recipientId);if(p)setSelectedRecipients(current=>current.some(r=>r.id===p.id)?current:[...current,p]);setRecipientId('');setRecipientSearch('');}}><Plus className="h-4 w-4"/></Button>
             <F label="Finalidade da assinatura"><select aria-label="Finalidade da assinatura" className="h-9 w-full rounded-md border bg-card px-2" value={purpose} onChange={e=>setPurpose(e.target.value==='ciencia'?'ciencia':'deferimento')}><option value="deferimento">Deferimento</option><option value="ciencia">Somente ciência</option></select></F>
-            <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={(!recipientId&&!selectedRecipients.length)||sending||saving} onClick={()=>encaminhar(false)}>Enviar para</Button><Button disabled={(!recipientId&&!selectedRecipients.length)||sending||saving} onClick={()=>encaminhar(true)}>Enviar e solicitar assinatura</Button></div>
+            <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={(!recipientId&&!selectedRecipients.length)||sending||saving} onClick={()=>encaminhar(false)}>Enviar para</Button><Button disabled={(!recipientId&&!selectedRecipients.length)||sending||saving} onClick={()=>{setSenhaEmissao('');setPedirSenha(true);}}>Assinar e enviar para assinatura</Button></div>
           </Group>}
           <div className="sticky bottom-0 -mx-4 flex gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
             <Button variant="outline" className="flex-1" onClick={salvar} disabled={saving}>
-              <Save className="h-4 w-4" /> {documentStatus === "enviado" ? "Atualizar doc" : "Salvar"}
+              <Save className="h-4 w-4" /> {documentStatus !== "desenvolvendo" ? "Atualizar doc" : "Salvar"}
             </Button>
             <Button
               className="flex-1"
@@ -283,6 +295,7 @@ function Editor() {
           <DocumentPreview doc={full} />
         </aside>
       </main>
+      <Dialog open={pedirSenha} onOpenChange={setPedirSenha}><DialogContent><DialogHeader><DialogTitle>Assinar e enviar para assinatura</DialogTitle></DialogHeader><p className="text-sm">Confirme a sua senha para emitir e assinar o documento. Depois ele será enviado aos selecionados.</p><form className="space-y-3" onSubmit={e=>{e.preventDefault();confirmarSenhaEmissao();}}><Label htmlFor="senha-emissao">Sua senha</Label><Input id="senha-emissao" type="password" autoComplete="current-password" required value={senhaEmissao} onChange={e=>setSenhaEmissao(e.target.value)}/><Button className="w-full" type="submit" disabled={sending||!senhaEmissao}>{sending?'Conferindo…':'Assinar e enviar'}</Button></form></DialogContent></Dialog>
     </div>
   );
 }

@@ -98,7 +98,7 @@ function Processos() {
   }
 
   async function criarProcesso() {
-    if (!tema.trim() || !assunto.trim() || !descricao.trim() || !numero.trim()) return;
+    if (!tema.trim() || !assunto.trim() || !numero.trim()) return;
     setSalvando(true);
     try {
       const { data: user } = await supabase.auth.getUser();
@@ -188,7 +188,7 @@ function Processos() {
           <div className="space-y-3">
             <div><Label htmlFor="tema">Tema</Label><Input id="tema" maxLength={200} value={tema} onChange={(e) => setTema(e.target.value)} /></div>
             <div><Label htmlFor="assunto-proc">Assunto</Label><Textarea id="assunto-proc" rows={2} maxLength={500} value={assunto} onChange={(e) => setAssunto(e.target.value)} /></div>
-            <div><Label htmlFor="descricao">Descrição</Label><Textarea id="descricao" rows={4} maxLength={4000} value={descricao} onChange={(e) => setDescricao(e.target.value)} /></div>
+            
             <div>
               <Label>Quem pode acessar</Label>
               <div className="mt-1.5 flex flex-wrap gap-2">
@@ -200,7 +200,7 @@ function Processos() {
               </div>
             </div>
             <div><Label htmlFor="numero-proc">Numeração do processo</Label><Input id="numero-proc" type="number" min={1} required value={numero} onChange={(e) => setNumero(e.target.value)} /></div>
-            <Button className="w-full" disabled={salvando || !tema.trim() || !assunto.trim() || !descricao.trim() || !numero.trim()} onClick={criarProcesso}>
+            <Button className="w-full" disabled={salvando || !tema.trim() || !assunto.trim() || !numero.trim()} onClick={criarProcesso}>
               {salvando ? "Abrindo…" : "Abrir processo"}
             </Button>
           </div>
@@ -226,7 +226,7 @@ function Processos() {
               )}
               <h2 className="text-center text-xl font-bold">{aberto.tema}</h2><p className="text-sm text-muted-foreground">{aberturaProcesso(aberto)}</p>
               <p className="font-semibold">{aberto.assunto}</p>
-              <p className="whitespace-pre-line text-sm">{aberto.descricao}</p>
+              
               {aberto.encerrado_em && <p className="rounded-md bg-muted px-3 py-2 text-sm font-semibold">Processo encerrado e arquivado em {new Date(aberto.encerrado_em).toLocaleDateString("pt-BR")} — não aceita novos documentos ou anexos.</p>}
               {aberto.aberto_em && !aberto.encerrado_em && podeEmitir && (
                 <Button variant="outline" size="sm" asChild>
@@ -274,9 +274,9 @@ function Processos() {
           {edicao && <div className="space-y-3">
             <div><Label htmlFor="ed-tema">Nome / tema</Label><Input id="ed-tema" maxLength={200} value={edicao.tema} onChange={(e) => setEdicao({ ...edicao, tema: e.target.value })} /></div>
             <div><Label htmlFor="ed-assunto">Assunto</Label><Textarea id="ed-assunto" rows={2} maxLength={500} value={edicao.assunto} onChange={(e) => setEdicao({ ...edicao, assunto: e.target.value })} /></div>
-            <div><Label htmlFor="ed-desc">Descrição</Label><Textarea id="ed-desc" rows={4} maxLength={4000} value={edicao.descricao} onChange={(e) => setEdicao({ ...edicao, descricao: e.target.value })} /></div>
+            
             <div><Label>Quem pode acessar</Label><div className="mt-1.5 flex flex-wrap gap-2">{paineis.map((p) => { const m = edicao.acessos.includes(p.user_id); return <Button key={p.user_id} size="sm" variant={m ? "default" : "outline"} aria-pressed={m} onClick={() => setEdicao({ ...edicao, acessos: m ? edicao.acessos.filter((a) => a !== p.user_id) : [...edicao.acessos, p.user_id] })}>{p.nome}</Button>; })}</div></div>
-            <Button className="w-full" disabled={!edicao.tema.trim() || !edicao.assunto.trim() || !edicao.descricao.trim()} onClick={salvarEdicao}>Salvar alterações</Button>
+            <Button className="w-full" disabled={!edicao.tema.trim() || !edicao.assunto.trim()} onClick={salvarEdicao}>Salvar alterações</Button>
           </div>}
         </DialogContent>
       </Dialog>
