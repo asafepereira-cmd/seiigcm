@@ -1,6 +1,7 @@
 import { dataExtenso, identificacaoDocumento, type Documento } from "@/lib/documento";
 import { richBlocks } from "@/lib/rich-text";
 export function DocumentPreview({ doc }: { doc: Documento }) {
+  const termo = doc.tipo.toLocaleLowerCase('pt-BR') === 'termo';
   const paras = doc.corpo.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   return (
     <div aria-label="Prévia do documento" className="document-preview aspect-[210/297] w-full overflow-auto rounded-sm bg-paper p-[6%] font-[Times_New_Roman,serif] text-[10px] text-paper-ink shadow-paper lg:text-[11px]">
@@ -11,16 +12,16 @@ export function DocumentPreview({ doc }: { doc: Documento }) {
         </div>
         <img src={doc.setor ? "/brand/governo.png" : "/brand/midia.png"} alt="" className={doc.setor ? "w-[10%]" : "w-[15%]"} />
       </div>
-      <p className="mt-4 text-[1.1em] font-bold">{identificacaoDocumento(doc)}</p>
+      <p className={`mt-4 text-[1.1em] font-bold ${termo ? "text-center" : ""}`}>{identificacaoDocumento(doc)}</p>
       {doc.processo && <p className="mt-1 text-center font-bold break-words">{doc.processo.tema}</p>}
       {doc.tipo !== 'Edital' && <p className="text-right font-bold">{doc.cidade} - {dataExtenso(doc.data)}</p>}
-      {doc.tipo !== "Edital" && <><p className="mt-3 text-justify"><b>Para:</b> {doc.para}</p>
+      {doc.tipo !== "Edital" && !termo && <><p className="mt-3 text-justify"><b>Para:</b> {doc.para}</p>
       <p className="text-justify"><b>De:</b> {doc.de}</p></>}
-      {doc.tipo === 'Edital' ? <p className="mt-3 text-center font-bold break-words">{doc.assunto}</p> : <p className="mt-2 text-justify"><b>Assunto:</b> {doc.assunto}</p>}
+      {doc.tipo === 'Edital' || termo ? <p className="mt-3 text-center font-bold break-words">{doc.assunto}</p> : <p className="mt-2 text-justify"><b>Assunto:</b> {doc.assunto}</p>}
       {doc.vocativo && <p className="mt-2 text-justify">{doc.vocativo}</p>}
        {doc.corpoFormatado ? richBlocks(doc.corpoFormatado).map((b, i) => <p key={i} className="mt-2 min-h-[1em] whitespace-pre-line" style={{ textAlign: b.align, paddingLeft: `${b.indent * 1.25}cm` }}>{b.runs.map((run, j) => <span key={j} className={`${run.bold ? "font-bold" : ""} ${run.italic ? "italic" : ""} ${run.underline ? "underline" : ""}`} style={run.fontSize ? { fontSize: `${run.fontSize / 12}em` } : undefined}>{run.text}</span>)}</p>) : paras.map((p, i) => <p key={i} className="mt-2 text-justify">{p}</p>)}
       {doc.fotos?.map((f, i) => <figure key={i} className="mt-2 text-center"><img src={f.src} alt={f.legenda || "Foto"} className="mx-auto max-h-[40%] max-w-[80%]" />{f.legenda && <figcaption className="text-[0.85em] italic">{f.legenda}</figcaption>}</figure>)}
-      {doc.fecho && <p className="mt-2 text-justify">{doc.fecho}</p>}
+      {doc.tipo !== 'Edital' && doc.fecho && <p className="mt-2 text-justify">{doc.fecho}</p>}
       {doc.tipo === 'Edital' && <p className="mt-3 text-right font-bold">{doc.cidade} - {dataExtenso(doc.data)}</p>}
       {!!doc.anexos?.length && <><p className="mt-4 font-bold">Anexos</p>{doc.anexos.map((f, i) => <figure key={i} className="mt-2 text-center"><img src={f.src} alt={f.legenda || `Anexo ${i + 1}`} className="mx-auto max-w-[80%]" /><figcaption className="text-[0.85em]">Anexo {i + 1}{f.legenda ? ` – ${f.legenda}` : ""}</figcaption></figure>)}</>}
     </div>
