@@ -6,9 +6,11 @@ import { createFirstAccount, getSetupStatus } from "@/lib/server.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { oauthReturnPath } from "@/lib/oauth-return-path";
 import seiiLogo from "@/assets/seii-transparent.png";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (s: Record<string, unknown>) => ({ next: typeof s["next"] === "string" ? s["next"] : undefined }),
   head: () => ({
     meta: [
       { title: "Entrar — SEII GCM" },
@@ -24,6 +26,9 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const destino = next ? oauthReturnPath(next) : null;
+  const irDepois = () => destino && destino !== "/" ? window.location.assign(destino) : navigate({ to: "/home" });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,7 +53,7 @@ function Login() {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => data.session && navigate({ to: "/home" }));
+    supabase.auth.getSession().then(({ data }) => data.session && irDepois());
     getSetupStatus().then((r) => setSetup(r.needsSetup)).catch(() => {});
   }, [navigate]);
 
@@ -62,7 +67,7 @@ function Login() {
       }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw new Error("E-mail ou senha incorretos.");
-      navigate({ to: "/home" });
+      irDepois();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao entrar");
     } finally {
