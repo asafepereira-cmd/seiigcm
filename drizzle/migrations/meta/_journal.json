@@ -197,6 +197,13 @@
       "when": 1793726209700,
       "tag": "0027_keep_signed_status_on_edit",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1794073373304,
+      "tag": "0028_isolar_documentos",
+      "breakpoints": true
     }
   ]
 }
