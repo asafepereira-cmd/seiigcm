@@ -80,7 +80,7 @@ function Login() {
       <div className="w-full max-w-md rounded-xl border bg-card px-6 py-8 text-card-foreground shadow-paper sm:p-10">
         <div className="mb-6 flex flex-col items-center text-center">
           <h1 className="flex w-full justify-center rounded-md bg-primary p-4"><img src={seiiLogo} alt="SEII — Sistema eletrônico interno de informações" className="h-16 max-w-full object-contain" /></h1>
-          <p className="mt-2 text-base leading-relaxed text-muted-foreground">Sistema Interno de Informações do CEMXXXIII · Acesso restrito</p>
+          <p className="mt-2 text-base leading-relaxed text-muted-foreground">Sistema Eletrônico Interno de Informações do CEMXXXIII · Acesso restrito</p>
         </div>
         {setup && (
           <p className="mb-4 rounded-md bg-secondary p-3 text-sm text-secondary-foreground">

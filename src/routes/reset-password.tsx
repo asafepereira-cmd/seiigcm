@@ -63,7 +63,7 @@ function ResetPassword() {
           <h1 className="flex w-full justify-center rounded-md bg-primary p-4">
             <img src={seiiLogo} alt="SEII — Sistema eletrônico interno de informações" className="h-16 max-w-full object-contain" />
           </h1>
-          <p className="mt-2 text-base leading-relaxed text-muted-foreground">Recuperar acesso · Sistema Interno de Informações do CEMXXXIII</p>
+          <p className="mt-2 text-base leading-relaxed text-muted-foreground">Recuperar acesso · Sistema Eletrônico Interno de Informações do CEMXXXIII</p>
         </div>
         {recovery ? (
           <form onSubmit={submit} className="space-y-5">
