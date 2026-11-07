@@ -91,6 +91,7 @@ function Historico() {
   const [paineis,setPaineis] = useState<{user_id:string;nome:string;funcao:string}[]>([]);
   const [funcoes,setFuncoes] = useState<string[]>([]);
   const [sending,setSending] = useState(false);
+  const [jaAssinantes,setJaAssinantes] = useState<string[]>([]);
   async function abrirLinks(row: Row) {
     setLinks({ row, itens: await carregarSolicitacoes(row.id) });
   }
@@ -119,7 +120,7 @@ function Historico() {
     if (!documento || !podeEditarDocumento(isAdmin,session?.user.id??'',documento)) return;
     if (status === "enviado") {
       const row = rows?.find(r => r.id === id);
-      if (row) { setExtras([]); setPrazo(""); setPrioridade("normal"); setTermo(""); setEnvio({ row, opcao: row.dados.despacho ?? "ambas" }); return; }
+      if (row) { setJaAssinantes([]); carregarSolicitacoes(row.id).then(s=>setJaAssinantes(s.map(x=>x.signatario_nome||x.gestora))).catch(()=>{}); setExtras([]); setPrazo(""); setPrioridade("normal"); setTermo(""); setEnvio({ row, opcao: row.dados.despacho ?? "ambas" }); return; }
     }
     if (!isAdmin) return;
     setUpdating(current => [...current, id]);
@@ -210,7 +211,8 @@ function Historico() {
           <p className="text-xs text-muted-foreground">Sua emissão eletrônica será registrada agora. Selecione um ou mais painéis ou pessoas para deferimento; cada um recebe um link único.</p>
           <div className="grid grid-cols-2 gap-3"><div><Label>Prioridade</Label><Select value={prioridade} onValueChange={setPrioridade}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="alta">Alta</SelectItem></SelectContent></Select></div><div><Label htmlFor="prazo">Data limite</Label><Input id="prazo" type="date" value={prazo} onChange={e=>setPrazo(e.target.value)}/></div></div>
           <div><Label htmlFor="termo">Termo de ciência</Label><Textarea id="termo" maxLength={2000} value={termo} onChange={e=>setTermo(e.target.value)}/></div>
-          <h3 className="font-semibold">Outros signatários</h3>
+          {jaAssinantes.length>0&&<div className="space-y-1"><h3 className="font-semibold">Já enviados</h3>{jaAssinantes.map((n,i)=><p key={i} className="text-sm">✓ {n}</p>)}</div>}
+          <h3 className="font-semibold">Adicionar signatários</h3>
           {extras.map((extra,i)=><div key={i} className="space-y-2 border-b pb-3"><Input aria-label={`Nome completo do signatário ${i+1}`} placeholder="Nome completo" disabled={!!extra.user_id} maxLength={200} value={extra.nome} onChange={e=>setExtras(extras.map((x,j)=>j===i?{...x,nome:e.target.value}:x))}/><Input list="funcoes-lista" aria-label={`Função do signatário ${i+1}`} placeholder="Função" maxLength={200} disabled={!!extra.user_id} value={extra.funcao} onChange={e=>setExtras(extras.map((x,j)=>j===i?{...x,funcao:e.target.value}:x))}/><Button variant="outline" size="sm" onClick={()=>setExtras(extras.filter((_,j)=>j!==i))}>Remover</Button></div>)}
           <datalist id="funcoes-lista">{funcoes.map(f=><option value={f} key={f}/>)}</datalist>
           <Button variant="outline" disabled={extras.length>=10} onClick={()=>setExtras([...extras,{nome:"",funcao:""}])}>Adicionar signatário</Button>

@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { gerarPDF } from "@/lib/pdf";
 import { carregarExtras } from "@/lib/assinaturas-eletronicas";
 import { podeEditarDocumento } from "@/lib/document-access";
+import { carregarEncaminhados } from "@/lib/encaminhados";
 import { proximoNumeroDocumento } from "@/lib/document-numbering";
 import { siglaSetor, dataExtenso, modeloGravacao, numeroFormatado, numeroValido, type Documento, type Participante } from "@/lib/documento";
 
@@ -76,7 +77,9 @@ function Editor() {
   const [purpose,setPurpose] = useState<'deferimento'|'ciencia'>('deferimento');
   const [sending,setSending] = useState(false);
   useEffect(()=>{if(!ready)return;supabase.from('paineis').select('tipo_painel').eq('user_id',session?.user.id??'').maybeSingle().then(({data})=>setPanelType(data?.tipo_painel??'individual'));},[ready,session?.user.id]);
+  const [jaEnviados,setJaEnviados] = useState<{id:string;nome:string}[]>([]);
   useEffect(()=>{if(ready)listRecipients().then(setRecipients).catch(()=>toast.error('Não foi possível listar destinatários.'));},[ready]);
+  useEffect(()=>{if(!ready||!docId||!recipients.length){setJaEnviados([]);return;}carregarEncaminhados(docId).then(ids=>setJaEnviados(ids.map(i=>recipients.find(r=>r.id===i)).filter((r):r is {id:string;nome:string}=>!!r)));},[ready,docId,recipients]);
 
   async function comProcesso(documento: Documento, processoId?: string | null) {
     if (!processoId) return documento;
@@ -258,9 +261,10 @@ function Editor() {
           </Group>
 
           {<Group title="Encaminhamento">
-            {selectedRecipients.map(p=><div className="flex items-center gap-2" key={p.id}><span className="mr-auto font-semibold">{p.nome}</span><Button size="icon" variant="ghost" aria-label={`Remover ${p.nome}`} onClick={()=>setSelectedRecipients(current=>current.filter(r=>r.id!==p.id))}><X className="h-4 w-4"/></Button></div>)}
+            {jaEnviados.map(p=><div className="flex items-center gap-2" key={'e'+p.id}><Check className="h-4 w-4 text-primary"/><span className="mr-auto font-semibold">{p.nome}</span><span className="text-xs text-muted-foreground">já enviado</span></div>)}
+            {selectedRecipients.filter(p=>!jaEnviados.some(j=>j.id===p.id)).map(p=><div className="flex items-center gap-2" key={p.id}><span className="mr-auto font-semibold">{p.nome}</span><Button size="icon" variant="ghost" aria-label={`Remover ${p.nome}`} onClick={()=>setSelectedRecipients(current=>current.filter(r=>r.id!==p.id))}><X className="h-4 w-4"/></Button></div>)}
             <Input aria-label="Destinatário do documento" placeholder="Pesquisar setor ou pessoa" value={recipientSearch} onChange={e=>{setRecipientSearch(e.target.value);setRecipientId('');}}/>
-            {recipientSearch&&!recipientId&&<div className="flex flex-wrap gap-2">{recipients.filter(p=>!selectedRecipients.some(s=>s.id===p.id)&&p.nome.toLocaleLowerCase('pt-BR').includes(recipientSearch.toLocaleLowerCase('pt-BR'))).map(p=><Button key={p.id} variant="outline" onClick={()=>{setRecipientId(p.id);setRecipientSearch(p.nome);}}>{p.nome}</Button>)}</div>}
+            {recipientSearch&&!recipientId&&<div className="flex flex-wrap gap-2">{recipients.filter(p=>!selectedRecipients.some(s=>s.id===p.id)&&!jaEnviados.some(s=>s.id===p.id)&&p.nome.toLocaleLowerCase('pt-BR').includes(recipientSearch.toLocaleLowerCase('pt-BR'))).map(p=><Button key={p.id} variant="outline" onClick={()=>{setRecipientId(p.id);setRecipientSearch(p.nome);}}>{p.nome}</Button>)}</div>}
             <Button size="icon" variant="outline" aria-label="Adicionar destinatário" title="Adicionar destinatário" disabled={!recipientId} onClick={()=>{const p=recipients.find(r=>r.id===recipientId);if(p)setSelectedRecipients(current=>current.some(r=>r.id===p.id)?current:[...current,p]);setRecipientId('');setRecipientSearch('');}}><Plus className="h-4 w-4"/></Button>
             <F label="Finalidade da assinatura"><select aria-label="Finalidade da assinatura" className="h-9 w-full rounded-md border bg-card px-2" value={purpose} onChange={e=>setPurpose(e.target.value==='ciencia'?'ciencia':'deferimento')}><option value="deferimento">Deferimento</option><option value="ciencia">Somente ciência</option></select></F>
             <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={(!recipientId&&!selectedRecipients.length)||sending||saving} onClick={()=>encaminhar(false)}>Enviar para</Button><Button disabled={(!recipientId&&!selectedRecipients.length)||sending||saving} onClick={()=>{setSenhaEmissao('');setPedirSenha(true);}}>Assinar e enviar para assinatura</Button></div>
