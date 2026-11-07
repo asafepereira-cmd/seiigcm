@@ -1,0 +1,1 @@
+CREATE POLICY destinatarios_emissor_read ON public.documento_destinatarios FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.documentos d WHERE d.id = documento_id AND d.criado_por = auth.uid()));
