@@ -57,8 +57,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   pdf.setFont("times", "bold");
   pdf.setFontSize(13);
   const identification = pdf.splitTextToSize(identificacaoDocumento(doc), TW) as string[];
-  const ehTermo = doc.tipo.toLocaleLowerCase('pt-BR') === 'termo';
-  if (ehTermo) pdf.text(identification, W / 2, y, { align: "center" }); else pdf.text(identification, ML, y);
+  pdf.text(identification, ML, y);
   y += identification.length * 6;
   if (doc.processo) {
     pdf.setFontSize(12);
@@ -111,12 +110,12 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   };
 
   pdf.setFontSize(12);
-  if (doc.tipo !== "Edital" && !ehTermo) {
+  if (doc.tipo !== "Edital") {
     labelLine("Para:", doc.para, true);
     labelLine("De:", doc.de, true);
     y += LH * 0.7;
   }
-  if (doc.tipo === 'Edital' || ehTermo) {
+  if (doc.tipo === 'Edital') {
     pdf.setFont('times', 'bold');
     const tema = pdf.splitTextToSize(doc.assunto, TW) as string[];
     for (const line of tema) { ensure(LH); pdf.text(line, W / 2, y, { align: 'center' }); y += LH; }
@@ -200,7 +199,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   };
   (doc.fotos ?? []).forEach((f) => imagem(f, "", 90));
 
-  if (doc.tipo !== 'Edital' && doc.fecho.trim()) paragraph(doc.fecho.trim());
+  if (doc.fecho.trim()) paragraph(doc.fecho.trim());
 
   if (doc.tipo === 'Edital') {
     ensure(LH * 2);
