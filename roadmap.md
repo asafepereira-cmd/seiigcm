@@ -1,5 +1,11 @@
 # Roadmap
 
+## Pedido 19/11
+- [ ] Corrigir identidade da escola e espaçamento do nome nas exibições
+- [ ] Árvore de processos com seleção de documentos e anexos
+- [ ] Assinatura do emissor antes de enviar, com senha e registro preservado
+- [ ] Testar árvore e assinatura autenticadas
+
 ## Pedido 01/11 — arquivo enviado
 - [ ] Voltar na assinatura; PDF em Assinados por mim; remover Documentos disponíveis
 - [ ] Editor: alinhamento, recuo, tamanho, fotos e favoritos
