@@ -204,6 +204,13 @@
       "when": 1795054218692,
       "tag": "0028_fix_documento_existe_recursion",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1795054270219,
+      "tag": "0029_restrict_paineis_funcoes_read",
+      "breakpoints": true
     }
   ]
 }
