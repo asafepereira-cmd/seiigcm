@@ -721,6 +721,10 @@ export type Database = {
       }
       conta_ativa: { Args: { _uid: string }; Returns: boolean }
       devolver_analise: { Args: { _id: string }; Returns: undefined }
+      documento_do_autor: {
+        Args: { _id: string; _uid: string }
+        Returns: boolean
+      }
       documento_existe: { Args: { _id: string }; Returns: boolean }
       documento_recebido: {
         Args: { _id: string; _uid: string }

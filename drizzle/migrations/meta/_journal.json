@@ -211,6 +211,13 @@
       "when": 1795054270219,
       "tag": "0029_restrict_paineis_funcoes_read",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795054482915,
+      "tag": "0030_fix_documentos_solicitacoes_recursion",
+      "breakpoints": true
     }
   ]
 }
