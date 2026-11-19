@@ -1,0 +1,2 @@
+ALTER TABLE public.solicitacoes_assinatura DROP CONSTRAINT solicitacoes_assinatura_gestora_check;
+ALTER TABLE public.solicitacoes_assinatura ADD CONSTRAINT solicitacoes_assinatura_gestora_check CHECK (gestora IN ('pedagogica','administrativa') OR ((gestora LIKE 'extra:%' OR gestora LIKE 'user:%' OR gestora LIKE 'emissor:%') AND signatario_nome IS NOT NULL AND signatario_funcao IS NOT NULL));

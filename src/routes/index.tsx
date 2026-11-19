@@ -1,11 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, Save, Sparkles, FilePlus2, Upload, X, Check, Circle, Plus } from "lucide-react";
+import { Download, Save, Sparkles, FilePlus2, Upload, X, Check, Circle, Plus, PenLine } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
 import { AppHeader } from "@/components/AppHeader";
 import { DocumentPreview } from "@/components/DocumentPreview";
+import { ProcessTree } from '@/components/ProcessTree';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { signAuthorDocument } from '@/lib/assinatura.functions';
+import { corrigirNome } from '@/lib/document-identity';
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { prepararFoto } from "@/lib/document-photo";
 import { richParagraphs } from "@/lib/rich-text";
@@ -70,6 +74,25 @@ function Editor() {
   const [selectedRecipients,setSelectedRecipients] = useState<{id:string;nome:string}[]>([]);
   const [purpose,setPurpose] = useState<'deferimento'|'ciencia'>('deferimento');
   const [sending,setSending] = useState(false);
+  const signAuthor = useServerFn(signAuthorDocument);
+  const [signOpen,setSignOpen] = useState(false);
+  const [signing,setSigning] = useState(false);
+  const [password,setPassword] = useState('');
+  const [signName,setSignName] = useState('');
+  const [signRole,setSignRole] = useState('');
+  const [signCpf,setSignCpf] = useState('');
+  const [consent,setConsent] = useState(false);
+  const [authorSigned,setAuthorSigned] = useState(false);
+  const [savedSnapshot,setSavedSnapshot] = useState('');
+  const [activeProcess,setActiveProcess] = useState<string | null>(processo ?? null);
+  const [treeDocs,setTreeDocs] = useState<{id:string;dados:Documento}[]>([]);
+  useEffect(() => {
+    if (!ready || !activeProcess) { setTreeDocs([]); return; }
+    supabase.from('documentos').select('id,dados').eq('processo_id',activeProcess).order('created_at').then(({data,error}) => {
+      if (error) toast.error('Não foi possível carregar a árvore do processo.');
+      else setTreeDocs((data ?? []) as unknown as {id:string;dados:Documento}[]);
+    });
+  },[ready,activeProcess,docId,savedSnapshot]);
   useEffect(()=>{if(!ready)return;supabase.from('paineis').select('tipo_painel').eq('user_id',session?.user.id??'').maybeSingle().then(({data})=>setPanelType(data?.tipo_painel??'individual'));},[ready,session?.user.id]);
   useEffect(()=>{if(ready)listRecipients().then(setRecipients).catch(()=>toast.error('Não foi possível listar destinatários.'));},[ready]);
 
@@ -85,7 +108,7 @@ function Editor() {
     if (!ready) return;
     setDocId(id);
     if (id) {
-      supabase.from("documentos").select("dados,criado_por,status,analise_admin,processo_id").eq("id", id).single().then(async ({ data }) => {
+      supabase.from("documentos").select("dados,criado_por,status,analise_admin,processo_id,versao").eq("id", id).single().then(async ({ data }) => {
         if (!data || !podeEditarDocumento(isAdmin, session?.user.id ?? '', data)) {
           toast.error("Este documento não está disponível para edição.");
           navigate({to:'/historico'});
@@ -94,11 +117,17 @@ function Editor() {
         if (data) {
           setDocumentStatus(data.status);
           const d = data.dados as unknown as Documento;
-          setDoc(await comProcesso(d, data.processo_id));
+          const loaded = await comProcesso(d, data.processo_id);
+          setDoc(loaded);
+          setSavedSnapshot(JSON.stringify(loaded));
+          setActiveProcess(data.processo_id);
+          const {data:signatures} = await supabase.from('solicitacoes_assinatura').select('assinado_em').eq('documento_id',id).eq('versao',data.versao).like('gestora','emissor:%').not('assinado_em','is',null);
+          setAuthorSigned(!!signatures?.length);
           setListaTexto(listaParaTexto(d.lista));
         }
       });
     } else {
+      setAuthorSigned(false); setSavedSnapshot(''); setActiveProcess(processo ?? null);
       Promise.all([proximoNumeroDocumento('Ofício', new Date().getFullYear()), supabase.from('paineis').select('nome,funcao,tipo_painel,setor,responsavel').eq('user_id',session?.user.id ?? '').maybeSingle()]).then(async ([n, {data: titular}]) => {
         if (!isAdmin && !titular) { toast.error('Seu painel precisa de nome e função.'); navigate({to:'/painel'}); return; }
         const model = modeloGravacao(n, !isAdmin && titular ? titular : undefined);
@@ -145,9 +174,25 @@ function Editor() {
     if (res.error || !res.data) return toast.error(res.error?.message ?? "Erro ao salvar"), undefined;
     setDocumentStatus(res.data.status);
     setDocId(res.data.id);
-    setDoc(res.data.dados as unknown as Documento);
+    const savedDoc = res.data.dados as unknown as Documento;
+    setDoc(savedDoc);
+    setSavedSnapshot(JSON.stringify(savedDoc));
+    if (JSON.stringify(dados) !== savedSnapshot) setAuthorSigned(false);
     toast.success("Documento salvo");
     return res.data.id;
+  }
+  async function assinarAutor() {
+    if (!consent || !password) return;
+    setSigning(true);
+    try {
+      const savedId = await salvar(); if (!savedId) return;
+      await signAuthor({data:{id:savedId,password,concordo:true,nome:signName,funcao:signRole,cpf:signCpf}});
+      const {data:updated,error} = await supabase.from('documentos').select('status').eq('id',savedId).single();
+      if (error || !updated) throw new Error('Não foi possível conferir a assinatura.');
+      setDocumentStatus(updated.status); setAuthorSigned(true); setSignOpen(false); setPassword('');
+      toast.success('Documento assinado pelo emissor. Agora você pode encaminhá-lo.');
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Não foi possível assinar.'); }
+    finally { setSigning(false); }
   }
 
   async function encaminhar(assinar:boolean) {
@@ -166,7 +211,11 @@ function Editor() {
   return (
     <div className="min-h-screen">
       <AppHeader />
-      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <main className={`mx-auto grid max-w-7xl gap-6 px-4 py-6 ${activeProcess ? 'lg:grid-cols-[230px_minmax(0,1fr)_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]'}`}>
+        {activeProcess && <aside className="min-w-0 rounded-md bg-card p-3 lg:sticky lg:top-20 lg:self-start"><ProcessTree title={doc.processo ? `PROCESSO INTERNO ${String(doc.processo.numero).padStart(3,'0')}/${doc.processo.ano}` : 'Documentos do processo'} documents={treeDocs} selected={docId} onSelect={selectedId => {
+          if (JSON.stringify(full) !== savedSnapshot && !confirm('Sair sem salvar as alterações?')) return;
+          navigate({to:'/',search:{id:selectedId}});
+        }}/><Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => navigate({to:'/processos'})}>Ver processo</Button></aside>}
         <section className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="mr-auto text-2xl font-bold text-primary-foreground">{docId ? "Editar documento" : "Novo documento"}</h1>
@@ -175,6 +224,11 @@ function Editor() {
                 <FilePlus2 className="h-4 w-4" /> Novo
               </Button>
             )}
+          </div>
+
+          <div role="toolbar" aria-label="Ações do documento" className="sticky top-0 z-10 flex flex-wrap gap-2 rounded-md border bg-card p-2">
+            <Button size="sm" disabled={saving || signing || (authorSigned && JSON.stringify(full) === savedSnapshot)} onClick={() => {setConsent(false);setPassword('');setSignOpen(true);}}><PenLine className="size-4" />{authorSigned && JSON.stringify(full) === savedSnapshot ? 'Assinado pelo emissor' : 'Assinar documento'}</Button>
+            <Button size="icon" variant="outline" aria-label="Salvar minuta" title="Salvar minuta" disabled={saving || signing} onClick={salvar}><Save className="size-4" /></Button>
           </div>
 
           <Group title="Identificação">
@@ -283,6 +337,16 @@ function Editor() {
           <DocumentPreview doc={full} />
         </aside>
       </main>
+      <Dialog open={signOpen} onOpenChange={open => { if (!signing) {setSignOpen(open);setPassword('');} }}>
+        <DialogContent><DialogHeader><DialogTitle>Assinar documento</DialogTitle></DialogHeader>
+          <form className="space-y-4" onSubmit={e => {e.preventDefault();void assinarAutor();}}>
+            {panelType === 'setor' ? <><F label="Nome completo"><Input aria-label="Nome completo do assinante" required value={signName} onChange={e=>setSignName(e.target.value)}/></F><F label="Função"><Input aria-label="Função do assinante" required value={signRole} onChange={e=>setSignRole(e.target.value)}/></F><F label="CPF"><Input aria-label="CPF do assinante" required value={signCpf} onChange={e=>setSignCpf(e.target.value)}/></F></> : <p className="text-sm font-semibold">{corrigirNome(doc.assinante)}<span className="block font-normal">{doc.cargo}</span></p>}
+            <F label="Senha da conta"><Input aria-label="Senha para assinar" type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></F>
+            <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} required className="mt-1"/>Li o documento e confirmo minha assinatura eletrônica.</label>
+            <Button type="submit" className="w-full" disabled={signing || saving || !password || !consent}>{signing ? 'Assinando…' : 'Confirmar assinatura'}</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

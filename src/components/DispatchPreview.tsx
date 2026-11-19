@@ -1,4 +1,5 @@
 import { assinantesDespacho, type Despacho } from "@/lib/documento";
+import { NOME_ESCOLA } from '@/lib/document-identity';
 
 export function DispatchPreview({ opcao }: { opcao: Despacho }) {
   const gestoras = assinantesDespacho(opcao);
@@ -9,7 +10,7 @@ export function DispatchPreview({ opcao }: { opcao: Despacho }) {
         <div className="dispatch-heading">
           GOVERNO DO ESTADO DE RORAIMA<br />
           SECRETARIA DE EDUCAÇÃO E DESPORTO<br />
-          COLÉGIO ESTADUAL MILITARIZADO FERNANDO GRANGEIRO DE MENEZES<br />
+          {NOME_ESCOLA}<br />
           GRUPAMENTO DE COMUNICAÇÃO E MÍDIA - "CEMXXXIII NA MÍDIA"
         </div>
         <img src="/brand/midia.png" alt="" className="dispatch-logo" />

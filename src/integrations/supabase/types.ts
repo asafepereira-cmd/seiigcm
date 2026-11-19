@@ -708,6 +708,16 @@ export type Database = {
         Returns: boolean
       }
       acesso_processo: { Args: { _id: string; _uid: string }; Returns: boolean }
+      assinar_documento_autor: {
+        Args: {
+          _autor: string
+          _cpf?: string
+          _funcao: string
+          _id: string
+          _nome: string
+        }
+        Returns: undefined
+      }
       assinar_identificado: {
         Args: {
           _cpf?: string

@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DocumentViewer } from "@/components/DocumentViewer";
+import { DocumentPreview } from '@/components/DocumentPreview';
+import { ProcessTree } from '@/components/ProcessTree';
 import { processoFormatado, numeroFormatado, type Documento } from "@/lib/documento";
 
 export const Route = createFileRoute("/processos")({
@@ -39,6 +41,7 @@ function Processos() {
   const [paineis, setPaineis] = useState<{ user_id: string; nome: string; setor: string; tipo_painel: string }[]>([]);
   const [aberto, setAberto] = useState<Processo | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
+  const [selectedDoc,setSelectedDoc] = useState<string | null>(null);
   const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [novo, setNovo] = useState(false);
   const [tema, setTema] = useState("");
@@ -83,12 +86,14 @@ function Processos() {
   }, [ready, isAdmin, session?.user.id]);
 
   async function abrirDetalhes(p: Processo) {
-    setAberto(p); setDocs([]); setAnexos([]);
+    setAberto(p); setDocs([]); setAnexos([]); setSelectedDoc(null);
     const [d, a] = await Promise.all([
-      supabase.from("documentos").select("id,dados,status").eq("processo_id", p.id),
+      supabase.from("documentos").select("id,dados,status").eq("processo_id", p.id).order('created_at'),
       supabase.from("processo_anexos").select("id,nome,caminho,created_at,criado_por").eq("processo_id", p.id).order("created_at"),
     ]);
     setDocs((d.data as unknown as Doc[]) ?? []);
+    setSelectedDoc(d.data?.[0]?.id ?? null);
+    if (d.error || a.error) toast.error('Não foi possível carregar todos os documentos do processo.');
     setAnexos((a.data as Anexo[]) ?? []);
   }
 
@@ -234,6 +239,13 @@ function Processos() {
                 </Button>
               )}
               <h3 className="font-semibold">Documentos do processo</h3>
+              <div className="grid min-w-0 gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+                <ProcessTree title={tituloProcesso(aberto)} documents={docs} attachments={anexos} selected={selectedDoc} onSelect={setSelectedDoc} onAttachment={attachmentId => {const a=anexos.find(item=>item.id===attachmentId);if(a)void baixarAnexo(a);}}/>
+                <div className="min-w-0">
+                  {docs.find(d=>d.id===selectedDoc) && <><div className="mb-3 flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={()=>setVisualizandoDoc(selectedDoc)}>Registros e PDF</Button><Button variant="ghost" size="sm" onClick={()=>setSelectedDoc(null)}>Lista de documentos</Button></div><DocumentPreview doc={docs.find(d=>d.id===selectedDoc)?.dados as Documento}/></>}
+                  {!selectedDoc && <p className="text-sm text-muted-foreground">{docs.length} documento(s) no processo</p>}
+                </div>
+              </div>
               {docs.length === 0 && <p className="text-sm text-muted-foreground">Nenhum documento vinculado.</p>}
               {docs.map((d) => (
                 <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3">

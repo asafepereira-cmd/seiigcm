@@ -6,6 +6,10 @@ export function podeComentarDocumento(status: string) {
   return status === 'desenvolvendo';
 }
 
+export function podeAssinarComoEmissor(userId: string, criadoPor: string | null, permitido: boolean) {
+  return !!userId && userId === criadoPor && permitido;
+}
+
 export function acoesDocumentoRecebido(finalidade: string, assinadoEm: string | null) {
   return { editar: false, excluir: false, encaminhar: false, visualizar: true, comentar: true, exportar: true, assinar: finalidade === 'deferimento' && !assinadoEm };
 }

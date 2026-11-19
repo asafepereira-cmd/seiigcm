@@ -1,11 +1,49 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
+import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
+import { corrigirNome } from './document-identity';
+import { podeAssinarComoEmissor } from './document-access';
 import { cpfValido } from './sector';
 import { GESTORAS } from './documento';
 import { exigeIdentificacaoAssinatura, gestoraDaConta } from './signature-identity';
 import type { Documento } from './documento';
 import type { ExtrasPDF } from './assinaturas-eletronicas';
 const tokenInput = z.object({ token: z.string().min(20).max(100) });
+export const signAuthorDocument = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), password: z.string().min(1).max(128), nome: z.string().max(200).optional(), funcao: z.string().max(200).optional(), cpf: z.string().max(20).optional(), concordo: z.literal(true) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: doc } = await context.supabase.from('documentos').select('criado_por,dados').eq('id', data.id).single();
+    if (!doc) throw new Error('Documento indisponível.');
+    const { data: allowed } = await context.supabase.rpc('permissao_painel', { _uid: context.userId, _acao: 'assinar' });
+    if (!podeAssinarComoEmissor(context.userId,doc.criado_por,!!allowed)) throw new Error('Você precisa ser o autor e ter permissão para assinar.');
+    const { data: panel } = await context.supabase.from('paineis').select('tipo_painel,nome,funcao').eq('user_id',context.userId).maybeSingle();
+    const { data: roles } = await context.supabase.from('user_roles').select('role').eq('user_id',context.userId);
+    const manager = gestoraDaConta('', (roles ?? []).map(r => r.role));
+    const manual = panel?.tipo_painel === 'setor' && !manager;
+    if (manual && (!data.nome?.trim() || !data.funcao?.trim() || !cpfValido(data.cpf ?? ''))) throw new Error('Informe nome completo, função e CPF válido.');
+    const { data: account } = await context.supabase.auth.getUser();
+    const email = account.user?.email;
+    const url = process.env['SUPABASE_URL']; const key = process.env['SUPABASE_PUBLISHABLE_KEY'];
+    if (!email || !url || !key) throw new Error('Não foi possível conferir a conta.');
+    const { createClient } = await import('@supabase/supabase-js');
+    const verifier = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: (input, init) => {
+      const headers = new Headers(init?.headers);
+      if (key.startsWith('sb_') && headers.get('Authorization') === `Bearer ${key}`) headers.delete('Authorization');
+      headers.set('apikey',key); return fetch(input,{ ...init,headers });
+    } } });
+    const { data: signed, error } = await verifier.auth.signInWithPassword({ email,password:data.password });
+    if (error || signed.user?.id !== context.userId) throw new Error('Senha da conta incorreta.');
+    await verifier.auth.signOut({ scope:'local' });
+    const document = doc.dados as unknown as Documento;
+    const identity = manager ? GESTORAS[manager] : null;
+    const nome = corrigirNome(manual ? data.nome ?? '' : identity?.nome ?? panel?.nome ?? document.assinante);
+    const funcao = manual ? data.funcao ?? '' : identity?.cargo ?? panel?.funcao ?? document.cargo;
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { error: saveError } = await supabaseAdmin.rpc('assinar_documento_autor',{ _id:data.id,_autor:context.userId,_nome:nome,_funcao:funcao,_cpf:data.cpf ?? '' });
+    if (saveError) throw new Error('Não foi possível assinar: esta versão pode já estar assinada.');
+    return { ok:true };
+  });
 export const getSignRequest = createServerFn({ method: 'POST' }).inputValidator((d: unknown) => tokenInput.parse(d)).handler(async ({ data }) => {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const { data: req } = await supabaseAdmin.from('solicitacoes_assinatura').select('id,gestora,signatario_nome,signatario_funcao,termo,finalidade,decisao,observacoes,assinado_em,documento_id,versao').eq('token', data.token).maybeSingle();

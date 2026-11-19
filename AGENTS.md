@@ -32,3 +32,5 @@
 - Shared signature identity resolves manager roles for legacy/user links and PDF stamps; managers skip manual identification, other sectors retain it, and account passwords stay required. Why: sector-style manager panels must sign with the correct identity.
 - In-app completion notices are user subscriptions in documento_avisos read against the current document lifecycle. Why: every current-version signature must finish before presenting download readiness.
 - Filing validates ownership, process and recipient access; issued content stays unchanged, drafts snapshot process identity. Why: moves preserve signatures and recipient visibility.
+- Author signing uses server password checks and a service-only atomic RPC; edited author-signed content is versioned. Why: prevent impersonation and preserve signatures.
+- ProcessTree shares RLS-scoped navigation in processes and editor. Why: retain process context without widening access.

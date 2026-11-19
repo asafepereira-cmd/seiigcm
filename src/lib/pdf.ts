@@ -4,6 +4,7 @@ import { dataHora, type ExtrasPDF } from "./assinaturas-eletronicas";
 import { fontStyle, richBlocks, wrapRichParagraph, type TextRun } from "./rich-text";
 import signatureSeal from '@/assets/seii-signature-seal.png.asset.json';
 import { identidadeAssinatura } from './signature-identity';
+import { NOME_ESCOLA, corrigirNome } from './document-identity';
 
 async function loadImage(src: string): Promise<string> {
   const res = await fetch(src);
@@ -18,7 +19,7 @@ async function loadImage(src: string): Promise<string> {
 const HEADER = [
   "GOVERNO DO ESTADO DE RORAIMA",
   "SECRETARIA DE EDUCAÇÃO E DESPORTO",
-  "COLÉGIO ESTADUAL MILITARIZADO FERNANDO GRANGEIRO DE MENEZES",
+  NOME_ESCOLA,
   "COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII",
 ];
 
@@ -265,11 +266,11 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     pdf.setDrawColor(0, 0, 0);
   };
 
-  if (extras.emitidoEm) {
+  if (extras.emitidoEm && !extras.assinaturas?.some(a => a.gestora.startsWith('emissor:') && a.assinadoEm)) {
     const { data, hora } = dataHora(extras.emitidoEm);
     pdf.setFontSize(12);
     y += 8;
-    const text = `Documento assinado eletronicamente por ${doc.assinante.toUpperCase()}, ${doc.cargo}, em ${data}, às ${hora}, conforme portaria interna de legalização do S.E.I.I GCM.`;
+    const text = `Documento assinado eletronicamente por ${corrigirNome(doc.assinante).toUpperCase()}, ${doc.cargo}, em ${data}, às ${hora}, conforme portaria interna de legalização do S.E.I.I GCM.`;
     ensure(stampHeight(text));
     y += carimbo(text, y);
   }

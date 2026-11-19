@@ -1,5 +1,6 @@
 import { dataExtenso, identificacaoDocumento, type Documento } from "@/lib/documento";
 import { richBlocks } from "@/lib/rich-text";
+import { NOME_ESCOLA } from '@/lib/document-identity';
 export function DocumentPreview({ doc }: { doc: Documento }) {
   const paras = doc.corpo.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   return (
@@ -7,7 +8,7 @@ export function DocumentPreview({ doc }: { doc: Documento }) {
       <div className="flex items-center gap-2 border-b border-paper-ink/60 pb-1">
         <img src="/brand/brasao.png" alt="" className="w-[11%]" />
         <div className="document-header-text flex-1 text-center text-[0.8em] font-bold">
-          GOVERNO DO ESTADO DE RORAIMA<br />SECRETARIA DE EDUCAÇÃO E DESPORTO<br />COLÉGIO ESTADUAL MILITARIZADO FERNANDO GRANGEIRO DE MENEZES<br />{doc.setor?.toUpperCase() || 'COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII'}
+          GOVERNO DO ESTADO DE RORAIMA<br />SECRETARIA DE EDUCAÇÃO E DESPORTO<br />{NOME_ESCOLA}<br />{doc.setor?.toUpperCase() || 'COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII'}
         </div>
         <img src={doc.setor ? "/brand/governo.png" : "/brand/midia.png"} alt="" className={doc.setor ? "w-[10%]" : "w-[15%]"} />
       </div>

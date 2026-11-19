@@ -1,4 +1,5 @@
 import { GESTORAS } from './documento';
+import { corrigirNome } from './document-identity';
 
 export function gestoraDaConta(gestora: string, roles: readonly string[]) {
   if (gestora === 'pedagogica' || roles.includes('pedagogica')) return 'pedagogica';
@@ -12,5 +13,5 @@ export function exigeIdentificacaoAssinatura(gestora: string, tipoPainel: string
 
 export function identidadeAssinatura<T extends { gestora: string; nome?: string | null; cargo?: string | null }>(s: T): Omit<T, 'nome' | 'cargo'> & { nome: string; cargo: string } {
   const gestora = GESTORAS[s.gestora as keyof typeof GESTORAS];
-  return { ...s, nome: s.nome?.trim() || gestora?.nome || 'Signatário identificado', cargo: s.cargo?.trim() || gestora?.cargo || '' };
+  return { ...s, nome: corrigirNome(s.nome?.trim() || gestora?.nome || 'Signatário identificado'), cargo: s.cargo?.trim() || gestora?.cargo || '' };
 }
