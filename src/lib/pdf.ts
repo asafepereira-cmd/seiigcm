@@ -4,7 +4,7 @@ import { dataHora, type ExtrasPDF } from "./assinaturas-eletronicas";
 import { fontStyle, richBlocks, wrapRichParagraph, type TextRun } from "./rich-text";
 import signatureSeal from '@/assets/seii-signature-seal.png.asset.json';
 import { identidadeAssinatura } from './signature-identity';
-import { NOME_ESCOLA, corrigirNome } from './document-identity';
+import { LEMA_ESTADUAL, NOME_ESCOLA, corrigirNome } from './document-identity';
 
 async function loadImage(src: string): Promise<string> {
   const res = await fetch(src);
@@ -16,11 +16,12 @@ async function loadImage(src: string): Promise<string> {
   });
 }
 
-const HEADER = [
-  "GOVERNO DO ESTADO DE RORAIMA",
-  "SECRETARIA DE EDUCAÇÃO E DESPORTO",
-  NOME_ESCOLA,
-  "COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII",
+export const HEADER: { texto: string; italico?: boolean }[] = [
+  { texto: "GOVERNO DO ESTADO DE RORAIMA" },
+  { texto: LEMA_ESTADUAL, italico: true },
+  { texto: "SECRETARIA DE EDUCAÇÃO E DESPORTO" },
+  { texto: NOME_ESCOLA },
+  { texto: "COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII" },
 ];
 
 export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF = {}) {
@@ -35,9 +36,11 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   const header = () => {
     pdf.addImage(brasao, "PNG", 12, 7, 20, 20, undefined, "FAST");
     if (doc.setor) pdf.addImage(midia, "PNG", 180, 7, 18, 20, undefined, "FAST"); else pdf.addImage(midia, "PNG", 170, 11, 28, 10, undefined, "FAST");
-    pdf.setFont("times", "bold");
     pdf.setFontSize(8.5);
-    HEADER.forEach((l, i) => pdf.text(i === 3 && doc.setor ? doc.setor.toUpperCase() : l, 105, 12 + i * HEADER_LH, { align: "center" }));
+    HEADER.forEach((l, i) => {
+      pdf.setFont("times", l.italico ? "italic" : "bold");
+      pdf.text(i === HEADER.length - 1 && doc.setor ? doc.setor.toUpperCase() : l.texto, 105, 12 + i * HEADER_LH, { align: "center" });
+    });
     pdf.setLineWidth(0.2);
     pdf.line(46, 28, 158, 28);
   };

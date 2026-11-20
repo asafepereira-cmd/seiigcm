@@ -1,5 +1,5 @@
 import { assinantesDespacho, type Despacho } from "@/lib/documento";
-import { NOME_ESCOLA } from '@/lib/document-identity';
+import { LEMA_ESTADUAL, NOME_ESCOLA } from '@/lib/document-identity';
 
 export function DispatchPreview({ opcao }: { opcao: Despacho }) {
   const gestoras = assinantesDespacho(opcao);
@@ -9,6 +9,7 @@ export function DispatchPreview({ opcao }: { opcao: Despacho }) {
         <img src="/brand/brasao.png" alt="" className="dispatch-crest" />
         <div className="dispatch-heading">
           GOVERNO DO ESTADO DE RORAIMA<br />
+          <i>{LEMA_ESTADUAL}</i><br />
           SECRETARIA DE EDUCAÇÃO E DESPORTO<br />
           {NOME_ESCOLA}<br />
           GRUPAMENTO DE COMUNICAÇÃO E MÍDIA - "CEMXXXIII NA MÍDIA"
