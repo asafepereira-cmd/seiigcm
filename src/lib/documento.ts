@@ -71,7 +71,7 @@ export function numeroValido(numero: number) {
   return Number.isSafeInteger(numero) && numero > 0;
 }
 
-export function documentoSemDestinatario(tipo: string) { return ['edital','termo'].includes(tipo.toLocaleLowerCase('pt-BR')); }
+export function documentoSemDestinatario(tipo: string) { return ['edital','termo','contrato'].includes(tipo.toLocaleLowerCase('pt-BR')); }
 
 export function hojeISO() {
   const d = new Date();

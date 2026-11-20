@@ -232,6 +232,13 @@
       "when": 1795061730667,
       "tag": "0032_allow_author_signature_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795188869751,
+      "tag": "0033_unit_templates_signature_blocks",
+      "breakpoints": true
     }
   ]
 }

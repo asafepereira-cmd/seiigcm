@@ -12,7 +12,7 @@
 - Documents are generated client-side with jsPDF in `src/lib/pdf.ts`; the on-screen preview in `src/routes/index.tsx` must mirror it. Why: no server PDF runtime on Workers.
 - Internal document process metadata is validated and snapshotted by salvar_documento; the shared identification helper drives PDF and preview. Why: process identity stays consistent across exports and archived versions.
 - Manual document numbers are validated atomically in salvar_documento per type and year; reediting issued documents archives previous versions. Why: user-selected numbers must persist without silent renumbering or concurrent collisions.
-- New document number suggestions share the type-and-year numbering helper across the editor and term generator. Why: one document category must never consume another category's sequence.
+- All document types use the unified editor and shared type-and-year numbering helper; legacy terms navigation redirects to Documents. Why: avoid divergent creation workflows.
 - The first shared administrator account uses `createFirstAccount` only when no auth users exist; only authenticated administrators may create manager accounts through server functions, with roles in `user_roles`; the UI never calls signUp. Why: no public registration or client-controlled privileges.
 - Optional document JSON fields remain backward compatible; shared identification drives edital qualifier/theme/date in PDF and preview. Why: archived documents retain consistent exports.
 - PDF paragraph justification places words using measured widths, leaving each final line natural. Why: single-line jsPDF justification does not reliably expand word spacing.
@@ -34,3 +34,5 @@
 - Filing validates ownership, process and recipient access; issued content stays unchanged, drafts snapshot process identity. Why: moves preserve signatures and recipient visibility.
 - Author signing uses server password checks and a service-only atomic RPC; edited author-signed content is versioned. Why: prevent impersonation and preserve signatures.
 - ProcessTree shares RLS-scoped navigation in processes and editor. Why: retain process context without widening access.
+- Unit templates are account-scoped through RLS, including shared sector accounts, and copy content only. Why: reuse text without copying identities, numbers or signatures.
+- Signature blocks snapshot document versions and use one password verification plus a service-only atomic RPC that rechecks every assignment. Why: stale or unauthorized items must roll back the entire block.

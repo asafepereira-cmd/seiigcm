@@ -179,6 +179,33 @@ export type Database = {
         }
         Relationships: []
       }
+      blocos_assinatura: {
+        Row: {
+          assinado_em: string | null
+          created_at: string
+          id: string
+          itens: Json
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          assinado_em?: string | null
+          created_at?: string
+          id?: string
+          itens: Json
+          nome: string
+          user_id?: string
+        }
+        Update: {
+          assinado_em?: string | null
+          created_at?: string
+          id?: string
+          itens?: Json
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       documento_avisos: {
         Row: {
           created_at: string
@@ -393,6 +420,33 @@ export type Database = {
           created_at?: string
           id?: string
           nome?: string
+        }
+        Relationships: []
+      }
+      modelos_unidade: {
+        Row: {
+          conteudo: Json
+          created_at: string
+          id: string
+          nome: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          conteudo: Json
+          created_at?: string
+          id?: string
+          nome: string
+          tipo: string
+          user_id?: string
+        }
+        Update: {
+          conteudo?: Json
+          created_at?: string
+          id?: string
+          nome?: string
+          tipo?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -708,6 +762,17 @@ export type Database = {
         Returns: boolean
       }
       acesso_processo: { Args: { _id: string; _uid: string }; Returns: boolean }
+      assinar_bloco: {
+        Args: {
+          _autor: string
+          _bloco: string
+          _cpf: string
+          _decisao: string
+          _funcao: string
+          _nome: string
+        }
+        Returns: number
+      }
       assinar_documento_autor: {
         Args: {
           _autor: string

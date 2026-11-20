@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { isStatusDocumento, ordenarEmitidos, STATUS_DOCUMENTO, type StatusDocumento } from "@/lib/emitidos";
 import { identificacaoDocumento, processoFormatado, type Documento } from "@/lib/documento";
 import { DocumentViewer } from "@/components/DocumentViewer";
+import { SignatureBlocks } from '@/components/SignatureBlocks';
 import { podeEditarDocumento, acoesDocumentoRecebido } from "@/lib/document-access";
 
 export const Route = createFileRoute("/historico")({
@@ -151,7 +152,8 @@ function Historico() {
     <div className="min-h-screen">
       <AppHeader />
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <h1 className="mb-4 text-2xl font-bold text-primary-foreground">Documentos</h1>
+        <div className="mb-4 flex flex-wrap items-center gap-2"><h1 className="mr-auto text-2xl font-bold text-primary-foreground">Documentos</h1><Button asChild variant="secondary"><Link to="/" search={{}}>Novo documento</Link></Button></div>
+        <div className="mb-5"><SignatureBlocks onSigned={() => { void load(); }} /></div>
         <div className="mb-3 flex flex-wrap gap-2"><select aria-label="Buscar por" className="h-9 rounded-md border bg-card px-2 text-sm text-card-foreground" value={campoBusca} onChange={e=>setCampoBusca(e.target.value as typeof campoBusca)}><option value="tema">Tema / assunto</option><option value="texto">Texto</option><option value="numero">Número</option></select><Input aria-label="Buscar documentos" placeholder="Buscar documentos" className="min-w-40 flex-1 bg-card text-card-foreground" value={busca} onChange={e=>setBusca(e.target.value)}/></div><div className="mb-4 flex gap-2">{(['todos','enviados','recebidos'] as const).map(a=><Button key={a} size="sm" variant={aba===a?'secondary':'outline'} onClick={()=>setAba(a)}>{a==='todos'?'Todos':a==='enviados'?'Enviados':'Recebidos'}</Button>)}</div>
         {loadError ? (
           <Button variant="outline" onClick={load}>Tentar novamente</Button>
@@ -163,12 +165,12 @@ function Historico() {
           <ul className="space-y-3">
             {rows.filter(casaBusca).filter(r=>aba==='todos'||(aba==='enviados'?r.criado_por===session?.user.id:r.criado_por!==session?.user.id&&!!received[r.id])).map((r) => (
               <li key={r.id} className={`flex flex-col gap-3 rounded-lg border border-status-ink/15 p-4 text-status-ink sm:flex-row sm:items-center ${STATUS_DOCUMENTO[r.status]?.className ?? STATUS_DOCUMENTO.desenvolvendo.className}`}>
-                <div className="mr-auto min-w-0">
+                <div className="mr-auto min-w-0 flex-1 sm:min-w-48">
                   <p className="font-sans font-bold break-words">{identificacaoDocumento(r.dados)}</p>
                   <p className="break-words text-sm opacity-80">{r.assunto}</p>
                   {isReceived(r)&&<p className="mt-1 text-sm">Enviado para {Array.from(new Set(received[r.id]?.map(x=>x.finalidade==='ciencia'?'ciência':'deferimento'))).join(' e ')} por: {senders[r.criado_por??'']||r.dados.setor||r.dados.assinante||r.dados.de}</p>}
                 </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2 sm:max-w-[65%]">
                   <span className="text-sm font-semibold">{STATUS_DOCUMENTO[r.status].label}</span>
                   {!isReceived(r) && podeEditarDocumento(isAdmin,session?.user.id??'',r) && <Button size="sm" onClick={()=>alterarStatus(r.id,"enviado")}>Encaminhar assinaturas</Button>}
                   <Button size="sm" variant="outline" onClick={()=>setView(r.id)}>Visualizar</Button>

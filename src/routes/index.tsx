@@ -12,6 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { signAuthorDocument } from '@/lib/assinatura.functions';
 import { corrigirNome } from '@/lib/document-identity';
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { UnitTemplates } from '@/components/UnitTemplates';
+import { tipoLivre } from '@/lib/document-models';
+import { documentoSemDestinatario } from '@/lib/documento';
 import { prepararFoto } from "@/lib/document-photo";
 import { richParagraphs } from "@/lib/rich-text";
 import { Button } from "@/components/ui/button";
@@ -241,7 +244,9 @@ function Editor() {
                   try {
                     const numero = await proximoNumeroDocumento(tipo, doc.ano);
                     const m = modeloTipo(tipo);
-                    setDoc(current => current ? { ...current, tipo, numero, ...(m && !current.corpo.trim() ? { vocativo: m.vocativo, corpo: m.corpo, fecho: m.fecho, corpoFormatado: undefined } : {}) } : current);
+                    if (tipoLivre(tipo) && doc.corpo.trim() && !confirm('Este tipo começa em branco. Limpar o texto atual?')) return;
+                    setDoc(current => current ? { ...current, tipo, numero, ...(tipoLivre(tipo) ? { para: '', de: '', assunto: '', vocativo: '', corpo: '', fecho: '', corpoFormatado: undefined, lista: [], tituloLista: '' } : m && !current.corpo.trim() ? { vocativo: m.vocativo, corpo: m.corpo, fecho: m.fecho, corpoFormatado: undefined } : {}) } : current);
+                    if (tipoLivre(tipo)) setListaTexto('');
                   } catch (error) { toast.error(error instanceof Error ? error.message : 'Falha ao consultar numeração.'); }
                   finally { setSaving(false); }
                 }}>
@@ -258,14 +263,15 @@ function Editor() {
             </div>
           </Group>
 
-          {doc.tipo !== "Edital" && <Group title="Destinatário">
+          {!documentoSemDestinatario(doc.tipo) && <Group title="Destinatário">
             <F label="Para"><Input value={doc.para} onChange={(e) => set("para", e.target.value)} /></F>
             <F label="De"><Input value={doc.de} onChange={(e) => set("de", e.target.value)} /></F>
           </Group>}
 
           <Group title="Conteúdo">
-            <F label={doc.tipo === 'Edital' ? 'Tema do edital' : 'Assunto'}><Textarea aria-label={doc.tipo === 'Edital' ? 'Tema do edital' : 'Assunto'} rows={2} value={doc.assunto} onChange={(e) => set("assunto", e.target.value)} /></F>
-            <F label="Vocativo"><Input value={doc.vocativo} onChange={(e) => set("vocativo", e.target.value)} /></F>
+            <UnitTemplates doc={full} onApply={model => { setDoc(model); setListaTexto(listaParaTexto(model.lista)); }} />
+            <F label={doc.tipo === 'Edital' ? 'Tema do edital' : tipoLivre(doc.tipo) ? 'Título (opcional)' : 'Assunto'}><Textarea aria-label={doc.tipo === 'Edital' ? 'Tema do edital' : tipoLivre(doc.tipo) ? 'Título (opcional)' : 'Assunto'} rows={2} value={doc.assunto} onChange={(e) => set("assunto", e.target.value)} /></F>
+            {!tipoLivre(doc.tipo) && <F label="Vocativo"><Input value={doc.vocativo} onChange={(e) => set("vocativo", e.target.value)} /></F>}
             <F label="Texto (separe parágrafos com uma linha em branco)">
                 <RichTextEditor text={doc.corpo} content={doc.corpoFormatado} onChange={(corpo, corpoFormatado) => setDoc((current) => current ? { ...current, corpo, corpoFormatado } : current)} />
             </F>
@@ -295,9 +301,9 @@ function Editor() {
             </div>
           </Group>
 
-          <Group title="Encerramento">
+          {!tipoLivre(doc.tipo) && <Group title="Encerramento">
             <F label="Fecho"><Textarea rows={2} value={doc.fecho} onChange={(e) => set("fecho", e.target.value)} /></F>
-          </Group>
+          </Group>}
 
           {<Group title="Encaminhamento">
             {selectedRecipients.map(p=><div className="flex items-center gap-2" key={p.id}><span className="mr-auto font-semibold">{p.nome}</span><Button size="icon" variant="ghost" aria-label={`Remover ${p.nome}`} onClick={()=>setSelectedRecipients(current=>current.filter(r=>r.id!==p.id))}><X className="h-4 w-4"/></Button></div>)}

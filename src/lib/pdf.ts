@@ -1,5 +1,5 @@
 import type { Documento } from "./documento";
-import { dataExtenso, identificacaoDocumento } from "./documento";
+import { dataExtenso, identificacaoDocumento, documentoSemDestinatario } from "./documento";
 import { dataHora, type ExtrasPDF } from "./assinaturas-eletronicas";
 import { fontStyle, richBlocks, wrapRichParagraph, type TextRun } from "./rich-text";
 import signatureSeal from '@/assets/seii-signature-seal.png.asset.json';
@@ -61,7 +61,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   pdf.setFont("times", "bold");
   pdf.setFontSize(13);
   const identification = pdf.splitTextToSize(identificacaoDocumento(doc), TW) as string[];
-  pdf.text(identification, ML, y);
+  pdf.text(identification, documentoSemDestinatario(doc.tipo) ? W / 2 : ML, y, { align: documentoSemDestinatario(doc.tipo) ? 'center' : 'left' });
   y += identification.length * 6;
   if (doc.processo) {
     pdf.setFontSize(12);
@@ -114,12 +114,12 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   };
 
   pdf.setFontSize(12);
-  if (doc.tipo !== "Edital") {
+  if (!documentoSemDestinatario(doc.tipo)) {
     labelLine("Para:", doc.para, true);
     labelLine("De:", doc.de, true);
     y += LH * 0.7;
   }
-  if (doc.tipo === 'Edital') {
+  if (documentoSemDestinatario(doc.tipo)) {
     pdf.setFont('times', 'bold');
     const tema = pdf.splitTextToSize(doc.assunto, TW) as string[];
     for (const line of tema) { ensure(LH); pdf.text(line, W / 2, y, { align: 'center' }); y += LH; }

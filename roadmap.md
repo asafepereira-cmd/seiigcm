@@ -1,5 +1,11 @@
 # Roadmap
 
+## Pedido 20/11 — documentos unificados
+- [x] Incluir Termo e Contrato no editor, vazios e sem questionário; redirecionar página antiga
+- [x] Modelos favoritos persistentes da unidade no editor
+- [x] Blocos persistentes de assinatura com senha única e validação de versões/acesso
+- [ ] Testar criação, modelos e assinatura em bloco
+
 ## Pedido 19/11
 - [ ] Corrigir identidade da escola e espaçamento do nome nas exibições
 - [ ] Árvore de processos com seleção de documentos e anexos

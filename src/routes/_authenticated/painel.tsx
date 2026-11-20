@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { lerAssinaturaPng } from '@/lib/assinatura';
 import { toast } from 'sonner';
 import { DocumentViewer } from '@/components/DocumentViewer';
+import { SignatureBlocks } from '@/components/SignatureBlocks';
 import { DocumentNotifications } from '@/components/DocumentNotifications';
 import { SectorCollaborators } from "@/components/SectorCollaborators";
 const options = queryOptions({queryKey:['painel'],queryFn:()=>getPainel(),refetchInterval:15_000,refetchOnWindowFocus:'always',refetchOnReconnect:'always'});
@@ -34,5 +35,5 @@ function Painel(){
   {data.admin&&<>
   <section className="space-y-3 border-t border-primary-foreground/30 pt-4 text-primary-foreground"><h2 className="text-lg font-bold">Funções para assinatura</h2><form className="flex gap-2" onSubmit={e=>{e.preventDefault();adicionarFuncao();}}><Input aria-label="Nova função" className="bg-card text-card-foreground" required maxLength={200} value={funcao} onChange={e=>setFuncao(e.target.value)}/><Button type="submit">Adicionar</Button></form>{data.funcoes.map(f=><div key={f.id} className="flex items-center justify-between gap-2"><span>{f.nome}</span><Button variant="outline" size="sm" onClick={async()=>{const {error}=await supabase.from('funcoes_predefinidas').delete().eq('id',f.id);if(error)toast.error('Não foi possível excluir.');else refetch();}}>Remover</Button></div>)}</section>
   </>}
-  <DocumentNotifications/><SectorCollaborators/><DocumentViewer id={view} onClose={()=>setView(null)}/></main></div>;
+  <SignatureBlocks onSigned={() => { void refetch(); }}/><DocumentNotifications/><SectorCollaborators/><DocumentViewer id={view} onClose={()=>setView(null)}/></main></div>;
 }

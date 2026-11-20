@@ -5,6 +5,7 @@ export const CATALOGO_TIPOS: { grupo: string; tipos: string[] }[] = [
   { grupo: 'Atos normativos', tipos: ['Portaria', 'Ordem de Serviço', 'Edital'] },
   { grupo: 'Registros', tipos: ['Ata', 'Relatório', 'Certidão', 'Declaração'] },
   { grupo: 'Solicitações', tipos: ['Requerimento'] },
+  { grupo: 'Instrumentos', tipos: ['Termo', 'Contrato'] },
 ];
 
 export const TIPOS_DOCUMENTO = CATALOGO_TIPOS.flatMap((g) => g.tipos);

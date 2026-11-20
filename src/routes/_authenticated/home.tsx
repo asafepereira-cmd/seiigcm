@@ -47,7 +47,6 @@ function Home() {
   const botoes: { label: string; to: string; icon: typeof FilePlus2; show: boolean }[] = [
     { label: 'Novo processo', to: '/processos', icon: FolderOpen, show: podeEmitir },
     { label: 'Novo documento', to: '/', icon: FilePlus2, show: podeEmitir },
-    { label: 'Novo termo/contrato', to: '/termos', icon: ScrollText, show: podeEmitir },
     { label: 'Acessar painel para assinaturas', to: '/painel', icon: FileSignature, show: true },
     { label: 'Arquivos', to: '/arquivos', icon: FileText, show: true },
     { label: 'Acessar processos', to: '/processos', icon: ClipboardList, show: true },
