@@ -1,3 +1,4 @@
+import { CATALOGO_TIPOS, TIPOS_DOCUMENTO, modeloTipo } from '@/lib/tipos-documento';
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Download, Save, Sparkles, FilePlus2, Upload, X, Check, Circle, Plus, PenLine } from "lucide-react";
@@ -239,14 +240,13 @@ function Editor() {
                   setSaving(true);
                   try {
                     const numero = await proximoNumeroDocumento(tipo, doc.ano);
-                    setDoc(current => current ? { ...current, tipo, numero } : current);
+                    const m = modeloTipo(tipo);
+                    setDoc(current => current ? { ...current, tipo, numero, ...(m && !current.corpo.trim() ? { vocativo: m.vocativo, corpo: m.corpo, fecho: m.fecho, corpoFormatado: undefined } : {}) } : current);
                   } catch (error) { toast.error(error instanceof Error ? error.message : 'Falha ao consultar numeração.'); }
                   finally { setSaving(false); }
                 }}>
-                  <option>Ofício</option>
-                  <option>Memorando</option>
-                  <option>Edital</option>
-                  {doc.tipo !== 'Ofício' && doc.tipo !== 'Memorando' && doc.tipo !== 'Edital' && <option>{doc.tipo}</option>}
+                  {CATALOGO_TIPOS.map(g => <optgroup key={g.grupo} label={g.grupo}>{g.tipos.map(t => <option key={t}>{t}</option>)}</optgroup>)}
+                  {!TIPOS_DOCUMENTO.includes(doc.tipo) && <option>{doc.tipo}</option>}
                 </select>
               </F>
               <F label="Número"><Input aria-label="Número do documento" type="number" min={1} step={1} value={doc.numero} onChange={(e) => set("numero", Number(e.target.value))} /></F>
