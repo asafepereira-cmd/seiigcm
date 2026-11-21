@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { cpfValido } from './sector';
 import { GESTORAS } from './documento';
-import { corrigirNome } from './document-identity';
+import { corrigirNome, identidadeEmissor } from './document-identity';
 import { gestoraDaConta } from './signature-identity';
 
 export const signBlock = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
@@ -22,7 +22,7 @@ export const signBlock = createServerFn({ method: 'POST' }).middleware([requireS
     if (manual && (!data.nome.trim() || !data.funcao.trim() || !cpfValido(data.cpf))) throw new Error('Informe nome, função e CPF válido.');
     const identity = manager ? GESTORAS[manager] : null;
     const nome = corrigirNome(manual ? data.nome : identity?.nome ?? panel?.nome ?? '');
-    const funcao = manual ? data.funcao : identity?.cargo ?? panel?.funcao ?? '';
+    const funcao = manual ? data.funcao : identity?.cargo ?? identidadeEmissor({}, panel).funcao;
     if (!nome || !funcao) throw new Error('Cadastre nome e função no painel antes de assinar.');
     const url = process.env['SUPABASE_URL']; const key = process.env['SUPABASE_PUBLISHABLE_KEY'];
     const email = account.user?.email;

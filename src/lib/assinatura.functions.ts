@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { corrigirNome } from './document-identity';
+import { corrigirNome, identidadeEmissor } from './document-identity';
 import { podeAssinarComoEmissor } from './document-access';
 import { cpfValido } from './sector';
 import { GESTORAS } from './documento';
@@ -37,8 +37,10 @@ export const signAuthorDocument = createServerFn({ method: 'POST' })
     await verifier.auth.signOut({ scope:'local' });
     const document = doc.dados as unknown as Documento;
     const identity = manager ? GESTORAS[manager] : null;
-    const nome = corrigirNome(manual ? data.nome ?? '' : identity?.nome ?? panel?.nome ?? document.assinante);
-    const funcao = manual ? data.funcao ?? '' : identity?.cargo ?? panel?.funcao ?? document.cargo;
+    const authorIdentity = identidadeEmissor(document, panel);
+    const nome = corrigirNome(manual ? data.nome ?? '' : identity?.nome ?? authorIdentity.nome);
+    const funcao = manual ? data.funcao ?? '' : identity?.cargo ?? authorIdentity.funcao;
+    if (!nome || !funcao) throw new Error('Informe a função institucional no documento ou no perfil antes de assinar.');
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     const { error: saveError } = await supabaseAdmin.rpc('assinar_documento_autor',{ _id:data.id,_autor:context.userId,_nome:nome,_funcao:funcao,_cpf:data.cpf ?? '' });
     if (saveError) throw new Error('Não foi possível assinar: esta versão pode já estar assinada.');

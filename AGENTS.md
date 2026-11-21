@@ -33,6 +33,7 @@
 - In-app completion notices are user subscriptions in documento_avisos read against the current document lifecycle. Why: every current-version signature must finish before presenting download readiness.
 - Filing validates ownership, process and recipient access; issued content stays unchanged, drafts snapshot process identity. Why: moves preserve signatures and recipient visibility.
 - Author signing uses server password checks and a service-only atomic RPC; edited author-signed content is versioned. Why: prevent impersonation and preserve signatures.
+- Author identity prefers the document's institutional position and rejects technical role labels, including in blocks. Why: access roles are not signature titles.
 - ProcessTree shares RLS-scoped navigation in processes and editor. Why: retain process context without widening access.
 - Unit templates are account-scoped through RLS, including shared sector accounts, and copy content only. Why: reuse text without copying identities, numbers or signatures.
 - Signature blocks snapshot document versions and use one password verification plus a service-only atomic RPC that rechecks every assignment. Why: stale or unauthorized items must roll back the entire block.

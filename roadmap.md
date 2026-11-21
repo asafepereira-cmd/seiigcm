@@ -1,5 +1,10 @@
 # Roadmap
 
+## Pedido 21/11 — identidade de assinatura
+- [ ] Priorizar cargo institucional nas assinaturas individuais e em bloco
+- [ ] Corrigir perfil e assinaturas do Termo 003 e Ofício 15, inclusive snapshots
+- [ ] Testar identidade e conferir exportação real
+
 ## Pedido 21/11 — cabeçalho e editor
 - [x] Cabeçalho SEI centralizado no PDF e prévias; texto de validação combinado
 - [x] Barra única de ações e encaminhamento sem repetir assinatura do emissor
