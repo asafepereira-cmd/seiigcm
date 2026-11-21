@@ -230,7 +230,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     pdf.setFontSize(10);
     return wrapRichParagraph(runs, TW - 30, run => {
       pdf.setFont('times', fontStyle(run));
-      return pdf.getTextWidth(run.text);
+      return run.text === ' ' ? Math.max(1.2, pdf.getTextWidth(' ')) : pdf.getTextWidth(run.text);
     });
   };
   const stampHeight = (text: string) => Math.max(26, stampLines(text).length * 4.5 + 8);
@@ -247,8 +247,11 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
       let x = ML + 30;
       line.runs.forEach(run => {
         pdf.setFont('times', fontStyle(run));
-        pdf.text(run.text, x, top + (h - lines.length * 4.5) / 2 + 3.5 + i * 4.5);
-        x += pdf.getTextWidth(run.text);
+        if (run.text === ' ') x += Math.max(1.2, pdf.getTextWidth(' '));
+        else {
+          pdf.text(run.text, x, top + (h - lines.length * 4.5) / 2 + 3.5 + i * 4.5);
+          x += pdf.getTextWidth(run.text);
+        }
       });
     });
     pdf.setDrawColor(0, 0, 0);
