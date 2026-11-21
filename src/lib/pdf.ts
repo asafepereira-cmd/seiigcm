@@ -1,7 +1,7 @@
 import type { Documento } from "./documento";
 import { dataExtenso, identificacaoDocumento, documentoSemDestinatario } from "./documento";
 import { dataHora, type ExtrasPDF } from "./assinaturas-eletronicas";
-import { fontStyle, richBlocks, wrapRichParagraph, type TextRun } from "./rich-text";
+import { fontStyle, richBlocks, wrapRichParagraph, unirTrechos, type TextRun } from "./rich-text";
 import signatureSeal from '@/assets/seii-signature-seal.png.asset.json';
 import { identidadeAssinatura } from './signature-identity';
 import { LEMA_ESTADUAL, GOVERNO_ESTADUAL, VALIDACAO_ASSINATURA, corrigirNome } from './document-identity';
@@ -245,13 +245,10 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     pdf.addImage(seal, 'PNG', ML + 1, top + (h - 18) / 2, 26.5, 18);
     lines.forEach((line, i) => {
       let x = ML + 30;
-      line.runs.forEach(run => {
+      unirTrechos(line.runs).forEach(run => {
         pdf.setFont('times', fontStyle(run));
-        if (run.text === ' ') x += Math.max(1.2, pdf.getTextWidth(' '));
-        else {
-          pdf.text(run.text, x, top + (h - lines.length * 4.5) / 2 + 3.5 + i * 4.5);
-          x += pdf.getTextWidth(run.text);
-        }
+        pdf.text(run.text, x, top + (h - lines.length * 4.5) / 2 + 3.5 + i * 4.5);
+        x += pdf.getTextWidth(run.text);
       });
     });
     pdf.setDrawColor(0, 0, 0);

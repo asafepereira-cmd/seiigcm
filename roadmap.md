@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Pedido 21/11 — identidade de assinatura
-- [ ] Priorizar cargo institucional nas assinaturas individuais e em bloco
-- [ ] Corrigir perfil e assinaturas do Termo 003 e Ofício 15, inclusive snapshots
-- [ ] Testar identidade e conferir exportação real
+- [x] Corrigir espaço visual de SILVA FELIX no carimbo; PDF inspecionado
+- [x] Priorizar cargo institucional nas assinaturas individuais e em bloco
+- [x] Corrigir perfil e assinaturas do Termo 003 e Ofício 15, inclusive snapshots
+- [x] 21 testes; quatro exportações reais conferidas (atual e v1 de ambos documentos)
 
 ## Pedido 21/11 — cabeçalho e editor
 - [x] Cabeçalho SEI centralizado no PDF e prévias; texto de validação combinado

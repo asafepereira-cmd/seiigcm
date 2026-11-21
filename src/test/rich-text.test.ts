@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { fontStyle, plainToRich, richParagraphs, richToPlain, wrapRichParagraph } from "@/lib/rich-text";
+import { fontStyle, plainToRich, richParagraphs, richToPlain, wrapRichParagraph, unirTrechos } from "@/lib/rich-text";
 
 describe("Formatação do texto principal", () => {
+  it('preserva SILVA FELIX em um único trecho do carimbo, com espaço real', () => {
+    const mark = { bold: true, italic: false, underline: false };
+    expect(unirTrechos([{ ...mark, text: 'SILVA' }, { ...mark, text: ' ' }, { ...mark, text: 'FELIX' }])).toEqual([{ ...mark, text: 'SILVA FELIX' }]);
+  });
   it("mantém documentos anteriores e parágrafos sem formatação", () => {
     const text = "Texto antigo\nsegunda linha\n\nOutro parágrafo";
     expect(richToPlain(plainToRich(text))).toBe(text);

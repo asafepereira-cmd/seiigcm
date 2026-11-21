@@ -41,6 +41,15 @@ export function fontStyle(run: TextRun) {
 }
 
 export type RichLine = { runs: TextRun[]; justify: boolean };
+export function unirTrechos(runs: TextRun[]): TextRun[] {
+  const result: TextRun[] = [];
+  for (const run of runs) {
+    const previous = result.at(-1);
+    if (previous && fontStyle(previous) === fontStyle(run) && previous.underline === run.underline && previous.fontSize === run.fontSize) previous.text += run.text;
+    else result.push({ ...run });
+  }
+  return result;
+}
 export function wrapRichParagraph(runs: TextRun[], width: number, measure: (run: TextRun) => number): RichLine[] {
   const lines: RichLine[] = [];
   let current: TextRun[] = [];
