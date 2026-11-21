@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { DocumentPreview } from '../components/DocumentPreview';
 import { DispatchPreview } from '../components/DispatchPreview';
-import { LEMA_ESTADUAL, NOME_ESCOLA } from '../lib/document-identity';
+import { LEMA_ESTADUAL } from '../lib/document-identity';
 import type { Documento } from '../lib/documento';
 
 const doc: Documento = {
@@ -27,6 +27,7 @@ const doc: Documento = {
 function linhasHeader(el: Element) {
   return el.innerHTML
     .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, " ")
     .replace(/<[^>]+>/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -37,21 +38,23 @@ describe('cabeçalho padrão nas prévias', () => {
     const { container } = render(<DocumentPreview doc={doc} />);
     const header = container.querySelector('.document-header-text');
     expect(header).not.toBeNull();
-    expect(linhasHeader(header!)).toBe(
-      `GOVERNO DO ESTADO DE RORAIMA ${LEMA_ESTADUAL} SECRETARIA DE EDUCAÇÃO E DESPORTO ${NOME_ESCOLA} COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII`,
+    if (!header) throw new Error('Cabeçalho ausente');
+    expect(linhasHeader(header)).toBe(
+      `Governo do Estado de Roraima “${LEMA_ESTADUAL}”`,
     );
   });
 
   it('mantém o lema em itálico na prévia', () => {
     const { container } = render(<DocumentPreview doc={doc} />);
     const italico = container.querySelector('.document-header-text .italic');
-    expect(italico?.textContent).toBe(LEMA_ESTADUAL);
+    expect(italico?.textContent).toBe(`“${LEMA_ESTADUAL}”`);
   });
 
   it('repete o lema na folha de despacho', () => {
     const { container } = render(<DispatchPreview opcao="pedagogica" />);
-    const heading = container.querySelector('.dispatch-heading');
+    const heading = container.querySelector('.document-header-text');
     expect(heading?.textContent).toContain(LEMA_ESTADUAL);
-    expect(linhasHeader(heading!)).toContain(`${NOME_ESCOLA} GRUPAMENTO DE COMUNICAÇÃO E MÍDIA`);
+    if (!heading) throw new Error('Cabeçalho ausente');
+    expect(linhasHeader(heading)).toBe(`Governo do Estado de Roraima “${LEMA_ESTADUAL}”`);
   });
 });

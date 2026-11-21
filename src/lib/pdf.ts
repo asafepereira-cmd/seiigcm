@@ -4,7 +4,7 @@ import { dataHora, type ExtrasPDF } from "./assinaturas-eletronicas";
 import { fontStyle, richBlocks, wrapRichParagraph, type TextRun } from "./rich-text";
 import signatureSeal from '@/assets/seii-signature-seal.png.asset.json';
 import { identidadeAssinatura } from './signature-identity';
-import { LEMA_ESTADUAL, NOME_ESCOLA, corrigirNome } from './document-identity';
+import { LEMA_ESTADUAL, GOVERNO_ESTADUAL, VALIDACAO_ASSINATURA, corrigirNome } from './document-identity';
 
 async function loadImage(src: string): Promise<string> {
   const res = await fetch(src);
@@ -17,35 +17,34 @@ async function loadImage(src: string): Promise<string> {
 }
 
 export const HEADER: { texto: string; italico?: boolean }[] = [
-  { texto: "GOVERNO DO ESTADO DE RORAIMA" },
-  { texto: LEMA_ESTADUAL, italico: true },
-  { texto: "SECRETARIA DE EDUCAÇÃO E DESPORTO" },
-  { texto: NOME_ESCOLA },
-  { texto: "COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII" },
+  { texto: GOVERNO_ESTADUAL },
+  { texto: `“${LEMA_ESTADUAL}”`, italico: true },
 ];
 
 export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF = {}) {
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
-  const [brasao, midia, seal] = await Promise.all([loadImage("/brand/brasao.png"), loadImage(doc.setor ? "/brand/governo.png" : "/brand/midia.png"), loadImage(signatureSeal.url)]);
+  const [brasao, seal, fontResponse] = await Promise.all([loadImage("/brand/governo.png"), loadImage(signatureSeal.url), fetch('/fonts/bookman-header.ttf')]);
+  if (!fontResponse.ok) throw new Error('Não foi possível carregar a fonte do cabeçalho.');
+  const fontBytes = new Uint8Array(await fontResponse.arrayBuffer());
+  let fontBinary = '';
+  fontBytes.forEach(byte => { fontBinary += String.fromCharCode(byte); });
+  pdf.addFileToVFS('bookman-header.ttf', btoa(fontBinary));
+  pdf.addFont('bookman-header.ttf', 'bookman', 'bold');
   const W = 210, ML = 20, MR = 20, TW = W - ML - MR, BOTTOM = 280;
   const PT_MM = 25.4 / 72;
   const LH = 12 * PT_MM * 1.26;
-  const HEADER_LH = 8.5 * PT_MM * 1.13;
 
   const header = () => {
-    pdf.addImage(brasao, "PNG", 12, 7, 20, 20, undefined, "FAST");
-    if (doc.setor) pdf.addImage(midia, "PNG", 180, 7, 18, 20, undefined, "FAST"); else pdf.addImage(midia, "PNG", 170, 11, 28, 10, undefined, "FAST");
-    pdf.setFontSize(8.5);
+    pdf.addImage(brasao, "PNG", 94, 8, 22, 25, undefined, "FAST");
+    pdf.setFontSize(12);
     HEADER.forEach((l, i) => {
-      pdf.setFont("times", l.italico ? "italic" : "bold");
-      pdf.text(i === HEADER.length - 1 && doc.setor ? doc.setor.toUpperCase() : l.texto, 105, 12 + i * HEADER_LH, { align: "center" });
+      pdf.setFont(l.italico ? 'times' : 'bookman', l.italico ? "italic" : "bold");
+      pdf.text(l.texto, 105, 38 + i * 12 * PT_MM * 1.13, { align: "center" });
     });
-    pdf.setLineWidth(0.2);
-    pdf.line(46, 28, 158, 28);
   };
   header();
-  let y = 40;
+  let y = 53;
   const ensure = (h: number) => {
     if (y + h > BOTTOM) {
       const font = pdf.getFont();
@@ -54,7 +53,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
       header();
       pdf.setFont(font.fontName, font.fontStyle);
       pdf.setFontSize(size);
-      y = 40;
+      y = 53;
     }
   };
 
@@ -273,7 +272,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
     const { data, hora } = dataHora(extras.emitidoEm);
     pdf.setFontSize(12);
     y += 8;
-    const text = `Documento assinado eletronicamente por ${corrigirNome(doc.assinante).toUpperCase()}, ${doc.cargo}, em ${data}, às ${hora}, conforme portaria interna de legalização do S.E.I.I GCM.`;
+    const text = `Documento assinado eletronicamente por ${corrigirNome(doc.assinante).toUpperCase()}, ${doc.cargo}, em ${data}, às ${hora}, ${VALIDACAO_ASSINATURA}.`;
     ensure(stampHeight(text));
     y += carimbo(text, y);
   }
@@ -282,7 +281,7 @@ export async function gerarPDF(doc: Documento, salvar = true, extras: ExtrasPDF 
   for (const a of outras) {
     if (!a.assinadoEm) continue;
     const {data,hora} = dataHora(a.assinadoEm);
-    const text = `Documento assinado eletronicamente por ${a.nome}, ${a.cargo ?? ""}, em ${data}, às ${hora}, conforme portaria interna de legalização do S.E.I.I GCM.`;
+    const text = `Documento assinado eletronicamente por ${a.nome}, ${a.cargo ?? ""}, em ${data}, às ${hora}, ${VALIDACAO_ASSINATURA}.`;
     pdf.setFontSize(9);
     ensure(stampHeight(text)+3);
     y += carimbo(text,y)+3;

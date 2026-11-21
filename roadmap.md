@@ -1,5 +1,11 @@
 # Roadmap
 
+## Pedido 21/11 — cabeçalho e editor
+- [x] Cabeçalho SEI centralizado no PDF e prévias; texto de validação combinado
+- [x] Barra única de ações e encaminhamento sem repetir assinatura do emissor
+- [x] Recuperar signatários da última versão ao reabrir documento
+- [x] 23 testes; PDF exportado e conferido; envio com registro de assinatura de teste preservado, versão 2 com destinatário recuperado e celular sem transbordamento
+
 ## Pedido 20/11 — documentos unificados
 - [x] Incluir Termo e Contrato no editor, vazios e sem questionário; redirecionar página antiga
 - [x] Modelos favoritos persistentes da unidade no editor

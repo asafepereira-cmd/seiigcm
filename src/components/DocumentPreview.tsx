@@ -1,17 +1,11 @@
 import { dataExtenso, identificacaoDocumento, documentoSemDestinatario, type Documento } from "@/lib/documento";
 import { richBlocks } from "@/lib/rich-text";
-import { LEMA_ESTADUAL, NOME_ESCOLA } from '@/lib/document-identity';
+import { DocumentHeader } from './DocumentHeader';
 export function DocumentPreview({ doc }: { doc: Documento }) {
   const paras = doc.corpo.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   return (
     <div aria-label="Prévia do documento" className="document-preview aspect-[210/297] w-full overflow-auto rounded-sm bg-paper p-[6%] font-[Times_New_Roman,serif] text-[10px] text-paper-ink shadow-paper lg:text-[11px]">
-      <div className="flex items-center gap-2 border-b border-paper-ink/60 pb-1">
-        <img src="/brand/brasao.png" alt="" className="w-[11%]" />
-        <div className="document-header-text flex-1 text-center text-[0.8em] font-bold">
-          GOVERNO DO ESTADO DE RORAIMA<br /><span className="italic">{LEMA_ESTADUAL}</span><br />SECRETARIA DE EDUCAÇÃO E DESPORTO<br />{NOME_ESCOLA}<br />{doc.setor?.toUpperCase() || 'COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII'}
-        </div>
-        <img src={doc.setor ? "/brand/governo.png" : "/brand/midia.png"} alt="" className={doc.setor ? "w-[10%]" : "w-[15%]"} />
-      </div>
+      <DocumentHeader />
       <p className={`mt-4 text-[1.1em] font-bold ${documentoSemDestinatario(doc.tipo) ? 'text-center' : ''}`}>{identificacaoDocumento(doc)}</p>
       {doc.processo && <p className="mt-1 text-center font-bold break-words">{doc.processo.tema}</p>}
       {doc.tipo !== 'Edital' && <p className="text-right font-bold">{doc.cidade} - {dataExtenso(doc.data)}</p>}

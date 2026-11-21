@@ -1,7 +1,7 @@
 import { CATALOGO_TIPOS, TIPOS_DOCUMENTO, modeloTipo } from '@/lib/tipos-documento';
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, Save, Sparkles, FilePlus2, Upload, X, Check, Circle, Plus, PenLine } from "lucide-react";
+import { Download, Save, Sparkles, FilePlus2, X, Plus, PenLine, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useRequireSession } from "@/hooks/use-session";
@@ -22,7 +22,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useServerFn } from "@tanstack/react-start";
-import { destinatarios } from "@/lib/setor.functions";
+import { destinatarios, signatariosDocumento } from "@/lib/setor.functions";
+import { precisaSalvar, type SignatarioEditor } from '@/lib/document-editor';
 import { podeExportar } from "@/lib/sector";
 import { reviewWithAI } from "@/lib/server.functions";
 import { gerarPDF } from "@/lib/pdf";
@@ -70,13 +71,16 @@ function Editor() {
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const listRecipients = useServerFn(destinatarios);
+  const loadSigners = useServerFn(signatariosDocumento);
   const [panelType,setPanelType] = useState('individual');
   const [documentStatus,setDocumentStatus] = useState('desenvolvendo');
   const [recipients,setRecipients] = useState<{id:string;nome:string}[]>([]);
   const [recipientSearch,setRecipientSearch] = useState('');
   const [recipientId,setRecipientId] = useState('');
-  const [selectedRecipients,setSelectedRecipients] = useState<{id:string;nome:string}[]>([]);
+  const [selectedRecipients,setSelectedRecipients] = useState<SignatarioEditor[]>([]);
   const [purpose,setPurpose] = useState<'deferimento'|'ciencia'>('deferimento');
+  const [requestSignatures,setRequestSignatures] = useState(true);
+  const forwardingRef = useRef<HTMLFieldSetElement>(null);
   const [sending,setSending] = useState(false);
   const signAuthor = useServerFn(signAuthorDocument);
   const [signOpen,setSignOpen] = useState(false);
@@ -99,6 +103,15 @@ function Editor() {
   },[ready,activeProcess,docId,savedSnapshot]);
   useEffect(()=>{if(!ready)return;supabase.from('paineis').select('tipo_painel').eq('user_id',session?.user.id??'').maybeSingle().then(({data})=>setPanelType(data?.tipo_painel??'individual'));},[ready,session?.user.id]);
   useEffect(()=>{if(ready)listRecipients().then(setRecipients).catch(()=>toast.error('Não foi possível listar destinatários.'));},[ready]);
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    setSelectedRecipients([]); setRecipientSearch(''); setRecipientId(''); setPurpose('deferimento');
+    if (id) loadSigners({ data: { id } }).then(result => {
+      if (!cancelled) { setSelectedRecipients(result.selected); setPurpose(result.purpose); }
+    }).catch(() => { if (!cancelled) toast.error('Não foi possível recuperar os signatários anteriores.'); });
+    return () => { cancelled = true; };
+  }, [ready, id]);
 
   async function comProcesso(documento: Documento, processoId?: string | null) {
     if (!processoId) return documento;
@@ -167,13 +180,14 @@ function Editor() {
   async function salvar() {
     if (!session?.user.id) { toast.error('Entre novamente para salvar.'); return; }
     if (!numeroValido(full.numero)) { toast.error('Informe um número inteiro maior que zero.'); return; }
+    if (!precisaSalvar(full, savedSnapshot, docId)) return docId;
     setSaving(true);
     let dados = full;
     let {data:saved,error} = await supabase.rpc('salvar_documento',{_id:(docId ?? null) as string,_dados:dados as never,_processo:(processo ?? null) as string});
     if (error && !docId && /número já está utilizado/i.test(error.message)) {
       try { const numero = await proximoNumeroDocumento(full.tipo, full.ano); dados = { ...full, numero }; ({data:saved,error} = await supabase.rpc('salvar_documento',{_id:null as unknown as string,_dados:dados as never,_processo:(processo ?? null) as string})); if (!error) toast.info(`Número ajustado automaticamente para ${String(numero).padStart(3,'0')}.`); } catch { /* mantém erro original */ }
     }
-    const res = error || !saved ? {error:error??new Error('Falha'),data:null} : await supabase.from('documentos').select('id,dados,status').eq('id',saved).single();
+    const res = error || !saved ? {error:error??new Error('Falha'),data:null} : await supabase.from('documentos').select('id,dados,status,versao').eq('id',saved).single();
     setSaving(false);
     if (res.error || !res.data) return toast.error(res.error?.message ?? "Erro ao salvar"), undefined;
     setDocumentStatus(res.data.status);
@@ -181,7 +195,8 @@ function Editor() {
     const savedDoc = res.data.dados as unknown as Documento;
     setDoc(savedDoc);
     setSavedSnapshot(JSON.stringify(savedDoc));
-    if (JSON.stringify(dados) !== savedSnapshot) setAuthorSigned(false);
+    const { data: signatures } = await supabase.from('solicitacoes_assinatura').select('id').eq('documento_id',res.data.id).eq('versao',res.data.versao).like('gestora','emissor:%').not('assinado_em','is',null);
+    setAuthorSigned(!!signatures?.length);
     toast.success("Documento salvo");
     return res.data.id;
   }
@@ -200,17 +215,36 @@ function Editor() {
   }
 
   async function encaminhar(assinar:boolean) {
-    const destinos = Array.from(new Set([...selectedRecipients.map(r=>r.id), ...(recipientId ? [recipientId] : [])]));
-    if(!destinos.length)return;
+    const destinos = Array.from(new Set([...selectedRecipients.filter(r=>!r.externo).map(r=>r.id), ...(recipientId ? [recipientId] : [])]));
+    const externos = selectedRecipients.filter(r=>r.externo);
+    if(!destinos.length&&!externos.length)return;
+    if (authorSigned && precisaSalvar(full,savedSnapshot,docId) && !confirm('O texto foi alterado após sua assinatura. Será criada uma nova versão, que precisa de novas assinaturas. Continuar com os signatários selecionados?')) return;
     setSending(true);
     try {
       const savedId=await salvar();if(!savedId)return;
-      const {error}=await supabase.rpc('enviar_documento_multiplos',{_id:savedId,_destinos:destinos,_assinar:assinar,_finalidade:purpose});
-      if(error)throw error;
+      if (destinos.length) {
+        const {error}=await supabase.rpc('enviar_documento_multiplos',{_id:savedId,_destinos:destinos,_assinar:assinar,_finalidade:purpose});
+        if(error)throw error;
+      }
+      if (externos.length && assinar) {
+        const { error } = await supabase.rpc('encaminhar_documento', { _id:savedId, _signatarios: externos.map(r=>({nome:r.nome,funcao:r.funcao ?? '',finalidade:purpose})), _prioridade:'normal', _prazo:null as unknown as string, _termo:'' });
+        if (error) throw error;
+      }
       toast.success(assinar?'Documento enviado para assinatura':'Documento enviado');
       navigate({to:'/historico'});
     } catch(error) { toast.error(error instanceof Error?error.message:'Não foi possível enviar.'); }
     finally {setSending(false);}
+  }
+  async function baixarPDF() {
+    setGenerating(true);
+    try {
+      const savedId = panelType==='setor'?docId:await salvar();
+      if (!savedId) return;
+      const {data:saved,error} = await supabase.from('documentos').select('dados').eq('id',savedId).single();
+      if (error || !saved) throw new Error('Não foi possível carregar o documento para gerar o PDF.');
+      await gerarPDF(saved.dados as unknown as Documento,true,await carregarExtras(savedId));
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Não foi possível gerar o PDF.'); }
+    finally { setGenerating(false); }
   }
   return (
     <div className="min-h-screen">
@@ -231,8 +265,10 @@ function Editor() {
           </div>
 
           <div role="toolbar" aria-label="Ações do documento" className="sticky top-0 z-10 flex flex-wrap gap-2 rounded-md border bg-card p-2">
-            <Button size="sm" disabled={saving || signing || (authorSigned && JSON.stringify(full) === savedSnapshot)} onClick={() => {setConsent(false);setPassword('');setSignOpen(true);}}><PenLine className="size-4" />{authorSigned && JSON.stringify(full) === savedSnapshot ? 'Assinado pelo emissor' : 'Assinar documento'}</Button>
-            <Button size="icon" variant="outline" aria-label="Salvar minuta" title="Salvar minuta" disabled={saving || signing} onClick={salvar}><Save className="size-4" /></Button>
+            <Button size="icon" variant="outline" aria-label="Salvar documento" title="Salvar documento" disabled={saving || signing || sending} onClick={salvar}><Save className="size-4" /></Button>
+            <Button size="icon" aria-label={authorSigned && !precisaSalvar(full,savedSnapshot,docId) ? 'Assinado pelo emissor' : 'Assinar documento'} title={authorSigned && !precisaSalvar(full,savedSnapshot,docId) ? 'Assinado pelo emissor' : 'Assinar documento'} disabled={saving || signing || sending || (authorSigned && !precisaSalvar(full,savedSnapshot,docId))} onClick={() => {setConsent(false);setPassword('');setSignOpen(true);}}><PenLine className="size-4" /></Button>
+            <Button size="icon" variant="outline" aria-label="Encaminhar assinaturas" title="Encaminhar assinaturas" onClick={()=>forwardingRef.current?.scrollIntoView({behavior:'smooth',block:'center'})}><Send className="size-4" /></Button>
+            <Button size="icon" variant="outline" aria-label="Baixar PDF" title={generating?'Gerando PDF…':'Baixar PDF'} disabled={generating || saving || signing || sending || uploading || !podeExportar(panelType,documentStatus)} onClick={baixarPDF}><Download className="size-4" /></Button>
           </div>
 
           <Group title="Identificação">
@@ -305,37 +341,14 @@ function Editor() {
             <F label="Fecho"><Textarea rows={2} value={doc.fecho} onChange={(e) => set("fecho", e.target.value)} /></F>
           </Group>}
 
-          {<Group title="Encaminhamento">
+          {<Group title="Encaminhar assinaturas" groupRef={forwardingRef}>
             {selectedRecipients.map(p=><div className="flex items-center gap-2" key={p.id}><span className="mr-auto font-semibold">{p.nome}</span><Button size="icon" variant="ghost" aria-label={`Remover ${p.nome}`} onClick={()=>setSelectedRecipients(current=>current.filter(r=>r.id!==p.id))}><X className="h-4 w-4"/></Button></div>)}
             <Input aria-label="Destinatário do documento" placeholder="Pesquisar setor ou pessoa" value={recipientSearch} onChange={e=>{setRecipientSearch(e.target.value);setRecipientId('');}}/>
-            {recipientSearch&&!recipientId&&<div className="flex flex-wrap gap-2">{recipients.filter(p=>!selectedRecipients.some(s=>s.id===p.id)&&p.nome.toLocaleLowerCase('pt-BR').includes(recipientSearch.toLocaleLowerCase('pt-BR'))).map(p=><Button key={p.id} variant="outline" onClick={()=>{setRecipientId(p.id);setRecipientSearch(p.nome);}}>{p.nome}</Button>)}</div>}
-            <Button size="icon" variant="outline" aria-label="Adicionar destinatário" title="Adicionar destinatário" disabled={!recipientId} onClick={()=>{const p=recipients.find(r=>r.id===recipientId);if(p)setSelectedRecipients(current=>current.some(r=>r.id===p.id)?current:[...current,p]);setRecipientId('');setRecipientSearch('');}}><Plus className="h-4 w-4"/></Button>
+            {recipientSearch&&!recipientId&&<div className="flex flex-wrap gap-2">{recipients.filter(p=>!selectedRecipients.some(s=>s.id===p.id)&&p.nome.toLocaleLowerCase('pt-BR').includes(recipientSearch.toLocaleLowerCase('pt-BR'))).map(p=><Button key={p.id} variant="outline" onClick={()=>{setSelectedRecipients(current=>[...current,p]);setRecipientSearch('');}}><Plus className="size-4"/>{p.nome}</Button>)}</div>}
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={requestSignatures} onChange={e=>setRequestSignatures(e.target.checked)}/>Solicitar assinatura dos destinatários</label>
             <F label="Finalidade da assinatura"><select aria-label="Finalidade da assinatura" className="h-9 w-full rounded-md border bg-card px-2" value={purpose} onChange={e=>setPurpose(e.target.value==='ciencia'?'ciencia':'deferimento')}><option value="deferimento">Deferimento</option><option value="ciencia">Somente ciência</option></select></F>
-            <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={(!recipientId&&!selectedRecipients.length)||sending||saving} onClick={()=>encaminhar(false)}>Enviar para</Button><Button disabled={(!recipientId&&!selectedRecipients.length)||sending||saving} onClick={()=>encaminhar(true)}>Enviar e solicitar assinatura</Button></div>
+            <Button disabled={(!recipientId&&!selectedRecipients.length)||sending||saving||signing||(!requestSignatures&&selectedRecipients.some(r=>r.externo))} onClick={()=>encaminhar(requestSignatures)}><Send className="size-4"/>{sending?'Enviando…':requestSignatures?'Enviar para signatários':'Enviar documento'}</Button>
           </Group>}
-          <div className="sticky bottom-0 -mx-4 flex gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0">
-            <Button variant="outline" className="flex-1" onClick={salvar} disabled={saving}>
-              <Save className="h-4 w-4" /> {documentStatus === "enviado" ? "Atualizar doc" : "Salvar"}
-            </Button>
-            <Button
-              className="flex-1"
-              disabled={generating || saving || uploading || !podeExportar(panelType,documentStatus)}
-              onClick={async () => {
-                setGenerating(true);
-                try {
-                  const savedId = panelType==='setor'?docId:await salvar();
-                  if (!savedId) return;
-                  const {data:saved,error} = await supabase.from("documentos").select("dados").eq("id",savedId).single();
-                  if (error || !saved) throw new Error("Não foi possível carregar o documento para gerar o PDF. Tente novamente.");
-                  await gerarPDF(saved.dados as unknown as Documento, true, await carregarExtras(savedId));
-                } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Não foi possível gerar o PDF.");
-                } finally { setGenerating(false); }
-              }}
-            >
-              <Download className="h-4 w-4" /> {generating ? "Gerando…" : "Gerar PDF"}
-            </Button>
-          </div>
         </section>
 
         <aside className="lg:sticky lg:top-20 lg:self-start">
@@ -357,9 +370,9 @@ function Editor() {
   );
 }
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
+function Group({ title, children, groupRef }: { title: string; children: React.ReactNode; groupRef?: React.Ref<HTMLFieldSetElement> }) {
   return (
-    <fieldset className="space-y-3 rounded-xl border bg-card p-4">
+    <fieldset ref={groupRef} className="space-y-3 rounded-xl border bg-card p-4">
       <legend className="rounded-sm bg-card px-2 font-sans text-sm font-semibold text-primary">{title}</legend>
       {children}
     </fieldset>

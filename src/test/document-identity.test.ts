@@ -7,11 +7,8 @@ describe('identidade institucional', () => {
   it('separa Silva Felix nas assinaturas antigas', () => expect(identidadeAssinatura({ gestora:'emissor:a', nome:'ASAFE PEREIRA DA SILVAFELIX' }).nome).toBe('ASAFE PEREIRA DA SILVA FELIX'));
   it('não altera os demais nomes', () => expect(corrigirNome('Maria Silva')).toBe('Maria Silva'));
   it('ordena o cabeçalho padrão do Governo de Roraima', () => expect(HEADER.map((l) => l.texto)).toEqual([
-    'GOVERNO DO ESTADO DE RORAIMA',
-    LEMA_ESTADUAL,
-    'SECRETARIA DE EDUCAÇÃO E DESPORTO',
-    NOME_ESCOLA,
-    'COORDENAÇÃO DE COMUNICAÇÃO E MÍDIA DO CEMXXXIII',
+    'Governo do Estado de Roraima',
+    `“${LEMA_ESTADUAL}”`,
   ]));
-  it('destaca o lema estadual em itálico', () => expect(HEADER[1]).toEqual({ texto: LEMA_ESTADUAL, italico: true }));
+  it('destaca o lema estadual em itálico', () => expect(HEADER[1]).toEqual({ texto: `“${LEMA_ESTADUAL}”`, italico: true }));
 });

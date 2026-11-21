@@ -1,20 +1,12 @@
 import { assinantesDespacho, type Despacho } from "@/lib/documento";
-import { LEMA_ESTADUAL, NOME_ESCOLA } from '@/lib/document-identity';
+import { DocumentHeader } from './DocumentHeader';
 
 export function DispatchPreview({ opcao }: { opcao: Despacho }) {
   const gestoras = assinantesDespacho(opcao);
   return (
     <div aria-label="Página de despacho" className="dispatch-sheet bg-paper text-paper-ink shadow-paper">
       <div className="dispatch-header">
-        <img src="/brand/brasao.png" alt="" className="dispatch-crest" />
-        <div className="dispatch-heading">
-          GOVERNO DO ESTADO DE RORAIMA<br />
-          <i>{LEMA_ESTADUAL}</i><br />
-          SECRETARIA DE EDUCAÇÃO E DESPORTO<br />
-          {NOME_ESCOLA}<br />
-          GRUPAMENTO DE COMUNICAÇÃO E MÍDIA - "CEMXXXIII NA MÍDIA"
-        </div>
-        <img src="/brand/midia.png" alt="" className="dispatch-logo" />
+        <DocumentHeader />
       </div>
       <div className="dispatch-box">
         <b>Despacho / Gestão</b>

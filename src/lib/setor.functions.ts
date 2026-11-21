@@ -1,6 +1,27 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
+import { signatariosUltimaVersao, type SignatarioEditor } from './document-editor';
+
+export const signatariosDocumento = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: document } = await context.supabase.from('documentos').select('criado_por').eq('id', data.id).single();
+    if (!document || document.criado_por !== context.userId) throw new Error('Documento indisponível.');
+    const { data: rows, error } = await context.supabase.from('solicitacoes_assinatura')
+      .select('gestora,signatario_nome,signatario_funcao,versao,finalidade').eq('documento_id', data.id);
+    if (error) throw new Error('Não foi possível recuperar os signatários.');
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { data: roles } = await supabaseAdmin.from('user_roles').select('user_id,role').in('role', ['pedagogica','administrativa']);
+    const latest = signatariosUltimaVersao(rows ?? []);
+    const selected: SignatarioEditor[] = [];
+    for (const row of latest) {
+      const external = row.gestora.startsWith('extra:');
+      const id = row.gestora.startsWith('user:') ? row.gestora.slice(5) : external ? row.gestora : roles?.find(role => role.role === row.gestora)?.user_id;
+      if (id && !selected.some(item => item.id === id)) selected.push({ id, nome: row.signatario_nome ?? (row.gestora === 'pedagogica' ? 'Gestora Pedagógica' : 'Gestora Administrativa'), funcao: row.signatario_funcao ?? '', externo: external });
+    }
+    return { selected, purpose: latest[0]?.finalidade === 'ciencia' ? 'ciencia' as const : 'deferimento' as const };
+  });
 
 export const destinatarios = createServerFn({ method: 'GET' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   const { data: active } = await context.supabase.rpc('conta_ativa', { _uid: context.userId });
