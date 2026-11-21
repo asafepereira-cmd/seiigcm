@@ -11,6 +11,7 @@ import { getSignRequest, signDocument } from "@/lib/assinatura.functions";
 import { GESTORAS, numeroFormatado } from "@/lib/documento";
 import { dataHora } from "@/lib/assinaturas-eletronicas";
 import { supabase } from '@/integrations/supabase/client';
+import { DocumentPreview } from '@/components/DocumentPreview';
 import { decisaoLabel } from '@/lib/workflow';
 
 export const Route = createFileRoute("/assinar/$token")({
@@ -71,10 +72,8 @@ function Assinar() {
               <div>
                 <p className="text-sm text-muted-foreground">Assinatura eletrônica · S.E.I.GCM-CEMXXXIII</p>
                 <h1 className="text-xl font-bold">{numeroFormatado(req.doc)}</h1>
-                <p className="mt-1"><b>Assunto:</b> {req.doc.assunto}</p>
-                <p><b>Para:</b> {req.doc.para}</p>
               </div>
-              <div className="max-h-64 overflow-auto whitespace-pre-line rounded-md border bg-paper p-3 text-sm text-paper-ink">{req.doc.corpo}</div>
+              <DocumentPreview doc={req.doc} />
               {req.assinadoEm ? (
                 <div className="flex items-start gap-3 rounded-md border border-primary/40 bg-primary/10 p-4">
                   <BadgeCheck className="h-6 w-6 shrink-0 text-primary" />
