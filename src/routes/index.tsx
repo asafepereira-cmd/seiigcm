@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useServerFn } from "@tanstack/react-start";
 import { destinatarios, signatariosDocumento } from "@/lib/setor.functions";
+import { notificarSignatariosDocumento } from "@/lib/email-notificacao.functions";
 import { precisaSalvar, type SignatarioEditor } from '@/lib/document-editor';
 import { podeExportar } from "@/lib/sector";
 import { reviewWithAI } from "@/lib/server.functions";
@@ -83,6 +84,7 @@ function Editor() {
   const forwardingRef = useRef<HTMLFieldSetElement>(null);
   const [sending,setSending] = useState(false);
   const signAuthor = useServerFn(signAuthorDocument);
+  const notifySigners = useServerFn(notificarSignatariosDocumento);
   const [signOpen,setSignOpen] = useState(false);
   const [signing,setSigning] = useState(false);
   const [password,setPassword] = useState('');
@@ -225,6 +227,9 @@ function Editor() {
       if (destinos.length) {
         const {error}=await supabase.rpc('enviar_documento_multiplos',{_id:savedId,_destinos:destinos,_assinar:assinar,_finalidade:purpose});
         if(error)throw error;
+        if (assinar) {
+          await notifySigners({ data: { documentoId: savedId } }).catch(() => null);
+        }
       }
       if (externos.length && assinar) {
         const { error } = await supabase.rpc('encaminhar_documento', { _id:savedId, _signatarios: externos.map(r=>({nome:r.nome,funcao:r.funcao ?? '',finalidade:purpose})), _prioridade:'normal', _prazo:null as unknown as string, _termo:'' });

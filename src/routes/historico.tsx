@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Copy, Download, Link2, Pencil, Trash2, FolderInput } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import { identificacaoDocumento, processoFormatado, type Documento } from "@/lib
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { SignatureBlocks } from '@/components/SignatureBlocks';
 import { podeEditarDocumento, acoesDocumentoRecebido } from "@/lib/document-access";
+import { notificarSignatariosDocumento } from "@/lib/email-notificacao.functions";
 
 export const Route = createFileRoute("/historico")({
   head: () => ({
@@ -92,6 +94,7 @@ function Historico() {
   const [paineis,setPaineis] = useState<{user_id:string;nome:string;funcao:string}[]>([]);
   const [funcoes,setFuncoes] = useState<string[]>([]);
   const [sending,setSending] = useState(false);
+  const notifySigners = useServerFn(notificarSignatariosDocumento);
   async function abrirLinks(row: Row) {
     setLinks({ row, itens: await carregarSolicitacoes(row.id) });
   }
@@ -101,6 +104,7 @@ function Historico() {
     setSending(true);
     try {
       await enviarParaAssinatura(envio.row.id, [], null,extras,prioridade,prazo || null,termo);
+      await notifySigners({ data: { documentoId: envio.row.id } }).catch(() => null);
       setRows(current => current?.map(row => row.id === envio.row.id ? { ...row, status: "enviado" } : row) ?? null);
       const row = envio.row;
       setEnvio(null);
