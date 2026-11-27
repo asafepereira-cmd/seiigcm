@@ -523,6 +523,7 @@ export type Database = {
           situacao: string
           telefone: string
           unidade: string
+          unidade_id: string | null
           updated_at: string
           vinculo: string
         }
@@ -543,6 +544,7 @@ export type Database = {
           situacao?: string
           telefone?: string
           unidade?: string
+          unidade_id?: string | null
           updated_at?: string
           vinculo?: string
         }
@@ -563,10 +565,19 @@ export type Database = {
           situacao?: string
           telefone?: string
           unidade?: string
+          unidade_id?: string | null
           updated_at?: string
           vinculo?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "integrantes_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       minutas_fisicas: {
         Row: {
@@ -648,6 +659,7 @@ export type Database = {
           responsavel: string
           setor: string
           tipo_painel: string
+          unidade_id: string | null
           user_id: string
         }
         Insert: {
@@ -661,6 +673,7 @@ export type Database = {
           responsavel?: string
           setor?: string
           tipo_painel?: string
+          unidade_id?: string | null
           user_id: string
         }
         Update: {
@@ -674,9 +687,18 @@ export type Database = {
           responsavel?: string
           setor?: string
           tipo_painel?: string
+          unidade_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "paineis_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       processo_anexos: {
         Row: {
@@ -912,6 +934,47 @@ export type Database = {
         }
         Relationships: []
       }
+      unidades: {
+        Row: {
+          ativa: boolean
+          created_at: string
+          id: string
+          nome: string
+          pai_id: string | null
+          pode_emitir: boolean
+          pode_receber: boolean
+          sigla: string
+        }
+        Insert: {
+          ativa?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          pai_id?: string | null
+          pode_emitir?: boolean
+          pode_receber?: boolean
+          sigla: string
+        }
+        Update: {
+          ativa?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          pai_id?: string | null
+          pode_emitir?: boolean
+          pode_receber?: boolean
+          sigla?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidades_pai_id_fkey"
+            columns: ["pai_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -1066,6 +1129,10 @@ export type Database = {
         Returns: string
       }
       submeter_analise: { Args: { _id: string }; Returns: undefined }
+      unidade_permite: {
+        Args: { _acao: string; _id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "pedagogica" | "administrativa" | "emissor"

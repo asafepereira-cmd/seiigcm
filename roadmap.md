@@ -1,5 +1,11 @@
 # Roadmap
 
+## Pedido 27/11 — gestão de unidades
+- [ ] Cadastro e edição de unidades/subunidades com ativação, emissão e recebimento
+- [ ] Vincular contas e integrantes às unidades oficiais
+- [ ] Aplicar controles de unidades sem ampliar acesso aos documentos ou dossiês
+- [ ] Testar regras e fluxo administrativo no computador e celular
+
 ## Pedido 27/11 — integrantes, minutas e aparência
 - [ ] Cadastro de integrante e quatro modelos de minuta para assinatura física
 - [ ] Consulta com dossiê, anexos assinados, advertências e processos
