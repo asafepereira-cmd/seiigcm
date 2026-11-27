@@ -156,15 +156,15 @@ function Historico() {
     <div className="min-h-screen">
       <AppHeader />
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <div className="mb-4 flex flex-wrap items-center gap-2"><h1 className="mr-auto text-2xl font-bold text-primary-foreground">Documentos</h1><Button asChild variant="secondary"><Link to="/" search={{}}>Novo documento</Link></Button></div>
+        <div className="mb-4 flex flex-wrap items-center gap-2"><h1 className="mr-auto text-2xl font-bold text-foreground">Documentos</h1><Button asChild variant="secondary"><Link to="/" search={{}}>Novo documento</Link></Button></div>
         <div className="mb-5"><SignatureBlocks onSigned={() => { void load(); }} /></div>
         <div className="mb-3 flex flex-wrap gap-2"><select aria-label="Buscar por" className="h-9 rounded-md border bg-card px-2 text-sm text-card-foreground" value={campoBusca} onChange={e=>setCampoBusca(e.target.value as typeof campoBusca)}><option value="tema">Tema / assunto</option><option value="texto">Texto</option><option value="numero">Número</option></select><Input aria-label="Buscar documentos" placeholder="Buscar documentos" className="min-w-40 flex-1 bg-card text-card-foreground" value={busca} onChange={e=>setBusca(e.target.value)}/></div><div className="mb-4 flex gap-2">{(['todos','enviados','recebidos'] as const).map(a=><Button key={a} size="sm" variant={aba===a?'secondary':'outline'} onClick={()=>setAba(a)}>{a==='todos'?'Todos':a==='enviados'?'Enviados':'Recebidos'}</Button>)}</div>
         {loadError ? (
           <Button variant="outline" onClick={load}>Tentar novamente</Button>
         ) : rows === null ? (
-          <p className="text-primary-foreground">Carregando...</p>
+          <p className="text-foreground">Carregando...</p>
         ) : rows.length === 0 ? (
-          <p className="text-primary-foreground">Nenhum documento salvo ainda.</p>
+          <p className="text-foreground">Nenhum documento salvo ainda.</p>
         ) : (
           <ul className="space-y-3">
             {rows.filter(casaBusca).filter(r=>aba==='todos'||(aba==='enviados'?r.criado_por===session?.user.id:r.criado_por!==session?.user.id&&!!received[r.id])).map((r) => (

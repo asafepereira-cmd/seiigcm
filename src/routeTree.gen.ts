@@ -18,6 +18,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedArquivosRouteImport } from './routes/_authenticated/arquivos'
 import { Route as AuthenticatedContasRouteImport } from './routes/_authenticated/contas'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedIntegrantesRouteImport } from './routes/_authenticated/integrantes'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AuthenticatedTermosRouteImport } from './routes/_authenticated/termos'
 import { Route as AssinarTokenRouteImport } from './routes/assinar.$token'
@@ -68,6 +69,12 @@ const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedIntegrantesRoute =
+  AuthenticatedIntegrantesRouteImport.update({
+    id: '/integrantes',
+    path: '/integrantes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   id: '/painel',
   path: '/painel',
@@ -104,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/arquivos': typeof AuthenticatedArquivosRoute
   '/contas': typeof AuthenticatedContasRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/integrantes': typeof AuthenticatedIntegrantesRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/termos': typeof AuthenticatedTermosRoute
   '/assinar/$token': typeof AssinarTokenRoute
@@ -119,6 +127,7 @@ export interface FileRoutesByTo {
   '/arquivos': typeof AuthenticatedArquivosRoute
   '/contas': typeof AuthenticatedContasRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/integrantes': typeof AuthenticatedIntegrantesRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/termos': typeof AuthenticatedTermosRoute
   '/assinar/$token': typeof AssinarTokenRoute
@@ -136,6 +145,7 @@ export interface FileRoutesById {
   '/_authenticated/arquivos': typeof AuthenticatedArquivosRoute
   '/_authenticated/contas': typeof AuthenticatedContasRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/integrantes': typeof AuthenticatedIntegrantesRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/termos': typeof AuthenticatedTermosRoute
   '/assinar/$token': typeof AssinarTokenRoute
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/arquivos'
     | '/contas'
     | '/home'
+    | '/integrantes'
     | '/painel'
     | '/termos'
     | '/assinar/$token'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/arquivos'
     | '/contas'
     | '/home'
+    | '/integrantes'
     | '/painel'
     | '/termos'
     | '/assinar/$token'
@@ -184,6 +196,7 @@ export interface FileRouteTypes {
     | '/_authenticated/arquivos'
     | '/_authenticated/contas'
     | '/_authenticated/home'
+    | '/_authenticated/integrantes'
     | '/_authenticated/painel'
     | '/_authenticated/termos'
     | '/assinar/$token'
@@ -268,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/integrantes': {
+      id: '/_authenticated/integrantes'
+      path: '/integrantes'
+      fullPath: '/integrantes'
+      preLoaderRoute: typeof AuthenticatedIntegrantesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/painel': {
       id: '/_authenticated/painel'
       path: '/painel'
@@ -310,6 +330,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedArquivosRoute: typeof AuthenticatedArquivosRoute
   AuthenticatedContasRoute: typeof AuthenticatedContasRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedIntegrantesRoute: typeof AuthenticatedIntegrantesRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedTermosRoute: typeof AuthenticatedTermosRoute
 }
@@ -318,6 +339,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedArquivosRoute: AuthenticatedArquivosRoute,
   AuthenticatedContasRoute: AuthenticatedContasRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedIntegrantesRoute: AuthenticatedIntegrantesRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedTermosRoute: AuthenticatedTermosRoute,
 }

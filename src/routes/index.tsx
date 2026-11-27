@@ -261,7 +261,7 @@ function Editor() {
         }}/><Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => navigate({to:'/processos'})}>Ver processo</Button></aside>}
         <section className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="mr-auto text-2xl font-bold text-primary-foreground">{docId ? "Editar documento" : "Novo documento"}</h1>
+            <h1 className="mr-auto text-2xl font-bold text-foreground">{docId ? "Editar documento" : "Novo documento"}</h1>
             {docId && (
               <Button variant="outline" size="sm" onClick={() => navigate({ to: "/", search: {} })}>
                 <FilePlus2 className="h-4 w-4" /> Novo
@@ -357,7 +357,7 @@ function Editor() {
         </section>
 
         <aside className="lg:sticky lg:top-20 lg:self-start">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-primary-foreground">Pré-visualização</p>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-foreground">Pré-visualização</p>
           <DocumentPreview doc={full} />
         </aside>
       </main>

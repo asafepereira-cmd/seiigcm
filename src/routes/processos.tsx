@@ -164,13 +164,13 @@ function Processos() {
       <AppHeader />
       <main className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6 flex flex-wrap items-center gap-2">
-          <h1 className="mr-auto text-2xl font-bold text-primary-foreground">Processos</h1>
+          <h1 className="mr-auto text-2xl font-bold text-foreground">Processos</h1>
           {podeEmitir && <Button onClick={() => { setNovo(true); proximoNumero(); }}><FilePlus2 className="h-4 w-4" /> Novo processo</Button>}
         </div>
         {rows === null ? (
-          <p className="text-primary-foreground">Carregando...</p>
+          <p className="text-foreground">Carregando...</p>
         ) : rows.length === 0 ? (
-          <p className="text-primary-foreground">Nenhum processo aberto ainda.</p>
+          <p className="text-foreground">Nenhum processo aberto ainda.</p>
         ) : (
           <ul className="space-y-3">
             {rows.map((p) => (

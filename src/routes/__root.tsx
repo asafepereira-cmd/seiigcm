@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { isModuleLoadError, recoverModuleLoad } from "@/lib/module-recovery";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { SCRIPT_TEMA } from "@/lib/theme";
 
 function NotFoundComponent() {
   return (
@@ -102,8 +103,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
         <HeadContent />
       </head>
       <body>

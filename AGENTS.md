@@ -39,3 +39,4 @@
 - Signature blocks snapshot document versions and use one password verification plus a service-only atomic RPC that rechecks every assignment. Why: stale or unauthorized items must roll back the entire block.
 - Document headers share one preview component and embed the supplied PDF's Bookman subset for the fixed government title. Why: identical typography without platform font dependencies.
 - Editor recovers the latest non-author signer selection through an owner-checked function and skips unchanged saves before dispatch. Why: preserve recipients and current-version author signatures without copying signature validity.
+- Member dossiers and drafts use admin-only RLS and checked server functions. Why: private records.

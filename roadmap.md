@@ -1,5 +1,11 @@
 # Roadmap
 
+## Pedido 27/11 — integrantes, minutas e aparência
+- [ ] Cadastro de integrante e quatro modelos de minuta para assinatura física
+- [ ] Consulta com dossiê, anexos assinados, advertências e processos
+- [ ] Menu de três pontos com atalhos e alternância claro/escuro
+- [ ] Testes das regras e verificação do fluxo autenticado no celular
+
 ## Pedido 21/11 — identidade de assinatura
 - [x] Corrigir espaço visual de SILVA FELIX no carimbo; PDF inspecionado
 - [x] Priorizar cargo institucional nas assinaturas individuais e em bloco

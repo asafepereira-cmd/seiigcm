@@ -59,7 +59,7 @@ function Assinar() {
 
   return (
     <main className="relative mx-auto min-h-screen max-w-2xl px-4 py-8">
-      <Button variant="ghost" size="icon" aria-label="Voltar" title="Voltar" className="absolute left-2 top-2 text-primary-foreground" onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.assign("/"); }}><ArrowLeft className="h-5 w-5" /></Button>
+      <Button variant="ghost" size="icon" aria-label="Voltar" title="Voltar" className="absolute left-2 top-2 text-foreground" onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.assign("/"); }}><ArrowLeft className="h-5 w-5" /></Button>
       <div className="rounded-xl bg-card p-6 text-card-foreground shadow-lg">
         {req === null ? <p>Carregando...</p> : !req.found ? (
           <p>Link de assinatura inválido.</p>

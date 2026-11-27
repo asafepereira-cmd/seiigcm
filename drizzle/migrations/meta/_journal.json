@@ -239,6 +239,13 @@
       "when": 1795188869751,
       "tag": "0033_unit_templates_signature_blocks",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795753271443,
+      "tag": "0034_create_member_records_and_physical_drafts",
+      "breakpoints": true
     }
   ]
 }

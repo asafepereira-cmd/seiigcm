@@ -50,11 +50,11 @@ function Contas() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-primary">
+    <div className="flex min-h-screen flex-col bg-background">
       <AppHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8">
-        <h1 className="text-2xl font-bold text-primary-foreground">Painel de contas</h1>
-        <p className="text-primary-foreground/80">{contas.length} conta(s) com acesso ao sistema.</p>
+        <h1 className="text-2xl font-bold text-foreground">Painel de contas</h1>
+        <p className="text-foreground/80">{contas.length} conta(s) com acesso ao sistema.</p>
         <NovaContaForm onCreated={() => void refetch()} />
         <ul className="space-y-3">
           {contas.map(c => (

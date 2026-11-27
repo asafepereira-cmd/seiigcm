@@ -423,6 +423,192 @@ export type Database = {
         }
         Relationships: []
       }
+      integrante_anexos: {
+        Row: {
+          caminho: string
+          created_at: string
+          criado_por: string
+          id: string
+          integrante_id: string
+          mime_type: string
+          nome: string
+          tamanho: number
+        }
+        Insert: {
+          caminho: string
+          created_at?: string
+          criado_por: string
+          id?: string
+          integrante_id: string
+          mime_type: string
+          nome: string
+          tamanho?: number
+        }
+        Update: {
+          caminho?: string
+          created_at?: string
+          criado_por?: string
+          id?: string
+          integrante_id?: string
+          mime_type?: string
+          nome?: string
+          tamanho?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrante_anexos_integrante_id_fkey"
+            columns: ["integrante_id"]
+            isOneToOne: false
+            referencedRelation: "integrantes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrante_ocorrencias: {
+        Row: {
+          created_at: string
+          criado_por: string
+          descricao: string
+          id: string
+          integrante_id: string
+          ocorrido_em: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por: string
+          descricao: string
+          id?: string
+          integrante_id: string
+          ocorrido_em?: string
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string
+          descricao?: string
+          id?: string
+          integrante_id?: string
+          ocorrido_em?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrante_ocorrencias_integrante_id_fkey"
+            columns: ["integrante_id"]
+            isOneToOne: false
+            referencedRelation: "integrantes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrantes: {
+        Row: {
+          cpf: string
+          created_at: string
+          criado_por: string
+          dados_extras: Json
+          data_ingresso: string
+          data_nascimento: string | null
+          email: string
+          endereco: string
+          funcao: string
+          id: string
+          nome: string
+          observacoes: string
+          rg: string
+          situacao: string
+          telefone: string
+          unidade: string
+          updated_at: string
+          vinculo: string
+        }
+        Insert: {
+          cpf?: string
+          created_at?: string
+          criado_por: string
+          dados_extras?: Json
+          data_ingresso?: string
+          data_nascimento?: string | null
+          email?: string
+          endereco?: string
+          funcao?: string
+          id?: string
+          nome: string
+          observacoes?: string
+          rg?: string
+          situacao?: string
+          telefone?: string
+          unidade?: string
+          updated_at?: string
+          vinculo?: string
+        }
+        Update: {
+          cpf?: string
+          created_at?: string
+          criado_por?: string
+          dados_extras?: Json
+          data_ingresso?: string
+          data_nascimento?: string | null
+          email?: string
+          endereco?: string
+          funcao?: string
+          id?: string
+          nome?: string
+          observacoes?: string
+          rg?: string
+          situacao?: string
+          telefone?: string
+          unidade?: string
+          updated_at?: string
+          vinculo?: string
+        }
+        Relationships: []
+      }
+      minutas_fisicas: {
+        Row: {
+          conteudo: string
+          created_at: string
+          criado_por: string
+          dados: Json
+          id: string
+          integrante_id: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          conteudo: string
+          created_at?: string
+          criado_por: string
+          dados?: Json
+          id?: string
+          integrante_id: string
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string
+          criado_por?: string
+          dados?: Json
+          id?: string
+          integrante_id?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minutas_fisicas_integrante_id_fkey"
+            columns: ["integrante_id"]
+            isOneToOne: false
+            referencedRelation: "integrantes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modelos_unidade: {
         Row: {
           conteudo: Json
