@@ -11,11 +11,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { NovaContaForm } from '@/components/NovaContaForm';
 import { listarContas, alterarEmail, alterarSenha, excluirConta, atualizarPermissoes } from '@/lib/contas.functions';
+import { listarUnidades } from '@/lib/unidades.functions';
+import { ordenarUnidadesHierarquia, siglaUnidade } from '@/lib/unidades';
 
 const options = queryOptions({ queryKey: ['contas'], queryFn: () => listarContas() });
+const unidadesOptions = queryOptions({ queryKey: ['unidades'], queryFn: () => listarUnidades() });
 
 export const Route = createFileRoute('/_authenticated/contas')({
-  loader: ({ context }) => context.queryClient.ensureQueryData(options),
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(options),
+      context.queryClient.ensureQueryData(unidadesOptions),
+    ]);
+  },
   head: () => ({ meta: [
     { title: 'Painel de contas — SEII GCM' },
     { name: 'description', content: 'Gestão das contas de acesso ao SEII GCM.' },
@@ -33,6 +41,8 @@ const ROTULO: Record<string, string> = { admin: 'Administrador', pedagogica: 'Ge
 
 function Contas() {
   const { data: contas, refetch } = useSuspenseQuery(options);
+  const { data: unidades } = useSuspenseQuery(unidadesOptions);
+  const opcoesUnidade = ordenarUnidadesHierarquia(unidades);
   const mudarEmail = useServerFn(alterarEmail);
   const mudarSenha = useServerFn(alterarSenha);
   const excluir = useServerFn(excluirConta);
@@ -41,12 +51,12 @@ function Contas() {
   const [senhaId, setSenhaId] = useState<string | null>(null);
   const [emailId, setEmailId] = useState<string | null>(null);
   const [valor, setValor] = useState('');
-  const [perms, setPerms] = useState({ tipo_painel: 'individual' as 'individual'|'setor', setor: '', responsavel: '', nome: '', funcao: '', pode_emitir: false, pode_assinar: false, pode_comentar: false, ativo: true });
+  const [perms, setPerms] = useState({ tipo_painel: 'individual' as 'individual'|'setor', setor: '', responsavel: '', nome: '', funcao: '', pode_emitir: false, pode_assinar: false, pode_comentar: false, ativo: true, unidade_id: null as string | null });
   const [busy, setBusy] = useState(false);
 
   function abrirPerms(c: Conta) {
     setEditando(c);
-    setPerms({ tipo_painel: c.painel?.tipo_painel === 'setor' ? 'setor' : 'individual', setor: c.painel?.setor ?? '', responsavel: c.painel?.responsavel ?? '', nome: c.painel?.nome ?? '', funcao: c.painel?.funcao ?? '', pode_emitir: c.painel?.pode_emitir ?? false, pode_assinar: c.painel?.pode_assinar ?? false, pode_comentar: c.painel?.pode_comentar ?? false, ativo: c.painel?.ativo ?? true });
+    setPerms({ tipo_painel: c.painel?.tipo_painel === 'setor' ? 'setor' : 'individual', setor: c.painel?.setor ?? '', responsavel: c.painel?.responsavel ?? '', nome: c.painel?.nome ?? '', funcao: c.painel?.funcao ?? '', pode_emitir: c.painel?.pode_emitir ?? false, pode_assinar: c.painel?.pode_assinar ?? false, pode_comentar: c.painel?.pode_comentar ?? false, ativo: c.painel?.ativo ?? true, unidade_id: c.painel?.unidade_id ?? null });
   }
 
   return (
@@ -55,7 +65,7 @@ function Contas() {
       <main className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8">
         <h1 className="text-2xl font-bold text-foreground">Painel de contas</h1>
         <p className="text-foreground/80">{contas.length} conta(s) com acesso ao sistema.</p>
-        <NovaContaForm onCreated={() => void refetch()} />
+        <NovaContaForm onCreated={() => void refetch()} unidades={unidades} />
         <ul className="space-y-3">
           {contas.map(c => (
             <li key={c.id} className="space-y-3 rounded-lg bg-card p-4 text-card-foreground">
@@ -63,7 +73,7 @@ function Contas() {
                 <div className="mr-auto min-w-0">
                   <p className="truncate font-bold">{c.painel?.nome ?? c.email}</p>
                   <p className="truncate text-sm text-muted-foreground">{c.email} · {ROTULO[c.role] ?? c.role}{c.painel ? ` · ${c.painel.funcao}` : ''}</p>
-                  {c.painel && <p className="text-xs text-muted-foreground">{c.painel.ativo ? 'Ativa' : 'Desativada'} · {c.painel.pode_emitir ? 'Emite' : 'Não emite'} · {c.painel.pode_assinar ? 'Assina' : 'Não assina'} · {c.painel.pode_comentar ? 'Comenta' : 'Não comenta'}</p>}
+                  {c.painel && <p className="text-xs text-muted-foreground">{c.painel.ativo ? 'Ativa' : 'Desativada'} · {c.painel.pode_emitir ? 'Emite' : 'Não emite'} · {c.painel.pode_assinar ? 'Assina' : 'Não assina'} · {c.painel.pode_comentar ? 'Comenta' : 'Não comenta'}{c.painel.unidade_id ? ` · ${siglaUnidade(c.painel.unidade_id, unidades)}` : ''}</p>}
                 </div>
                 <Button size="sm" variant="outline" onClick={() => abrirPerms(c)}>Alterar nome</Button>
                 <Button size="sm" variant="outline" onClick={() => { setEmailId(c.id); setValor(c.email); }}>Alterar e-mail</Button>
@@ -103,6 +113,13 @@ function Contas() {
           <div className="space-y-3">
             <div><Label>Tipo de painel</Label><select aria-label="Tipo de painel" className="h-9 w-full rounded-md border bg-card px-2" value={perms.tipo_painel} onChange={e=>setPerms({...perms,tipo_painel:e.target.value === "setor" ? "setor" : "individual"})}><option value="individual">Emissão única — pessoa</option><option value="setor">Órgão / setor</option></select></div>{perms.tipo_painel === "setor" && <><Label>Nome do setor</Label><Input aria-label="Nome do setor" value={perms.setor} onChange={e=>setPerms({...perms,setor:e.target.value,nome:e.target.value})}/><Label>Responsável (opcional)</Label><Input value={perms.responsavel} onChange={e=>setPerms({...perms,responsavel:e.target.value})}/></>}<div><Label htmlFor="perm-nome">Nome completo</Label><Input id="perm-nome" value={perms.nome} onChange={e => setPerms({ ...perms, nome: e.target.value })} /></div>
             <div><Label htmlFor="perm-funcao">Função</Label><Input id="perm-funcao" value={perms.funcao} onChange={e => setPerms({ ...perms, funcao: e.target.value })} /></div>
+            <div>
+              <Label htmlFor="perm-unidade">Unidade oficial</Label>
+              <select id="perm-unidade" className="mt-1 h-9 w-full rounded-md border bg-card px-2 text-sm" value={perms.unidade_id ?? ''} onChange={e => setPerms({ ...perms, unidade_id: e.target.value || null })}>
+                <option value="">Sem unidade vinculada</option>
+                {opcoesUnidade.map(item => <option key={item.unidade.id} value={item.unidade.id}>{item.unidade.nome} ({item.siglaCompleta})</option>)}
+              </select>
+            </div>
             {([['pode_emitir', 'Pode emitir docs'], ['pode_assinar', 'Pode enviar solicitações de assinatura'], ['pode_comentar', 'Pode comentar nos docs'], ['ativo', 'Conta ativa (desmarque para bloquear o acesso)']] as const).map(([k, l]) => (
               <label key={k} className="flex items-center gap-2 text-sm">
                 <Checkbox checked={perms[k]} onCheckedChange={v => setPerms({ ...perms, [k]: v === true })} /> {l}

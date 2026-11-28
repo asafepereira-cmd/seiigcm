@@ -15,6 +15,7 @@ const dadosIntegrante = z.object({
   vinculo: z.string().trim().min(2).max(100),
   funcao: z.string().trim().max(200),
   unidade: z.string().trim().min(2).max(200),
+  unidade_id: z.string().uuid().nullable().default(null),
   data_ingresso: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   situacao: z.enum(['Ativo', 'Afastado', 'Desligado']),
   observacoes: z.string().max(10000),
@@ -29,7 +30,7 @@ async function exigirAdmin(context: AuthContext) {
 
 export const listarIntegrantes = createServerFn({ method: 'GET' }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   await exigirAdmin(context);
-  const { data, error } = await context.supabase.from('integrantes').select('id,nome,cpf,vinculo,funcao,unidade,data_ingresso,situacao,created_at').order('nome').limit(200);
+  const { data, error } = await context.supabase.from('integrantes').select('id,nome,cpf,vinculo,funcao,unidade,unidade_id,data_ingresso,situacao,created_at').order('nome').limit(200);
   if (error) throw new Error('Não foi possível consultar os integrantes.');
   return data;
 });

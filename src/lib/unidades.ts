@@ -32,3 +32,43 @@ export function unidadePermite(id: string, unidades: Unidade[], acao: 'emitir' |
   const caminho = caminhoUnidade(id, unidades);
   return caminho.length > 0 && caminho.every(u => u.ativa && (acao === 'emitir' ? u.pode_emitir : u.pode_receber));
 }
+
+export function descendentesUnidade(id: string, unidades: Unidade[]): Set<string> {
+  const resultado = new Set<string>([id]);
+  let mudou = true;
+  while (mudou) {
+    mudou = false;
+    for (const u of unidades) {
+      if (u.pai_id && resultado.has(u.pai_id) && !resultado.has(u.id)) {
+        resultado.add(u.id);
+        mudou = true;
+      }
+    }
+  }
+  return resultado;
+}
+
+export function ordenarUnidadesHierarquia(unidades: Unidade[]): Array<{ unidade: Unidade; nivel: number; siglaCompleta: string }> {
+  const porPai = new Map<string | null, Unidade[]>();
+  for (const u of unidades) {
+    const chave = u.pai_id && unidades.some(x => x.id === u.pai_id) ? u.pai_id : null;
+    const lista = porPai.get(chave) ?? [];
+    lista.push(u);
+    porPai.set(chave, lista);
+  }
+  for (const lista of porPai.values()) {
+    lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  }
+  const saida: Array<{ unidade: Unidade; nivel: number; siglaCompleta: string }> = [];
+  const visitados = new Set<string>();
+  function percorrer(paiId: string | null, nivel: number) {
+    for (const u of porPai.get(paiId) ?? []) {
+      if (visitados.has(u.id)) continue;
+      visitados.add(u.id);
+      saida.push({ unidade: u, nivel, siglaCompleta: siglaUnidade(u.id, unidades) });
+      percorrer(u.id, nivel + 1);
+    }
+  }
+  percorrer(null, 0);
+  return saida;
+}

@@ -14,7 +14,7 @@ export const listarContas = createServerFn({ method: 'GET' }).middleware([requir
   if (error) throw new Error('Não foi possível listar as contas.');
   const [{ data: roles }, { data: paineis }] = await Promise.all([
     supabaseAdmin.from('user_roles').select('user_id,role'),
-    supabaseAdmin.from('paineis').select('user_id,nome,funcao,pode_emitir,pode_assinar,pode_comentar,ativo,tipo_painel,setor,responsavel'),
+    supabaseAdmin.from('paineis').select('user_id,nome,funcao,pode_emitir,pode_assinar,pode_comentar,ativo,tipo_painel,setor,responsavel,unidade_id'),
   ]);
   const rolePor = new Map((roles ?? []).map(r => [r.user_id, r.role as string]));
   const painelPor = new Map((paineis ?? []).map(p => [p.user_id, p]));
@@ -71,6 +71,7 @@ export const atualizarPermissoes = createServerFn({ method: 'POST' }).middleware
     pode_assinar: z.boolean(),
     pode_comentar: z.boolean(),
     ativo: z.boolean(),
+    unidade_id: z.string().uuid().nullable().optional(),
   }).refine(v => v.tipo_painel !== 'setor' || v.setor.length > 2, 'Informe o setor.').parse(d))
   .handler(async ({ data, context }) => {
     await exigirAdmin(context);
@@ -78,7 +79,7 @@ export const atualizarPermissoes = createServerFn({ method: 'POST' }).middleware
     if (data.id === context.userId && (!data.ativo || !data.pode_emitir)) throw new Error('Sua própria conta não pode perder emissão nem ser desativada.');
     const { error } = await supabaseAdmin.from('paineis').upsert({
       user_id: data.id, tipo_painel: data.tipo_painel, setor: data.setor, responsavel: data.responsavel, nome: data.tipo_painel==='setor'?data.setor:(data.nome || 'Painel'), funcao: data.tipo_painel==='setor'?'Setor':(data.funcao || 'Painel'),
-      pode_emitir: data.pode_emitir, pode_assinar: data.pode_assinar, pode_comentar: data.pode_comentar, ativo: data.ativo,
+      pode_emitir: data.pode_emitir, pode_assinar: data.pode_assinar, pode_comentar: data.pode_comentar, ativo: data.ativo, ...(data.unidade_id !== undefined ? { unidade_id: data.unidade_id } : {}),
     });
     if (error) throw new Error('Não foi possível salvar as permissões.');
     return { ok: true };

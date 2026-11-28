@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { Download, Plus, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,17 +8,24 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MinutaFisicaPreview } from '@/components/MinutaFisicaPreview';
 import { registrarMinutaFisica, salvarIntegrante } from '@/lib/integrantes.functions';
+import { listarUnidades } from '@/lib/unidades.functions';
+import { ordenarUnidadesHierarquia, type Unidade } from '@/lib/unidades';
 import { gerarMinutaPDF } from '@/lib/minuta-pdf';
 import { dadosMinutaIniciais, montarMinuta, ROTULOS_MINUTA, TIPOS_MINUTA, type DadosMinuta, type TipoMinuta } from '@/lib/minutas';
 
 export function MemberForm({ onSaved }: { onSaved?: (id: string) => void }) {
   const [tipo, setTipo] = useState<TipoMinuta>('integrante');
   const [dados, setDados] = useState<DadosMinuta>(dadosMinutaIniciais);
+  const [unidadeId, setUnidadeId] = useState<string | null>(null);
+  const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [integranteId, setIntegranteId] = useState<string>();
   const [snapshot, setSnapshot] = useState('');
   const [busy, setBusy] = useState(false);
   const salvar = useServerFn(salvarIntegrante);
   const registrarMinuta = useServerFn(registrarMinutaFisica);
+  const carregarUnidades = useServerFn(listarUnidades);
+  useEffect(() => { void carregarUnidades().then(setUnidades).catch(() => {}); }, []);
+  const opcoesUnidade = ordenarUnidadesHierarquia(unidades);
   const minuta = montarMinuta(tipo, dados);
   const atualizar = <K extends keyof DadosMinuta>(campo: K, valor: DadosMinuta[K]) => setDados(atual => ({ ...atual, [campo]: valor }));
 
@@ -29,7 +36,7 @@ export function MemberForm({ onSaved }: { onSaved?: (id: string) => void }) {
         ...(integranteId ? { id: integranteId } : {}), nome: dados.nome, cpf: dados.documento, rg: dados.rg,
         data_nascimento: dados.dataNascimento || null, telefone: dados.telefone, email: dados.email,
         endereco: dados.endereco, vinculo: ROTULOS_MINUTA[tipo], funcao: dados.funcao,
-        unidade: dados.unidade, data_ingresso: dados.dataIngresso, situacao: dados.situacao,
+        unidade: dados.unidade, unidade_id: unidadeId, data_ingresso: dados.dataIngresso, situacao: dados.situacao,
         observacoes: dados.observacoes, dados_extras: dados.camposExtras,
       } });
       setIntegranteId(salvo.id); setSnapshot(JSON.stringify({ tipo, dados }));
@@ -73,7 +80,20 @@ export function MemberForm({ onSaved }: { onSaved?: (id: string) => void }) {
         <Field id="member-email" label="E-mail"><Input id="member-email" type="email" maxLength={200} value={dados.email} onChange={e => atualizar('email', e.target.value)} /></Field>
         <Field id="member-address" label="Endereço" className="sm:col-span-2"><Input id="member-address" maxLength={500} value={dados.endereco} onChange={e => atualizar('endereco', e.target.value)} /></Field>
         <Field id="member-role" label="Função / Atividade"><Input id="member-role" maxLength={200} value={dados.funcao} onChange={e => atualizar('funcao', e.target.value)} /></Field>
-        <Field id="member-unit" label="Unidade"><Input id="member-unit" required maxLength={200} value={dados.unidade} onChange={e => atualizar('unidade', e.target.value)} /></Field>
+        {opcoesUnidade.length > 0 && (
+          <Field id="member-unit-official" label="Unidade oficial">
+            <select id="member-unit-official" className="h-9 w-full rounded-md border bg-card px-2 text-sm" value={unidadeId ?? ''} onChange={e => {
+              const id = e.target.value || null;
+              setUnidadeId(id);
+              const escolhida = unidades.find(u => u.id === id);
+              if (escolhida) atualizar('unidade', escolhida.nome);
+            }}>
+              <option value="">Sem vínculo oficial</option>
+              {opcoesUnidade.map(item => <option key={item.unidade.id} value={item.unidade.id}>{item.unidade.nome} ({item.siglaCompleta})</option>)}
+            </select>
+          </Field>
+        )}
+        <Field id="member-unit" label="Unidade (texto na minuta)"><Input id="member-unit" required maxLength={200} value={dados.unidade} onChange={e => atualizar('unidade', e.target.value)} /></Field>
         <Field id="member-status" label="Situação"><select id="member-status" className="h-9 w-full rounded-md border bg-card px-2 text-sm" value={dados.situacao} onChange={e => atualizar('situacao', e.target.value as DadosMinuta['situacao'])}><option>Ativo</option><option>Afastado</option><option>Desligado</option></select></Field>
       </fieldset>
       {tipo === 'credenciamento' && <fieldset className="grid gap-3 border-t pt-4 sm:grid-cols-2"><legend className="px-1 text-sm font-semibold">Credenciamento</legend><Field id="accreditation-company" label="Empresa / Prestador"><Input id="accreditation-company" value={dados.empresa} onChange={e => atualizar('empresa', e.target.value)} /></Field><Field id="accreditation-responsible" label="Responsável legal"><Input id="accreditation-responsible" value={dados.responsavel} onChange={e => atualizar('responsavel', e.target.value)} /></Field><Field id="accreditation-object" label="Objeto" className="sm:col-span-2"><Textarea id="accreditation-object" value={dados.objeto} onChange={e => atualizar('objeto', e.target.value)} /></Field><Field id="accreditation-validity" label="Vigência (opcional)" className="sm:col-span-2"><Input id="accreditation-validity" value={dados.vigencia} onChange={e => atualizar('vigencia', e.target.value)} /></Field></fieldset>}
