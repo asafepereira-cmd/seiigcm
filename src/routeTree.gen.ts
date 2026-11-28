@@ -21,6 +21,7 @@ import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/h
 import { Route as AuthenticatedIntegrantesRouteImport } from './routes/_authenticated/integrantes'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
 import { Route as AuthenticatedTermosRouteImport } from './routes/_authenticated/termos'
+import { Route as AuthenticatedUnidadesRouteImport } from './routes/_authenticated/unidades'
 import { Route as AssinarTokenRouteImport } from './routes/assinar.$token'
 import { Route as VerificarIdRouteImport } from './routes/verificar.$id'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -85,6 +86,11 @@ const AuthenticatedTermosRoute = AuthenticatedTermosRouteImport.update({
   path: '/termos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUnidadesRoute = AuthenticatedUnidadesRouteImport.update({
+  id: '/unidades',
+  path: '/unidades',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AssinarTokenRoute = AssinarTokenRouteImport.update({
   id: '/assinar/$token',
   path: '/assinar/$token',
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/integrantes': typeof AuthenticatedIntegrantesRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/termos': typeof AuthenticatedTermosRoute
+  '/unidades': typeof AuthenticatedUnidadesRoute
   '/assinar/$token': typeof AssinarTokenRoute
   '/verificar/$id': typeof VerificarIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/integrantes': typeof AuthenticatedIntegrantesRoute
   '/painel': typeof AuthenticatedPainelRoute
   '/termos': typeof AuthenticatedTermosRoute
+  '/unidades': typeof AuthenticatedUnidadesRoute
   '/assinar/$token': typeof AssinarTokenRoute
   '/verificar/$id': typeof VerificarIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/_authenticated/integrantes': typeof AuthenticatedIntegrantesRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
   '/_authenticated/termos': typeof AuthenticatedTermosRoute
+  '/_authenticated/unidades': typeof AuthenticatedUnidadesRoute
   '/assinar/$token': typeof AssinarTokenRoute
   '/verificar/$id': typeof VerificarIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/integrantes'
     | '/painel'
     | '/termos'
+    | '/unidades'
     | '/assinar/$token'
     | '/verificar/$id'
     | '/lovable/email/transactional/preview'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/integrantes'
     | '/painel'
     | '/termos'
+    | '/unidades'
     | '/assinar/$token'
     | '/verificar/$id'
     | '/lovable/email/transactional/preview'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/_authenticated/integrantes'
     | '/_authenticated/painel'
     | '/_authenticated/termos'
+    | '/_authenticated/unidades'
     | '/assinar/$token'
     | '/verificar/$id'
     | '/lovable/email/transactional/preview'
@@ -302,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTermosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/unidades': {
+      id: '/_authenticated/unidades'
+      path: '/unidades'
+      fullPath: '/unidades'
+      preLoaderRoute: typeof AuthenticatedUnidadesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/assinar/$token': {
       id: '/assinar/$token'
       path: '/assinar/$token'
@@ -333,6 +352,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIntegrantesRoute: typeof AuthenticatedIntegrantesRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
   AuthenticatedTermosRoute: typeof AuthenticatedTermosRoute
+  AuthenticatedUnidadesRoute: typeof AuthenticatedUnidadesRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -342,6 +362,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIntegrantesRoute: AuthenticatedIntegrantesRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
   AuthenticatedTermosRoute: AuthenticatedTermosRoute,
+  AuthenticatedUnidadesRoute: AuthenticatedUnidadesRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
